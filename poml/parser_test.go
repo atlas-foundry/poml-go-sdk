@@ -357,6 +357,7 @@ func TestParsesMessagesAndTools(t *testing.T) {
 	src := `<poml>
   <human-msg>Hello</human-msg>
   <assistant-msg>Hi</assistant-msg>
+  <img src="file://foo.png" alt="pic" syntax="multimedia"><![CDATA[data]]></img>
   <tool-definition name="calc">{"type":"object"}</tool-definition>
   <tool-request id="call_1" name="calc" parameters="{{ { x: 1 } }}"/>
   <tool-response id="call_1" name="calc">2</tool-response>
@@ -385,12 +386,15 @@ func TestParsesMessagesAndTools(t *testing.T) {
 	if len(doc.Runtimes) != 1 || len(doc.Runtimes[0].Attrs) == 0 {
 		t.Fatalf("runtime missing: %+v", doc.Runtimes)
 	}
+	if len(doc.Images) != 1 || doc.Images[0].Src == "" || doc.Images[0].Body == "" {
+		t.Fatalf("image missing or incomplete: %+v", doc.Images)
+	}
 	var types []ElementType
 	for _, el := range doc.Elements {
 		types = append(types, el.Type)
 	}
 	want := []ElementType{
-		ElementHumanMsg, ElementAssistantMsg, ElementToolDefinition,
+		ElementHumanMsg, ElementAssistantMsg, ElementImage, ElementToolDefinition,
 		ElementToolRequest, ElementToolResponse, ElementOutputSchema, ElementRuntime,
 	}
 	if len(types) != len(want) {

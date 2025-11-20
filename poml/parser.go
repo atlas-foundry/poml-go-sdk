@@ -28,6 +28,7 @@ const (
 	ElementToolResponse   ElementType = "tool_response"
 	ElementOutputSchema   ElementType = "output_schema"
 	ElementRuntime        ElementType = "runtime"
+	ElementImage      ElementType = "image"
 	ElementUnknown  ElementType = "unknown"
 )
 
@@ -60,6 +61,7 @@ type Document struct {
 	ToolResps []ToolResponse
 	Runtimes  []Runtime
 	Schema    OutputSchema
+	Images    []Image
 	Elements  []Element
 	rawPrefix string // leading text before root (e.g., XML decl); kept for future extension
 
@@ -96,6 +98,15 @@ type DocRef struct {
 // Style represents an <style><output format=...> block.
 type Style struct {
 	Outputs []Output   `xml:"output"`
+	Attrs   []xml.Attr `xml:",any,attr"`
+}
+
+// Image represents an <img> block (often used for multimedia).
+type Image struct {
+	Src     string     `xml:"src,attr"`
+	Alt     string     `xml:"alt,attr"`
+	Syntax  string     `xml:"syntax,attr"`
+	Body    string     `xml:",innerxml"`
 	Attrs   []xml.Attr `xml:",any,attr"`
 }
 
@@ -497,6 +508,7 @@ type ElementPayload struct {
 	Input  *Input
 	DocRef *DocRef
 	Style  *Style
+	Image  *Image
 	Message *Message
 	ToolDef *ToolDefinition
 	ToolReq *ToolRequest
@@ -839,6 +851,17 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 					el.Leading = leading
 				}
 				doc.Elements = append(doc.Elements, el)
+			case "img":
+				var im Image
+				if err := dec.DecodeElement(&im, &t); err != nil {
+					return doc, wrapXMLError(err, "<img>")
+				}
+				doc.Images = append(doc.Images, im)
+				el := doc.newElement(ElementImage, len(doc.Images)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
 			default:
 				// Preserve unknown elements as raw where possible.
 				raw, err := consumeRaw(dec, t)
@@ -979,6 +1002,11 @@ func encodeElement(enc *xml.Encoder, out io.Writer, doc Document, el Element, op
 			return fmt.Errorf("encode runtime: index %d out of range", el.Index)
 		}
 		err = enc.EncodeElement(doc.Runtimes[el.Index], xml.StartElement{Name: xml.Name{Local: "runtime"}})
+	case ElementImage:
+		if el.Index < 0 || el.Index >= len(doc.Images) {
+			return fmt.Errorf("encode image: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Images[el.Index], xml.StartElement{Name: xml.Name{Local: "img"}})
 	case ElementUnknown:
 		if el.RawXML == "" {
 			return nil
@@ -1062,6 +1090,9 @@ func (d Document) defaultElements() []Element {
 	for i := range d.Runtimes {
 		out = append(out, d.newElement(ElementRuntime, i, ""))
 	}
+	for i := range d.Images {
+		out = append(out, d.newElement(ElementImage, i, ""))
+	}
 	return out
 }
 
@@ -1091,6 +1122,10 @@ func (d Document) payloadFor(el Element) ElementPayload {
 	case ElementStyle:
 		if el.Index >= 0 && el.Index < len(d.Styles) {
 			return ElementPayload{Style: &d.Styles[el.Index]}
+		}
+	case ElementImage:
+		if el.Index >= 0 && el.Index < len(d.Images) {
+			return ElementPayload{Image: &d.Images[el.Index]}
 		}
 	case ElementHumanMsg, ElementAssistantMsg, ElementSystemMsg:
 		if el.Index >= 0 && el.Index < len(d.Messages) {
@@ -1170,7 +1205,7 @@ func renderToken(tok xml.Token) string {
 // reindex updates element indices to match current slice state after mutations.
 func (d *Document) reindex() {
 	taskIdx, inputIdx, docIdx, styleIdx := 0, 0, 0, 0
-	msgIdx, toolDefIdx, toolReqIdx, toolRespIdx, runtimeIdx := 0, 0, 0, 0, 0
+	msgIdx, toolDefIdx, toolReqIdx, toolRespIdx, runtimeIdx, imageIdx := 0, 0, 0, 0, 0, 0
 	for i := range d.Elements {
 		switch d.Elements[i].Type {
 		case ElementTask:
@@ -1200,6 +1235,9 @@ func (d *Document) reindex() {
 		case ElementRuntime:
 			d.Elements[i].Index = runtimeIdx
 			runtimeIdx++
+		case ElementImage:
+			d.Elements[i].Index = imageIdx
+			imageIdx++
 		}
 	}
 }
