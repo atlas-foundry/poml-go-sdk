@@ -1,3 +1,3 @@
-module plugins/poml-go-sdk
+module github.com/atlas-foundry/poml-go-sdk
 
 go 1.25
