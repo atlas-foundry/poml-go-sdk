@@ -20,6 +20,14 @@ const (
 	ElementInput    ElementType = "input"
 	ElementDocument ElementType = "document"
 	ElementStyle    ElementType = "style"
+	ElementHumanMsg ElementType = "human_msg"
+	ElementAssistantMsg ElementType = "assistant_msg"
+	ElementSystemMsg ElementType = "system_msg"
+	ElementToolDefinition ElementType = "tool_definition"
+	ElementToolRequest    ElementType = "tool_request"
+	ElementToolResponse   ElementType = "tool_response"
+	ElementOutputSchema   ElementType = "output_schema"
+	ElementRuntime        ElementType = "runtime"
 	ElementUnknown  ElementType = "unknown"
 )
 
@@ -46,6 +54,12 @@ type Document struct {
 	Inputs    []Input  `xml:"input"`
 	Documents []DocRef `xml:"document"`
 	Styles    []Style  `xml:"style"`
+	Messages  []Message
+	ToolDefs  []ToolDefinition
+	ToolReqs  []ToolRequest
+	ToolResps []ToolResponse
+	Runtimes  []Runtime
+	Schema    OutputSchema
 	Elements  []Element
 	rawPrefix string // leading text before root (e.g., XML decl); kept for future extension
 
@@ -83,6 +97,47 @@ type DocRef struct {
 type Style struct {
 	Outputs []Output   `xml:"output"`
 	Attrs   []xml.Attr `xml:",any,attr"`
+}
+
+// Message represents <human-msg>, <assistant-msg>, or <system-msg>.
+type Message struct {
+	Role  string     `xml:"-"`
+	Body  string     `xml:",innerxml"`
+	Attrs []xml.Attr `xml:",any,attr"`
+}
+
+// ToolDefinition describes a tool/function exposed to the model.
+type ToolDefinition struct {
+	Name        string     `xml:"name,attr"`
+	Description string     `xml:",innerxml"`
+	Attrs       []xml.Attr `xml:",any,attr"`
+}
+
+// ToolRequest captures a tool call issued by the model.
+type ToolRequest struct {
+	ID         string     `xml:"id,attr"`
+	Name       string     `xml:"name,attr"`
+	Parameters string     `xml:"parameters,attr"`
+	Attrs      []xml.Attr `xml:",any,attr"`
+}
+
+// ToolResponse captures a tool response.
+type ToolResponse struct {
+	ID   string     `xml:"id,attr"`
+	Name string     `xml:"name,attr"`
+	Body string     `xml:",innerxml"`
+	Attrs []xml.Attr `xml:",any,attr"`
+}
+
+// OutputSchema represents a JSON schema block.
+type OutputSchema struct {
+	Body  string     `xml:",innerxml"`
+	Attrs []xml.Attr `xml:",any,attr"`
+}
+
+// Runtime captures model/runtime hints.
+type Runtime struct {
+	Attrs []xml.Attr `xml:",any,attr"`
 }
 
 // Output holds a single output format entry.
@@ -442,6 +497,12 @@ type ElementPayload struct {
 	Input  *Input
 	DocRef *DocRef
 	Style  *Style
+	Message *Message
+	ToolDef *ToolDefinition
+	ToolReq *ToolRequest
+	ToolResp *ToolResponse
+	Schema *OutputSchema
+	Runtime *Runtime
 	Raw    string
 }
 
@@ -704,6 +765,80 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 					el.Leading = leading
 				}
 				doc.Elements = append(doc.Elements, el)
+			case "human-msg", "assistant-msg", "system-msg":
+				var msg Message
+				if err := dec.DecodeElement(&msg, &t); err != nil {
+					return doc, wrapXMLError(err, "<msg>")
+				}
+				msg.Role = strings.TrimSuffix(t.Name.Local, "-msg")
+				doc.Messages = append(doc.Messages, msg)
+				elType := ElementHumanMsg
+				switch msg.Role {
+				case "assistant":
+					elType = ElementAssistantMsg
+				case "system":
+					elType = ElementSystemMsg
+				}
+				el := doc.newElement(elType, len(doc.Messages)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "tool-definition":
+				var td ToolDefinition
+				if err := dec.DecodeElement(&td, &t); err != nil {
+					return doc, wrapXMLError(err, "<tool-definition>")
+				}
+				doc.ToolDefs = append(doc.ToolDefs, td)
+				el := doc.newElement(ElementToolDefinition, len(doc.ToolDefs)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "tool-request":
+				var tr ToolRequest
+				if err := dec.DecodeElement(&tr, &t); err != nil {
+					return doc, wrapXMLError(err, "<tool-request>")
+				}
+				doc.ToolReqs = append(doc.ToolReqs, tr)
+				el := doc.newElement(ElementToolRequest, len(doc.ToolReqs)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "tool-response":
+				var tr ToolResponse
+				if err := dec.DecodeElement(&tr, &t); err != nil {
+					return doc, wrapXMLError(err, "<tool-response>")
+				}
+				doc.ToolResps = append(doc.ToolResps, tr)
+				el := doc.newElement(ElementToolResponse, len(doc.ToolResps)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "output-schema":
+				var os OutputSchema
+				if err := dec.DecodeElement(&os, &t); err != nil {
+					return doc, wrapXMLError(err, "<output-schema>")
+				}
+				doc.Schema = os
+				el := doc.newElement(ElementOutputSchema, -1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "runtime":
+				var rt Runtime
+				if err := dec.DecodeElement(&rt, &t); err != nil {
+					return doc, wrapXMLError(err, "<runtime>")
+				}
+				doc.Runtimes = append(doc.Runtimes, rt)
+				el := doc.newElement(ElementRuntime, len(doc.Runtimes)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
 			default:
 				// Preserve unknown elements as raw where possible.
 				raw, err := consumeRaw(dec, t)
@@ -810,6 +945,40 @@ func encodeElement(enc *xml.Encoder, out io.Writer, doc Document, el Element, op
 			return fmt.Errorf("encode style: index %d out of range", el.Index)
 		}
 		err = enc.EncodeElement(doc.Styles[el.Index], xml.StartElement{Name: xml.Name{Local: "style"}})
+	case ElementHumanMsg, ElementAssistantMsg, ElementSystemMsg:
+		if el.Index < 0 || el.Index >= len(doc.Messages) {
+			return fmt.Errorf("encode message: index %d out of range", el.Index)
+		}
+		tag := "human-msg"
+		switch el.Type {
+		case ElementAssistantMsg:
+			tag = "assistant-msg"
+		case ElementSystemMsg:
+			tag = "system-msg"
+		}
+		err = enc.EncodeElement(doc.Messages[el.Index], xml.StartElement{Name: xml.Name{Local: tag}})
+	case ElementToolDefinition:
+		if el.Index < 0 || el.Index >= len(doc.ToolDefs) {
+			return fmt.Errorf("encode tool definition: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.ToolDefs[el.Index], xml.StartElement{Name: xml.Name{Local: "tool-definition"}})
+	case ElementToolRequest:
+		if el.Index < 0 || el.Index >= len(doc.ToolReqs) {
+			return fmt.Errorf("encode tool request: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.ToolReqs[el.Index], xml.StartElement{Name: xml.Name{Local: "tool-request"}})
+	case ElementToolResponse:
+		if el.Index < 0 || el.Index >= len(doc.ToolResps) {
+			return fmt.Errorf("encode tool response: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.ToolResps[el.Index], xml.StartElement{Name: xml.Name{Local: "tool-response"}})
+	case ElementOutputSchema:
+		err = enc.EncodeElement(doc.Schema, xml.StartElement{Name: xml.Name{Local: "output-schema"}})
+	case ElementRuntime:
+		if el.Index < 0 || el.Index >= len(doc.Runtimes) {
+			return fmt.Errorf("encode runtime: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Runtimes[el.Index], xml.StartElement{Name: xml.Name{Local: "runtime"}})
 	case ElementUnknown:
 		if el.RawXML == "" {
 			return nil
@@ -867,7 +1036,37 @@ func (d Document) defaultElements() []Element {
 	for i := range d.Styles {
 		out = append(out, d.newElement(ElementStyle, i, ""))
 	}
+	for i := range d.Messages {
+		// Preserve role-specific element types.
+		elType := ElementHumanMsg
+		switch d.Messages[i].Role {
+		case "assistant":
+			elType = ElementAssistantMsg
+		case "system":
+			elType = ElementSystemMsg
+		}
+		out = append(out, d.newElement(elType, i, ""))
+	}
+	for i := range d.ToolDefs {
+		out = append(out, d.newElement(ElementToolDefinition, i, ""))
+	}
+	for i := range d.ToolReqs {
+		out = append(out, d.newElement(ElementToolRequest, i, ""))
+	}
+	for i := range d.ToolResps {
+		out = append(out, d.newElement(ElementToolResponse, i, ""))
+	}
+	if d.hasSchema() {
+		out = append(out, d.newElement(ElementOutputSchema, -1, ""))
+	}
+	for i := range d.Runtimes {
+		out = append(out, d.newElement(ElementRuntime, i, ""))
+	}
 	return out
+}
+
+func (d Document) hasSchema() bool {
+	return d.Schema.Body != "" || len(d.Schema.Attrs) > 0
 }
 
 // payloadFor resolves concrete pointers for an element.
@@ -892,6 +1091,30 @@ func (d Document) payloadFor(el Element) ElementPayload {
 	case ElementStyle:
 		if el.Index >= 0 && el.Index < len(d.Styles) {
 			return ElementPayload{Style: &d.Styles[el.Index]}
+		}
+	case ElementHumanMsg, ElementAssistantMsg, ElementSystemMsg:
+		if el.Index >= 0 && el.Index < len(d.Messages) {
+			return ElementPayload{Message: &d.Messages[el.Index]}
+		}
+	case ElementToolDefinition:
+		if el.Index >= 0 && el.Index < len(d.ToolDefs) {
+			return ElementPayload{ToolDef: &d.ToolDefs[el.Index]}
+		}
+	case ElementToolRequest:
+		if el.Index >= 0 && el.Index < len(d.ToolReqs) {
+			return ElementPayload{ToolReq: &d.ToolReqs[el.Index]}
+		}
+	case ElementToolResponse:
+		if el.Index >= 0 && el.Index < len(d.ToolResps) {
+			return ElementPayload{ToolResp: &d.ToolResps[el.Index]}
+		}
+	case ElementOutputSchema:
+		if d.hasSchema() {
+			return ElementPayload{Schema: &d.Schema}
+		}
+	case ElementRuntime:
+		if el.Index >= 0 && el.Index < len(d.Runtimes) {
+			return ElementPayload{Runtime: &d.Runtimes[el.Index]}
 		}
 	case ElementUnknown:
 		return ElementPayload{Raw: el.RawXML}
@@ -947,6 +1170,7 @@ func renderToken(tok xml.Token) string {
 // reindex updates element indices to match current slice state after mutations.
 func (d *Document) reindex() {
 	taskIdx, inputIdx, docIdx, styleIdx := 0, 0, 0, 0
+	msgIdx, toolDefIdx, toolReqIdx, toolRespIdx, runtimeIdx := 0, 0, 0, 0, 0
 	for i := range d.Elements {
 		switch d.Elements[i].Type {
 		case ElementTask:
@@ -961,6 +1185,21 @@ func (d *Document) reindex() {
 		case ElementStyle:
 			d.Elements[i].Index = styleIdx
 			styleIdx++
+		case ElementHumanMsg, ElementAssistantMsg, ElementSystemMsg:
+			d.Elements[i].Index = msgIdx
+			msgIdx++
+		case ElementToolDefinition:
+			d.Elements[i].Index = toolDefIdx
+			toolDefIdx++
+		case ElementToolRequest:
+			d.Elements[i].Index = toolReqIdx
+			toolReqIdx++
+		case ElementToolResponse:
+			d.Elements[i].Index = toolRespIdx
+			toolRespIdx++
+		case ElementRuntime:
+			d.Elements[i].Index = runtimeIdx
+			runtimeIdx++
 		}
 	}
 }

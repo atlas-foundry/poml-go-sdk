@@ -347,8 +347,58 @@ func TestMutateReplaceRemoveInsert(t *testing.T) {
 func contains(list []string, target string) bool {
 	for _, v := range list {
 		if v == target {
-			return true
+		return true
 		}
 	}
 	return false
+}
+
+func TestParsesMessagesAndTools(t *testing.T) {
+	src := `<poml>
+  <human-msg>Hello</human-msg>
+  <assistant-msg>Hi</assistant-msg>
+  <tool-definition name="calc">{"type":"object"}</tool-definition>
+  <tool-request id="call_1" name="calc" parameters="{{ { x: 1 } }}"/>
+  <tool-response id="call_1" name="calc">2</tool-response>
+  <output-schema>{"type":"object"}</output-schema>
+  <runtime temperature="0.5" max-tokens="10"/>
+</poml>`
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(doc.Messages) != 2 || doc.Messages[0].Role != "human" || doc.Messages[1].Role != "assistant" {
+		t.Fatalf("messages not captured: %+v", doc.Messages)
+	}
+	if len(doc.ToolDefs) != 1 || doc.ToolDefs[0].Name != "calc" {
+		t.Fatalf("tool-definition missing: %+v", doc.ToolDefs)
+	}
+	if len(doc.ToolReqs) != 1 || doc.ToolReqs[0].ID != "call_1" {
+		t.Fatalf("tool-request missing: %+v", doc.ToolReqs)
+	}
+	if len(doc.ToolResps) != 1 || doc.ToolResps[0].Body == "" {
+		t.Fatalf("tool-response missing: %+v", doc.ToolResps)
+	}
+	if doc.Schema.Body == "" {
+		t.Fatalf("output-schema missing")
+	}
+	if len(doc.Runtimes) != 1 || len(doc.Runtimes[0].Attrs) == 0 {
+		t.Fatalf("runtime missing: %+v", doc.Runtimes)
+	}
+	var types []ElementType
+	for _, el := range doc.Elements {
+		types = append(types, el.Type)
+	}
+	want := []ElementType{
+		ElementHumanMsg, ElementAssistantMsg, ElementToolDefinition,
+		ElementToolRequest, ElementToolResponse, ElementOutputSchema, ElementRuntime,
+	}
+	if len(types) != len(want) {
+		t.Fatalf("element count mismatch: %v", types)
+	}
+	for i := range want {
+		if types[i] != want[i] {
+			t.Fatalf("element order mismatch at %d: got %s want %s", i, types[i], want[i])
+		}
+	}
 }
