@@ -8,6 +8,14 @@ Current scope
 - Parsers for string/file/reader plus role/task/input accessors.
 - Tests: golden sample, round-trip encode (including unknown), malformed error coverage, large document parsing, builder/mutation coverage.
 
+Parity matrix vs. Python SDK (working list)
+- ✅ Preserve unknown elements/attrs, CDATA, and element order; support whitespace/comments round-trip when requested.
+- ✅ Validation for required meta/role/task plus unique inputs/doc/style fields; structured error type.
+- ✅ Walk/Mutate with stable element IDs and ID lookup.
+- ✅ Encode options for header/indent/order/compact/whitespace.
+- 🟡 Parse options (whitespace preservation toggle) and parent hooks; more fixtures from Python SDK samples still to port.
+- 🟡 CI workflow/coverage thresholds and README examples mirroring Python usage (in progress).
+
 Usage patterns
 - Parsing: `doc, _ := poml.ParseFile("x.poml")` (or `ParseReader/ParseString`).
 - Walking: `doc.Walk(func(el Element, p ElementPayload) error { ... })`.

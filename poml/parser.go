@@ -101,6 +101,15 @@ type EncodeOptions struct {
 	Compact       bool   // when true, disable indentation
 }
 
+// ParseOptions controls parsing fidelity.
+type ParseOptions struct {
+	// PreserveWhitespace retains leading/trailing whitespace/comments between elements.
+	// When false, Leading/Trailing fields on Elements remain empty to reduce memory.
+	PreserveWhitespace bool
+}
+
+var defaultParseOptions = ParseOptions{PreserveWhitespace: true}
+
 type ErrorType string
 
 const (
@@ -144,7 +153,7 @@ func (v *ValidationError) Error() string {
 
 // ParseString decodes a POML document from a string.
 func ParseString(body string) (Document, error) {
-	return parse(strings.NewReader(body))
+	return parseWithOptions(strings.NewReader(body), defaultParseOptions)
 }
 
 // ParseFile decodes a POML document from the given file path.
@@ -154,12 +163,17 @@ func ParseFile(path string) (Document, error) {
 		return Document{}, err
 	}
 	defer f.Close()
-	return parse(f)
+	return parseWithOptions(f, defaultParseOptions)
 }
 
 // ParseReader decodes a POML document from an io.Reader.
 func ParseReader(r io.Reader) (Document, error) {
-	return parse(r)
+	return parseWithOptions(r, defaultParseOptions)
+}
+
+// ParseReaderWithOptions decodes a POML document with fidelity controls.
+func ParseReaderWithOptions(r io.Reader, opts ParseOptions) (Document, error) {
+	return parseWithOptions(r, opts)
 }
 
 // Encode writes the POML document back to XML.
@@ -389,6 +403,16 @@ func (d Document) Walk(fn func(Element, ElementPayload) error) error {
 	return nil
 }
 
+// ElementByID returns the element by stable ID plus its payload.
+func (d Document) ElementByID(id string) (Element, ElementPayload, bool) {
+	for _, el := range d.resolveOrder() {
+		if el.ID == id {
+			return el, d.payloadFor(el), true
+		}
+	}
+	return Element{}, ElementPayload{}, false
+}
+
 // Mutate walks elements and allows controlled insert/replace/remove via Mutator.
 func (d *Document) Mutate(fn func(Element, ElementPayload, *Mutator) error) error {
 	if fn == nil {
@@ -561,7 +585,7 @@ func (d *Document) insertElement(after Element, newEl Element) {
 	d.reindex()
 }
 
-func parse(r io.Reader) (Document, error) {
+func parseWithOptions(r io.Reader, opts ParseOptions) (Document, error) {
 	dec := xml.NewDecoder(r)
 	dec.Strict = true
 
@@ -583,15 +607,16 @@ func parse(r io.Reader) (Document, error) {
 				Message: fmt.Sprintf("parse poml: expected <poml> root, got <%s>", start.Name.Local),
 			}
 		}
-		return decodePoml(dec)
+		return decodePoml(dec, opts)
 	}
 }
 
-func decodePoml(dec *xml.Decoder) (Document, error) {
+func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 	var doc Document
 	doc.nextID = 1
 	var lastElement *Element
 	pending := ""
+	preserveWS := opts.PreserveWhitespace
 	for {
 		tok, err := dec.Token()
 		if err != nil {
@@ -602,9 +627,13 @@ func decodePoml(dec *xml.Decoder) (Document, error) {
 		}
 		switch t := tok.(type) {
 		case xml.CharData:
-			pending += string(t)
+			if preserveWS {
+				pending += string(t)
+			}
 		case xml.Comment:
-			pending += renderToken(t)
+			if preserveWS {
+				pending += renderToken(t)
+			}
 		case xml.StartElement:
 			leading := pending
 			pending = ""
@@ -616,7 +645,9 @@ func decodePoml(dec *xml.Decoder) (Document, error) {
 				}
 				doc.Meta = m
 				el := doc.newElement(ElementMeta, -1, "")
-				el.Leading = leading
+				if preserveWS {
+					el.Leading = leading
+				}
 				doc.Elements = append(doc.Elements, el)
 			case "role":
 				var b Block
@@ -625,7 +656,9 @@ func decodePoml(dec *xml.Decoder) (Document, error) {
 				}
 				doc.Role = b
 				el := doc.newElement(ElementRole, -1, "")
-				el.Leading = leading
+				if preserveWS {
+					el.Leading = leading
+				}
 				doc.Elements = append(doc.Elements, el)
 			case "task":
 				var b Block
@@ -634,7 +667,9 @@ func decodePoml(dec *xml.Decoder) (Document, error) {
 				}
 				doc.Tasks = append(doc.Tasks, b)
 				el := doc.newElement(ElementTask, len(doc.Tasks)-1, "")
-				el.Leading = leading
+				if preserveWS {
+					el.Leading = leading
+				}
 				doc.Elements = append(doc.Elements, el)
 			case "input":
 				var in Input
@@ -643,7 +678,9 @@ func decodePoml(dec *xml.Decoder) (Document, error) {
 				}
 				doc.Inputs = append(doc.Inputs, in)
 				el := doc.newElement(ElementInput, len(doc.Inputs)-1, "")
-				el.Leading = leading
+				if preserveWS {
+					el.Leading = leading
+				}
 				doc.Elements = append(doc.Elements, el)
 			case "document":
 				var dr DocRef
@@ -652,7 +689,9 @@ func decodePoml(dec *xml.Decoder) (Document, error) {
 				}
 				doc.Documents = append(doc.Documents, dr)
 				el := doc.newElement(ElementDocument, len(doc.Documents)-1, "")
-				el.Leading = leading
+				if preserveWS {
+					el.Leading = leading
+				}
 				doc.Elements = append(doc.Elements, el)
 			case "style":
 				var st Style
@@ -661,7 +700,9 @@ func decodePoml(dec *xml.Decoder) (Document, error) {
 				}
 				doc.Styles = append(doc.Styles, st)
 				el := doc.newElement(ElementStyle, len(doc.Styles)-1, "")
-				el.Leading = leading
+				if preserveWS {
+					el.Leading = leading
+				}
 				doc.Elements = append(doc.Elements, el)
 			default:
 				// Preserve unknown elements as raw where possible.
@@ -670,17 +711,19 @@ func decodePoml(dec *xml.Decoder) (Document, error) {
 					return doc, wrapXMLError(err, fmt.Sprintf("<%s>", t.Name.Local))
 				}
 				el := doc.newElement(ElementUnknown, -1, t.Name.Local, raw)
-				el.Leading = leading
+				if preserveWS {
+					el.Leading = leading
+				}
 				doc.Elements = append(doc.Elements, el)
 			}
-			if lastElement != nil && pending != "" {
+			if preserveWS && lastElement != nil && pending != "" {
 				lastElement.Trailing = pending
 			}
 			lastElement = &doc.Elements[len(doc.Elements)-1]
 			pending = ""
 		case xml.EndElement:
 			if t.Name.Local == "poml" {
-				if lastElement != nil && pending != "" {
+				if preserveWS && lastElement != nil && pending != "" {
 					lastElement.Trailing = pending
 				}
 				return doc, nil

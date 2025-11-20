@@ -173,6 +173,43 @@ func TestPreserveTrailingWhitespace(t *testing.T) {
 	}
 }
 
+func TestParseOptionsDisableWhitespace(t *testing.T) {
+	src := "<poml><task>one</task><!-- gap --><task>two</task></poml>"
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: false})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	for _, el := range doc.Elements {
+		if el.Leading != "" || el.Trailing != "" {
+			t.Fatalf("expected whitespace fields empty when disabled: %+v", el)
+		}
+	}
+	var buf bytes.Buffer
+	if err := doc.EncodeWithOptions(&buf, EncodeOptions{IncludeHeader: false, PreserveOrder: true, PreserveWS: true, Compact: true}); err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	if strings.Contains(buf.String(), "gap") {
+		t.Fatalf("whitespace/comment should not be preserved when disabled: %s", buf.String())
+	}
+}
+
+func TestElementByIDLookup(t *testing.T) {
+	doc, err := ParseString(sample)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(doc.Elements) == 0 {
+		t.Fatalf("expected populated elements")
+	}
+	el, payload, ok := doc.ElementByID(doc.Elements[0].ID)
+	if !ok {
+		t.Fatalf("expected element lookup by ID to succeed")
+	}
+	if el.Type != ElementMeta || payload.Meta == nil || payload.Meta.ID == "" {
+		t.Fatalf("unexpected payload returned: %+v %+v", el, payload.Meta)
+	}
+}
+
 func TestMalformedReportsError(t *testing.T) {
 	// missing closing tag, malformed attribute
 	bad := `<poml><meta><id>bad</id></meta><input name="x" required nope></input></poml>`
