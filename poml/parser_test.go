@@ -153,6 +153,26 @@ func TestPreserveWhitespaceLeading(t *testing.T) {
 	}
 }
 
+func TestPreserveTrailingWhitespace(t *testing.T) {
+	src := "<poml><task>one</task>\n  <!-- trailing comment -->\n</poml>"
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(doc.Elements) == 0 || strings.TrimSpace(doc.Elements[len(doc.Elements)-1].Trailing) == "" {
+		t.Fatalf("trailing whitespace/comments not captured: %+v", doc.Elements)
+	}
+
+	var buf bytes.Buffer
+	if err := doc.EncodeWithOptions(&buf, EncodeOptions{IncludeHeader: false, PreserveOrder: true, PreserveWS: true}); err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "</task>\n  <!-- trailing comment -->") {
+		t.Fatalf("trailing whitespace/comments not preserved:\n%s", out)
+	}
+}
+
 func TestMalformedReportsError(t *testing.T) {
 	// missing closing tag, malformed attribute
 	bad := `<poml><meta><id>bad</id></meta><input name="x" required nope></input></poml>`

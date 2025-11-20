@@ -741,42 +741,43 @@ func encodeElement(enc *xml.Encoder, out io.Writer, doc Document, el Element, op
 			return err
 		}
 	}
+	var err error
 	switch el.Type {
 	case ElementMeta:
-		return enc.EncodeElement(doc.Meta, xml.StartElement{Name: xml.Name{Local: "meta"}})
+		err = enc.EncodeElement(doc.Meta, xml.StartElement{Name: xml.Name{Local: "meta"}})
 	case ElementRole:
-		return enc.EncodeElement(doc.Role, xml.StartElement{Name: xml.Name{Local: "role"}})
+		err = enc.EncodeElement(doc.Role, xml.StartElement{Name: xml.Name{Local: "role"}})
 	case ElementTask:
 		if el.Index < 0 || el.Index >= len(doc.Tasks) {
 			return fmt.Errorf("encode task: index %d out of range", el.Index)
 		}
-		return enc.EncodeElement(doc.Tasks[el.Index], xml.StartElement{Name: xml.Name{Local: "task"}})
+		err = enc.EncodeElement(doc.Tasks[el.Index], xml.StartElement{Name: xml.Name{Local: "task"}})
 	case ElementInput:
 		if el.Index < 0 || el.Index >= len(doc.Inputs) {
 			return fmt.Errorf("encode input: index %d out of range", el.Index)
 		}
-		return enc.EncodeElement(doc.Inputs[el.Index], xml.StartElement{Name: xml.Name{Local: "input"}})
+		err = enc.EncodeElement(doc.Inputs[el.Index], xml.StartElement{Name: xml.Name{Local: "input"}})
 	case ElementDocument:
 		if el.Index < 0 || el.Index >= len(doc.Documents) {
 			return fmt.Errorf("encode document: index %d out of range", el.Index)
 		}
-		return enc.EncodeElement(doc.Documents[el.Index], xml.StartElement{Name: xml.Name{Local: "document"}})
+		err = enc.EncodeElement(doc.Documents[el.Index], xml.StartElement{Name: xml.Name{Local: "document"}})
 	case ElementStyle:
 		if el.Index < 0 || el.Index >= len(doc.Styles) {
 			return fmt.Errorf("encode style: index %d out of range", el.Index)
 		}
-		return enc.EncodeElement(doc.Styles[el.Index], xml.StartElement{Name: xml.Name{Local: "style"}})
+		err = enc.EncodeElement(doc.Styles[el.Index], xml.StartElement{Name: xml.Name{Local: "style"}})
 	case ElementUnknown:
 		if el.RawXML == "" {
 			return nil
 		}
-		if err := enc.Flush(); err != nil {
-			return err
+		if err = enc.Flush(); err == nil {
+			_, err = io.WriteString(out, el.RawXML)
 		}
-		_, err := io.WriteString(out, el.RawXML)
-		return err
 	default:
-		return nil
+	}
+	if err != nil {
+		return err
 	}
 	if opts.PreserveWS && el.Trailing != "" {
 		if err := enc.Flush(); err != nil {
