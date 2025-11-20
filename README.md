@@ -15,6 +15,16 @@ Parity matrix vs. Python SDK (working list)
 - ✅ Encode options for header/indent/order/compact/whitespace.
 - 🟡 Parse options (whitespace preservation toggle) and parent hooks; more fixtures from Python SDK samples still to port.
 - 🟡 CI workflow/coverage thresholds and README examples mirroring Python usage (in progress).
+- 🔴 Missing Python-level APIs: prompt builder/tag helpers, multimedia ingestion, tool/schema/runtime tags, format converters (dict/pydantic/OpenAI/LangChain), tracing backends, and fixtures parity.
+
+Milestones to reach Python parity
+1) **Tag coverage**: model additional tags used by Python SDK (message roles, tool-definition/request/response, output-schema, runtime, multimedia assets) and extend validation/AST to carry them.
+2) **Format converters**: implement `poml(..., format=...)`-style exports for message_dict/dict/openai_chat/langchain/pydantic, including tool-calls and schema/runtime propagation.
+3) **Builder/tag helpers**: add a Go prompt builder and tag helpers akin to Python `Prompt`/`_TagLib` so users can author POML programmatically with captions/styles.
+4) **Multimedia support**: support file/buffer/base64 ingestion, MIME detection, and data URI/base64 emission to mirror image/audio handling in Python tests.
+5) **Tracing**: implement tracing hooks (`set_trace`/`trace_artifact` equivalents) with env-based opt-in and optional backend hand-offs.
+6) **Parity tests/fixtures**: port Python example fixtures (`examples/*.poml` + expects) and core tests (`test_basic.py`, `test_poml_formats.py`, `test_examples.py`) to Go, then gate CI on them with coverage thresholds.
+7) **Docs/CI**: document the above APIs in README with usage snippets matching Python, and keep CI workflow green across the expanded surface.
 
 Usage patterns
 - Parsing: `doc, _ := poml.ParseFile("x.poml")` (or `ParseReader/ParseString`).
