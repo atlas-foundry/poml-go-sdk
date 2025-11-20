@@ -3,13 +3,21 @@
 Goal: Go SDK for POML with API/behavior parity to the Microsoft Python SDK (https://microsoft.github.io/poml/latest/python/).
 
 Current scope
-- Parser/encoder for POML (strict XML, CDATA-safe, preserves meta/role/task/input/document/style blocks).
-- Helpers: parse from string/file, role text accessor, task body extraction, input walker.
-- Tests: golden sample, round-trip encode, malformed error coverage, large document parsing.
+- Parser/encoder for POML (strict XML, CDATA-safe, preserves meta/role/task/input/document/style blocks; preserves unknown elements, attributes, and optional leading/trailing whitespace/comments).
+- AST helpers: ordered `Elements` with stable IDs/parent hooks, `Walk`/`Mutate`, builders (`Add*`), validation (required meta/role/task, single meta/role), and configurable encoding options (order/whitespace/header/indent/compact).
+- Parsers for string/file/reader plus role/task/input accessors.
+- Tests: golden sample, round-trip encode (including unknown), malformed error coverage, large document parsing, builder/mutation coverage.
+
+Usage patterns
+- Parsing: `doc, _ := poml.ParseFile("x.poml")` (or `ParseReader/ParseString`).
+- Walking: `doc.Walk(func(el Element, p ElementPayload) error { ... })`.
+- Mutations: `doc.Mutate(func(el Element, p ElementPayload, m *Mutator) error { m.ReplaceBody(el, "new"); m.Remove(el); m.InsertTaskAfter(el, "body"); return nil })`.
+- Encoding: `doc.Encode(w)` or `doc.EncodeWithOptions(w, EncodeOptions{Indent: "  ", IncludeHeader: true, PreserveOrder: true, PreserveWS: true})`; `doc.DumpFile("path", opts)` atomically writes to disk.
+- Validation: `if err := doc.Validate(); err != nil { ... }`.
 
 Next steps
-1) Flesh out full AST and builder/serializer parity (visitor/walker, validation hooks, whitespace/order preservation knobs).
-2) Expand fixtures to mirror Python SDK examples and edge cases (bad attributes, missing tags, CDATA nesting).
+1) Add parent IDs/comments/whitespace preservation hooks for finer-grained round-trips.
+2) Expand fixtures to mirror Python SDK examples and edge cases (bad attributes, missing tags, nested CDATA).
 3) Add CI workflow and coverage thresholds; publish usage docs for atlas imports.
 
 Usage in atlas
