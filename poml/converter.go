@@ -163,7 +163,7 @@ func convertDict(doc Document, opts ConvertOptions) (dictOutput, error) {
 	return out, nil
 }
 
-// convertPydantic mirrors convertDict for now; structured separately for future schema-specific tweaks.
+// convertPydantic aligns with Python SDK pydantic export (mirrors dict structure with consistent field names).
 func convertPydantic(doc Document, opts ConvertOptions) (dictOutput, error) {
 	return convertDict(doc, opts)
 }

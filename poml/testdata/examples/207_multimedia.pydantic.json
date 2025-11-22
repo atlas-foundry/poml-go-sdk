@@ -1,0 +1,28 @@
+{
+  "messages": [
+    {
+      "speaker": "system",
+      "content": "Test multimedia ingestion"
+    },
+    {
+      "speaker": "human",
+      "content": "Handle audio and video assets consistently across converters."
+    },
+    {
+      "speaker": "human",
+      "content": {
+        "alt": "clip",
+        "base64": "QQ==",
+        "type": "audio/mpeg"
+      }
+    },
+    {
+      "speaker": "human",
+      "content": {
+        "alt": "vid",
+        "base64": "QQ==",
+        "type": "video/mp4"
+      }
+    }
+  ]
+}
