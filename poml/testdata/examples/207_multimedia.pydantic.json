@@ -13,6 +13,9 @@
       "content": {
         "alt": "clip",
         "base64": "QQ==",
+        "data": "QQ==",
+        "mime": "audio/mpeg",
+        "mime_type": "audio/mpeg",
         "source": "base64",
         "syntax": "audio/mpeg",
         "type": "audio/mpeg"
@@ -23,10 +26,35 @@
       "content": {
         "alt": "vid",
         "base64": "QQ==",
+        "data": "QQ==",
+        "mime": "video/mp4",
+        "mime_type": "video/mp4",
         "source": "base64",
         "syntax": "video/mp4",
         "type": "video/mp4"
       }
+    }
+  ],
+  "media": [
+    {
+      "alt": "clip",
+      "base64": "QQ==",
+      "data": "QQ==",
+      "mime": "audio/mpeg",
+      "mime_type": "audio/mpeg",
+      "source": "base64",
+      "syntax": "audio/mpeg",
+      "type": "audio/mpeg"
+    },
+    {
+      "alt": "vid",
+      "base64": "QQ==",
+      "data": "QQ==",
+      "mime": "video/mp4",
+      "mime_type": "video/mp4",
+      "source": "base64",
+      "syntax": "video/mp4",
+      "type": "video/mp4"
     }
   ]
 }

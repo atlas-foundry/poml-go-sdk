@@ -624,11 +624,14 @@ func buildImagePart(im Image, opts ConvertOptions) (map[string]any, error) {
 		mime = "image/png"
 	}
 	return map[string]any{
-		"type":   mime,
-		"alt":    im.Alt,
-		"base64": data,
-		"source": "base64",
-		"syntax": im.Syntax,
+		"type":      mime,
+		"mime":      mime,
+		"mime_type": mime,
+		"alt":       im.Alt,
+		"base64":    data,
+		"source":    "base64",
+		"syntax":    im.Syntax,
+		"data":      data,
 	}, nil
 }
 
@@ -667,11 +670,14 @@ func buildMediaPart(m Media, opts ConvertOptions) (map[string]any, error) {
 		mime = guessMediaMime(m.Src)
 	}
 	return map[string]any{
-		"type":   mime,
-		"alt":    m.Alt,
-		"base64": data,
-		"source": "base64",
-		"syntax": m.Syntax,
+		"type":      mime,
+		"mime":      mime,
+		"mime_type": mime,
+		"alt":       m.Alt,
+		"base64":    data,
+		"source":    "base64",
+		"syntax":    m.Syntax,
+		"data":      data,
 	}, nil
 }
 

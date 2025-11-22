@@ -16,7 +16,10 @@
             "base64": "QQ==",
             "source": "base64",
             "syntax": "audio/mpeg",
-            "type": "audio/mpeg"
+            "type": "audio/mpeg",
+            "data": "QQ==",
+            "mime": "audio/mpeg",
+            "mime_type": "audio/mpeg"
           },
           "type": "input_audio"
         }
@@ -32,7 +35,10 @@
             "base64": "QQ==",
             "source": "base64",
             "syntax": "video/mp4",
-            "type": "video/mp4"
+            "type": "video/mp4",
+            "data": "QQ==",
+            "mime": "video/mp4",
+            "mime_type": "video/mp4"
           }
         }
       ],
