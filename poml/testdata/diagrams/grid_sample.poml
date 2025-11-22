@@ -1,0 +1,16 @@
+<poml>
+  <diagram id="grid-sample" projection="orthographic" layout="grid" unit="m">
+    <graph>
+      <node id="a1" label="A1" x="0" y="0" z="0"/>
+      <node id="a2" label="A2" x="1" y="0" z="0"/>
+      <node id="b1" label="B1" x="0" y="1" z="0"/>
+      <node id="b2" label="B2" x="1" y="1" z="0"/>
+      <edge from="a1" to="a2" kind="row" directed="false"/>
+      <edge from="a1" to="b1" kind="col" directed="false"/>
+      <edge from="b1" to="b2" kind="row" directed="false"/>
+      <edge from="a2" to="b2" kind="col" directed="false"/>
+    </graph>
+    <layer id="base" kind="grid" z="0"/>
+    <camera azimuth="0" elevation="45" distance="5"/>
+  </diagram>
+</poml>

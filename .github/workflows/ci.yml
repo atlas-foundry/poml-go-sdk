@@ -21,5 +21,22 @@ jobs:
             gofmt -l .
             exit 1
           fi
-      - name: Test
-        run: go test ./...
+      - name: Test with coverage (>=80%)
+        run: |
+          go test -coverprofile=coverage.out ./...
+          python3 - <<'PY'
+import subprocess, sys
+limit = 80.0
+report = subprocess.check_output(["go", "tool", "cover", "-func=coverage.out"], text=True)
+total = None
+for line in report.splitlines():
+    if line.startswith("total:"):
+        total = line.split()[-1]
+        break
+if total is None or not total.endswith("%"):
+    sys.exit("failed to parse coverage report:\n" + report)
+pct = float(total.rstrip("%"))
+if pct < limit:
+    sys.exit(f"coverage {pct}% below threshold {limit}%")
+print(f"coverage {pct}% (threshold {limit}%)")
+PY

@@ -1,0 +1,33 @@
+[
+  {
+    "speaker": "human",
+    "content": "Hello"
+  },
+  {
+    "speaker": "assistant",
+    "content": "Calling tool"
+  },
+  {
+    "speaker": "tool",
+    "content": "4"
+  },
+  {
+    "speaker": "tool",
+    "content": "ok"
+  },
+  {
+    "speaker": "tool",
+    "content": {
+      "error": "bad",
+      "name": "calc"
+    }
+  },
+  {
+    "speaker": "human",
+    "content": {
+      "type": "image/png",
+      "alt": "tiny",
+      "base64": "AA=="
+    }
+  }
+]

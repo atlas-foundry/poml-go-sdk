@@ -1,0 +1,22 @@
+<poml>
+  <diagram id="star-sample" projection="isometric" layout="manual" unit="u">
+    <graph>
+      <node id="hub" label="Hub" x="0" y="0" z="0">
+        <style shape="circle" size="1.2" color="#0ea5e9"/>
+      </node>
+      <node id="leaf-a" label="Leaf A" x="1" y="0" z="0">
+        <style shape="square" size="0.9" color="#22c55e"/>
+      </node>
+      <node id="leaf-b" label="Leaf B" x="-1" y="0" z="0">
+        <style shape="square" size="0.9" color="#f97316"/>
+      </node>
+      <node id="leaf-c" label="Leaf C" x="0" y="1" z="0">
+        <style shape="square" size="0.9" color="#a855f7"/>
+      </node>
+      <edge from="hub" to="leaf-a" kind="relates" directed="true" />
+      <edge from="hub" to="leaf-b" kind="relates" directed="true" />
+      <edge from="hub" to="leaf-c" kind="relates" directed="true" />
+    </graph>
+    <camera azimuth="20" elevation="25" distance="6"/>
+  </diagram>
+</poml>

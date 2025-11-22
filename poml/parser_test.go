@@ -2,6 +2,8 @@ package poml
 
 import (
 	"bytes"
+	"encoding/xml"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -193,6 +195,224 @@ func TestParseOptionsDisableWhitespace(t *testing.T) {
 	}
 }
 
+func TestParseOptionsValidate(t *testing.T) {
+	src := "<poml><task>one</task></poml>"
+	if _, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{Validate: true}); err == nil {
+		t.Fatalf("expected validation error when Validate=true")
+	} else {
+		var pe *POMLError
+		if !errors.As(err, &pe) || pe.Type != ErrValidate {
+			t.Fatalf("expected POMLError validation, got %v", err)
+		}
+	}
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{Validate: false})
+	if err != nil {
+		t.Fatalf("parse without validation: %v", err)
+	}
+	if len(doc.Tasks) != 1 {
+		t.Fatalf("expected task parsed even when validation disabled, got %d", len(doc.Tasks))
+	}
+}
+
+func TestParseStrictHelpers(t *testing.T) {
+	src := "<poml><task>one</task></poml>"
+	if _, err := ParseStringStrict(src); err == nil {
+		t.Fatalf("expected strict parse to fail validation")
+	}
+	valid := `<poml><meta><id>x</id><version>1</version><owner>me</owner></meta><role>r</role><task>t</task></poml>`
+	if _, err := ParseStringStrict(valid); err != nil {
+		t.Fatalf("strict parse should succeed: %v", err)
+	}
+}
+
+func TestParseOptionsValidateWithInvalidDiagramAndUnknownTags(t *testing.T) {
+	src := `<poml>
+  <diagram id="bad">
+    <graph>
+      <node label="no id"/>
+      <edge from="" to="" directed="true"/>
+    </graph>
+  </diagram>
+  <unknown foo="bar">keep me</unknown>
+</poml>`
+	if _, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{Validate: true}); err == nil {
+		t.Fatalf("expected diagram validation error")
+	}
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{Validate: false})
+	if err != nil {
+		t.Fatalf("parse without validation: %v", err)
+	}
+	if len(doc.Diagrams) != 1 || len(doc.Elements) == 0 {
+		t.Fatalf("expected diagram and elements")
+	}
+	var foundUnknown bool
+	for _, el := range doc.Elements {
+		if el.Type == ElementUnknown {
+			foundUnknown = true
+			break
+		}
+	}
+	if !foundUnknown {
+		t.Fatalf("expected unknown element preserved")
+	}
+}
+
+func TestPOMLErrorUnwrap(t *testing.T) {
+	inner := errors.New("root")
+	err := &POMLError{Type: ErrDecode, Message: "wrap", Err: inner}
+	if !errors.Is(err, inner) {
+		t.Fatalf("expected unwrap to expose inner error")
+	}
+}
+
+func TestWalkInputsHelper(t *testing.T) {
+	doc, err := ParseString(`<poml><input name="a" required="true">x</input><input name="b" required="false">y</input></poml>`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	var seen []string
+	doc.WalkInputs(func(in *Input) {
+		seen = append(seen, in.Name)
+	})
+	if len(seen) != 2 || seen[0] != "a" || seen[1] != "b" {
+		t.Fatalf("walk inputs mismatch: %v", seen)
+	}
+}
+
+func TestMutatorMarkModifiedAndInsertTaskBefore(t *testing.T) {
+	doc, err := ParseString("<poml><task>t1</task><task>t2</task></poml>")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	err = doc.Mutate(func(el Element, payload ElementPayload, m *Mutator) error {
+		if el.Type == ElementTask && el.Index == 0 {
+			payload.Task.Body = "updated"
+			m.MarkModified()
+			m.InsertTaskAfter(el, "inserted")
+		}
+		if el.Type == ElementTask && el.Index == 1 {
+			// insert unknown element before to exercise InsertBefore
+			m.InsertBefore(el, Element{Type: ElementUnknown, RawXML: "<extra/>"})
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("mutate: %v", err)
+	}
+	if doc.Tasks[0].Body != "updated" {
+		t.Fatalf("mark modified did not persist change")
+	}
+	if len(doc.Tasks) != 3 {
+		t.Fatalf("expected inserted task, got %d", len(doc.Tasks))
+	}
+	if !containsRaw(doc.Elements, "<extra/>") {
+		t.Fatalf("expected inserted unknown element")
+	}
+}
+
+func containsRaw(elems []Element, raw string) bool {
+	for _, el := range elems {
+		if el.RawXML == raw {
+			return true
+		}
+	}
+	return false
+}
+
+func TestParseReaderAndEncodeAllElements(t *testing.T) {
+	directed := true
+	doc := Document{
+		Meta:      Meta{ID: "full.demo", Version: "1", Owner: "me"},
+		Role:      Block{Body: "role"},
+		Tasks:     []Block{{Body: "t1"}},
+		Inputs:    []Input{{Name: "input", Required: true, Body: "body"}},
+		Documents: []DocRef{{Src: "file://x"}},
+		Styles:    []Style{{Outputs: []Output{{Format: "markdown", Body: "# hi"}}}},
+		Messages:  []Message{{Role: "human", Body: "hi"}},
+		ToolDefs:  []ToolDefinition{{Name: "calc", Description: `{"type":"object"}`, Attrs: []xml.Attr{{Name: xml.Name{Local: "x"}, Value: "1"}}}},
+		ToolReqs:  []ToolRequest{{ID: "call_1", Name: "calc", Parameters: "{{ {\"x\":1} }}"}},
+		ToolResps: []ToolResponse{{ID: "call_1", Name: "calc", Body: "2"}},
+		Schema:    OutputSchema{Body: `{"type":"object"}`},
+		Runtimes:  []Runtime{{Attrs: []xml.Attr{{Name: xml.Name{Local: "temperature"}, Value: "0.1"}}}},
+		Images:    []Image{{Src: "data:image/png;base64,AA==", Alt: "a", Syntax: "image/png"}},
+		Diagrams: []Diagram{{
+			ID: "d1",
+			Graph: DiagramGraph{
+				Nodes: []DiagramNode{{ID: "n1", X: "0", Y: "0", Z: "0"}},
+				Edges: []DiagramEdge{{From: "n1", To: "n1", Directed: &directed}},
+			},
+		}},
+	}
+	doc.Elements = doc.defaultElements()
+	var buf bytes.Buffer
+	if err := doc.Encode(&buf); err != nil {
+		t.Fatalf("encode all: %v", err)
+	}
+	if _, err := ParseReader(strings.NewReader(buf.String())); err != nil {
+		t.Fatalf("ParseReader: %v", err)
+	}
+}
+
+func TestMutatorRemoveAndReplaceBodyBranches(t *testing.T) {
+	doc := Document{}
+	doc.Meta = Meta{ID: "r", Version: "1", Owner: "o"}
+	doc.AddRole("role")
+	doc.AddTask("t1")
+	doc.AddInput("name", true, "body")
+	doc.AddDocument("file://d")
+	doc.AddStyle(Output{Format: "markdown", Body: "orig"})
+	doc.AddMessage("assistant", "msg")
+	doc.AddToolDefinition("calc", "{}")
+	doc.AddToolRequest("id", "calc", "{{ {\"x\":1} }}")
+	doc.AddToolResponse("id", "calc", "2")
+	doc.AddOutputSchema(`{"type":"object"}`)
+	doc.AddRuntime(xml.Attr{Name: xml.Name{Local: "temp"}, Value: "0.2"})
+	doc.AddImage(ImageFromBytes([]byte{0x01}, "image/png", "a"))
+
+	err := doc.Mutate(func(el Element, payload ElementPayload, m *Mutator) error {
+		switch el.Type {
+		case ElementStyle:
+			m.ReplaceBody(el, "updated-style")
+		case ElementToolResponse:
+			m.ReplaceBody(el, "updated-tool")
+		case ElementImage:
+			m.ReplaceBody(el, "img-body")
+		case ElementRole:
+			m.Remove(el)
+		case ElementRuntime:
+			m.Remove(el)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("mutate: %v", err)
+	}
+	if doc.Styles[0].Outputs[0].Body != "updated-style" {
+		t.Fatalf("replace style failed")
+	}
+	if doc.ToolResps[0].Body != "updated-tool" {
+		t.Fatalf("replace tool response failed")
+	}
+	if doc.Images[0].Body != "img-body" {
+		t.Fatalf("replace image failed")
+	}
+	if doc.Role.Body != "" {
+		t.Fatalf("role should be removed")
+	}
+	if len(doc.Runtimes) != 0 {
+		t.Fatalf("runtime should be removed")
+	}
+}
+
+func TestWrapXMLError(t *testing.T) {
+	syn := &xml.SyntaxError{Line: 3}
+	err := wrapXMLError(syn, "ctx")
+	var pe *POMLError
+	if !errors.As(err, &pe) || pe.Type != ErrDecode {
+		t.Fatalf("wrapXMLError should wrap syntax errors, got %v", err)
+	}
+}
+
 func TestElementByIDLookup(t *testing.T) {
 	doc, err := ParseString(sample)
 	if err != nil {
@@ -272,6 +492,94 @@ func TestValidateMetaRoleTasks(t *testing.T) {
 	}
 }
 
+func TestValidateToolingReferences(t *testing.T) {
+	base := Document{
+		Meta:  Meta{ID: "tools.demo", Version: "1", Owner: "me"},
+		Role:  Block{Body: "role"},
+		Tasks: []Block{{Body: "t"}},
+		ToolDefs: []ToolDefinition{
+			{Name: "calc"},
+			{Name: "echo"},
+		},
+		ToolReqs: []ToolRequest{{ID: "call_1", Name: "calc"}},
+		ToolResps: []ToolResponse{
+			{ID: "call_1", Name: "calc"},
+		},
+		ToolResults: []ToolResult{
+			{ID: "call_1", Name: "calc"},
+		},
+		ToolErrors: []ToolError{
+			{ID: "call_1", Name: "calc"},
+		},
+	}
+
+	if err := base.Validate(); err != nil {
+		t.Fatalf("expected valid tooling to pass validation: %v", err)
+	}
+
+	docUnknownDef := base
+	docUnknownDef.ToolReqs[0].Name = "missing"
+	if err := docUnknownDef.Validate(); err == nil {
+		t.Fatalf("expected validation error for unknown tool-definition")
+	}
+
+	docMissingRequest := base
+	docMissingRequest.ToolResps[0].ID = "call_2"
+	if err := docMissingRequest.Validate(); err == nil {
+		t.Fatalf("expected validation error for missing tool-request reference")
+	}
+
+	docMismatchedTool := base
+	docMismatchedTool.ToolResps[0].Name = "echo"
+	if err := docMismatchedTool.Validate(); err == nil {
+		t.Fatalf("expected validation error for mismatched tool name on response")
+	}
+
+	docDuplicateReq := base
+	docDuplicateReq.ToolReqs = append(docDuplicateReq.ToolReqs, ToolRequest{ID: "call_1", Name: "calc"})
+	if err := docDuplicateReq.Validate(); err == nil {
+		t.Fatalf("expected validation error for duplicate tool-request id")
+	}
+
+	docUnknownToolError := base
+	docUnknownToolError.ToolErrors[0].Name = "missing"
+	if err := docUnknownToolError.Validate(); err == nil {
+		t.Fatalf("expected validation error for tool-error with unknown tool-definition")
+	}
+}
+
+func TestDefaultElementsAdvanceNextID(t *testing.T) {
+	doc := Document{
+		Meta:  Meta{ID: "seed", Version: "1", Owner: "me"},
+		Tasks: []Block{{Body: "t1"}},
+	}
+	doc.Elements = doc.defaultElements()
+
+	seen := make(map[string]struct{})
+	for _, el := range doc.Elements {
+		if el.ID == "" {
+			t.Fatalf("expected element IDs populated, got %+v", el)
+		}
+		if _, ok := seen[el.ID]; ok {
+			t.Fatalf("duplicate ID after defaultElements: %s", el.ID)
+		}
+		seen[el.ID] = struct{}{}
+	}
+
+	doc.AddTask("t2")
+
+	seen = make(map[string]struct{})
+	for _, el := range doc.Elements {
+		if _, ok := seen[el.ID]; ok {
+			t.Fatalf("duplicate ID after adding task: %s", el.ID)
+		}
+		seen[el.ID] = struct{}{}
+	}
+	if doc.nextID <= len(doc.Elements) {
+		t.Fatalf("nextID not advanced; got %d with %d elements", doc.nextID, len(doc.Elements))
+	}
+}
+
 func TestDumpFile(t *testing.T) {
 	doc := Document{
 		Meta: Meta{ID: "dump.demo", Version: "1", Owner: "me"},
@@ -347,7 +655,7 @@ func TestMutateReplaceRemoveInsert(t *testing.T) {
 func contains(list []string, target string) bool {
 	for _, v := range list {
 		if v == target {
-		return true
+			return true
 		}
 	}
 	return false
@@ -404,5 +712,92 @@ func TestParsesMessagesAndTools(t *testing.T) {
 		if types[i] != want[i] {
 			t.Fatalf("element order mismatch at %d: got %s want %s", i, types[i], want[i])
 		}
+	}
+}
+
+func TestBuildersForMessagesToolsSchemaRuntimeImage(t *testing.T) {
+	var doc Document
+	doc.Meta = Meta{ID: "builder.demo", Version: "1", Owner: "me"}
+	doc.AddRole("role")
+	doc.AddTask("t1")
+	doc.AddMessage("assistant", "hi", xml.Attr{Name: xml.Name{Local: "tone"}, Value: "brief"})
+	doc.AddToolDefinition("calc", `{"type":"object"}`)
+	doc.AddToolRequest("call_1", "calc", "{{ {\"x\":1} }}")
+	doc.AddToolResponse("call_1", "calc", "2")
+	doc.AddOutputSchema(`{"type":"object","properties":{"x":{"type":"number"}}}`)
+	doc.AddRuntime(xml.Attr{Name: xml.Name{Local: "temperature"}, Value: "0.1"})
+	doc.AddImage(ImageFromBytes([]byte{0x01, 0x02}, "image/png", "tiny"))
+
+	if err := doc.Validate(); err != nil {
+		t.Fatalf("validate builders doc: %v", err)
+	}
+	var seen []ElementType
+	for _, el := range doc.Elements {
+		seen = append(seen, el.Type)
+	}
+	if !containsType(seen, ElementAssistantMsg) || !containsType(seen, ElementToolDefinition) || !containsType(seen, ElementOutputSchema) || !containsType(seen, ElementRuntime) || !containsType(seen, ElementImage) {
+		t.Fatalf("expected new element types recorded, got %v", seen)
+	}
+}
+
+func TestValidationCatchesMissingNamesAndSchema(t *testing.T) {
+	var doc Document
+	doc.Meta = Meta{ID: "v", Version: "1", Owner: "me"}
+	doc.AddRole("role")
+	doc.AddTask("task")
+	doc.ToolDefs = append(doc.ToolDefs, ToolDefinition{Description: "{}"})
+	doc.ToolReqs = append(doc.ToolReqs, ToolRequest{})
+	doc.AddOutputSchema("")
+	if err := doc.Validate(); err == nil {
+		t.Fatalf("expected validation errors for missing tool names and schema")
+	}
+}
+
+func containsType(list []ElementType, target ElementType) bool {
+	for _, v := range list {
+		if v == target {
+			return true
+		}
+	}
+	return false
+}
+
+func TestMutatorInsertDocumentAndStyle(t *testing.T) {
+	doc, err := ParseString(sample)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	err = doc.Mutate(func(el Element, payload ElementPayload, m *Mutator) error {
+		if el.Type == ElementDocument {
+			m.InsertDocumentAfter(el, "file://extra")
+			m.InsertStyleAfter(el, Style{Outputs: []Output{{Format: "text", Body: "plain"}}})
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("mutate: %v", err)
+	}
+	if len(doc.Documents) != 2 {
+		t.Fatalf("expected second document inserted, got %d", len(doc.Documents))
+	}
+	if len(doc.Styles) != 2 {
+		t.Fatalf("expected second style inserted, got %d", len(doc.Styles))
+	}
+	// Ensure elements are reindexed in order after inserts.
+	var seenDocs, seenStyles int
+	for _, el := range doc.Elements {
+		if el.Type == ElementDocument {
+			if el.Index == 0 || el.Index == 1 {
+				seenDocs++
+			}
+		}
+		if el.Type == ElementStyle {
+			if el.Index == 0 || el.Index == 1 {
+				seenStyles++
+			}
+		}
+	}
+	if seenDocs != 2 || seenStyles != 2 {
+		t.Fatalf("expected reindexed elements for docs/styles, got docs=%d styles=%d", seenDocs, seenStyles)
 	}
 }

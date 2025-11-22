@@ -6,8 +6,10 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -29,7 +31,13 @@ type ConvertOptions struct {
 	Context map[string]any
 	// BaseDir is used to resolve relative asset paths (e.g., <img src>).
 	BaseDir string
+	// AllowAbsImagePaths permits absolute image paths; defaults to false to avoid accidental file reads.
+	AllowAbsImagePaths bool
+	// MaxImageBytes caps bytes read before Base64 encoding; zero applies a default cap, negative disables the cap.
+	MaxImageBytes int64
 }
+
+const defaultMaxImageBytes int64 = 128 * 1024 * 1024 // 128MB safeguard
 
 // ErrNotImplemented signals that a conversion target is not yet supported.
 var ErrNotImplemented = errors.New("conversion not implemented")
@@ -72,6 +80,12 @@ func convertMessageDict(doc Document, opts ConvertOptions) ([]messageDict, error
 			payload := doc.Messages[el.Index]
 			content := strings.TrimSpace(payload.Body)
 			msgs = append(msgs, messageDict{Speaker: roleToSpeaker(payload.Role), Content: content})
+		case ElementToolResult:
+			payload := doc.ToolResults[el.Index]
+			msgs = append(msgs, messageDict{Speaker: "tool", Content: strings.TrimSpace(payload.Body)})
+		case ElementToolError:
+			payload := doc.ToolErrors[el.Index]
+			msgs = append(msgs, messageDict{Speaker: "tool", Content: map[string]any{"error": strings.TrimSpace(payload.Body), "name": payload.Name}})
 		case ElementToolResponse:
 			payload := doc.ToolResps[el.Index]
 			msgs = append(msgs, messageDict{Speaker: "tool", Content: strings.TrimSpace(payload.Body)})
@@ -88,9 +102,9 @@ func convertMessageDict(doc Document, opts ConvertOptions) ([]messageDict, error
 }
 
 type dictOutput struct {
-	Messages []messageDict `json:"messages"`
-	Schema   any           `json:"schema,omitempty"`
-	Tools    []any         `json:"tools,omitempty"`
+	Messages []messageDict  `json:"messages"`
+	Schema   any            `json:"schema,omitempty"`
+	Tools    []any          `json:"tools,omitempty"`
 	Runtime  map[string]any `json:"runtime,omitempty"`
 }
 
@@ -105,28 +119,10 @@ func convertDict(doc Document, opts ConvertOptions) (dictOutput, error) {
 	}
 	if len(doc.ToolDefs) > 0 {
 		for _, td := range doc.ToolDefs {
-			tool := map[string]any{
-				"type": "function",
-				"name": td.Name,
-			}
-			if td.Description != "" {
-				tool["description"] = strings.TrimSpace(td.Description)
-			}
-			if td.Description != "" {
-				tool["parameters"] = parseJSONFallback(td.Description)
-			}
-			if len(td.Attrs) > 0 {
-				tool["attrs"] = attrsToMap(td.Attrs)
-			}
-			out.Tools = append(out.Tools, tool)
+			out.Tools = append(out.Tools, buildFlatToolDefinition(td))
 		}
 	}
-	if len(doc.Runtimes) > 0 {
-		rt := make(map[string]any)
-		for _, attr := range doc.Runtimes[0].Attrs {
-			key := strings.ReplaceAll(attr.Name.Local, "-", "_")
-			rt[key] = attr.Value
-		}
+	if rt := collectRuntime(doc); rt != nil {
 		out.Runtime = rt
 	}
 	return out, nil
@@ -151,9 +147,21 @@ func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error
 				"id":   tr.ID,
 				"type": "function",
 				"function": map[string]any{
-					"name": tr.Name,
-					"arguments": strings.TrimSpace(strings.TrimPrefix(strings.TrimSuffix(tr.Parameters, "}}"), "{{")),
+					"name":      tr.Name,
+					"arguments": normalizeToolArgsJSON(tr.Parameters),
 				},
+			}
+			if len(messages) > 0 {
+				last := messages[len(messages)-1]
+				if last["role"] == "assistant" {
+					existing, ok := last["tool_calls"].([]any)
+					if !ok {
+						existing = nil
+					}
+					last["tool_calls"] = append(existing, toolCall)
+					messages[len(messages)-1] = last
+					continue
+				}
 			}
 			messages = append(messages, map[string]any{
 				"role":       "assistant",
@@ -162,10 +170,28 @@ func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error
 		case ElementToolResponse:
 			resp := doc.ToolResps[el.Index]
 			messages = append(messages, map[string]any{
-				"role":        "tool",
-				"content":     strings.TrimSpace(resp.Body),
+				"role":         "tool",
+				"content":      strings.TrimSpace(resp.Body),
 				"tool_call_id": resp.ID,
-				"name":        resp.Name,
+				"name":         resp.Name,
+			})
+		case ElementToolResult:
+			resp := doc.ToolResults[el.Index]
+			messages = append(messages, map[string]any{
+				"role":         "tool",
+				"content":      strings.TrimSpace(resp.Body),
+				"tool_call_id": resp.ID,
+				"name":         resp.Name,
+				"type":         "result",
+			})
+		case ElementToolError:
+			resp := doc.ToolErrors[el.Index]
+			messages = append(messages, map[string]any{
+				"role":         "tool",
+				"content":      strings.TrimSpace(resp.Body),
+				"tool_call_id": resp.ID,
+				"name":         resp.Name,
+				"type":         "error",
 			})
 		case ElementImage:
 			im := doc.Images[el.Index]
@@ -193,27 +219,100 @@ func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error
 			},
 		}
 	}
-	if len(doc.Runtimes) > 0 {
-		for _, attr := range doc.Runtimes[0].Attrs {
-			key := strings.ReplaceAll(attr.Name.Local, "-", "_")
-			result[key] = attr.Value
+	if rt := collectRuntime(doc); rt != nil {
+		for k, v := range rt {
+			result[k] = v
 		}
 	}
 	if len(doc.ToolDefs) > 0 {
 		var tools []any
 		for _, td := range doc.ToolDefs {
-			tools = append(tools, map[string]any{
-				"type": "function",
-				"function": map[string]any{
-					"name": td.Name,
-					"description": strings.TrimSpace(td.Description),
-					"parameters": parseJSONFallback(td.Description),
-				},
-			})
+			tools = append(tools, buildOpenAIToolDefinition(td))
 		}
 		result["tools"] = tools
 	}
 	return result, nil
+}
+
+func normalizeToolArgs(raw string) string {
+	body := strings.TrimSpace(raw)
+	if strings.HasPrefix(body, "{{") && strings.HasSuffix(body, "}}") {
+		body = strings.TrimSpace(strings.TrimPrefix(strings.TrimSuffix(body, "}}"), "{{"))
+	}
+	return body
+}
+
+func normalizeToolArgsJSON(raw string) string {
+	body := normalizeToolArgs(raw)
+	if val, ok := parseLooseJSONValue(body); ok {
+		b, err := json.Marshal(val)
+		if err == nil {
+			return string(b)
+		}
+	}
+	return body
+}
+
+var bareKeyRe = regexp.MustCompile(`([{\s,])([A-Za-z0-9_\-]+)\s*:`)
+
+func parseLooseJSON(body string) any {
+	if val, ok := parseLooseJSONValue(body); ok {
+		return val
+	}
+	return body
+}
+
+func parseLooseJSONValue(body string) (any, bool) {
+	body = strings.TrimSpace(body)
+	if body == "" {
+		return nil, false
+	}
+	var val any
+	if err := json.Unmarshal([]byte(body), &val); err == nil {
+		return val, true
+	}
+	// Normalize single quotes and bare keys.
+	body = strings.ReplaceAll(body, `'`, `"`)
+	body = bareKeyRe.ReplaceAllString(body, `$1"$2":`)
+	if err := json.Unmarshal([]byte(body), &val); err == nil {
+		return val, true
+	}
+	return nil, false
+}
+
+func normalizeRuntimeKey(key string) string {
+	key = strings.ReplaceAll(key, "-", "_")
+	// camelCase to snake_case (basic)
+	var out []rune
+	for i, r := range key {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			out = append(out, '_', r+('a'-'A'))
+		} else {
+			out = append(out, r)
+		}
+	}
+	return string(out)
+}
+
+func parseRuntimeValue(val string) any {
+	val = strings.TrimSpace(val)
+	if val == "" {
+		return val
+	}
+	var num float64
+	if err := json.Unmarshal([]byte(val), &num); err == nil {
+		// preserve ints when applicable
+		if float64(int(num)) == num {
+			return int(num)
+		}
+		return num
+	}
+	// try as array/object
+	var anyVal any
+	if err := json.Unmarshal([]byte(val), &anyVal); err == nil {
+		return anyVal
+	}
+	return val
 }
 
 func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error) {
@@ -234,7 +333,7 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 					"tool_calls": []any{map[string]any{
 						"id":   tr.ID,
 						"name": tr.Name,
-						"args": parseJSONFallback(strings.Trim(tr.Parameters, "{} ")),
+						"args": parseLooseJSON(normalizeToolArgs(tr.Parameters)),
 					}},
 				},
 			})
@@ -243,9 +342,31 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 			messages = append(messages, map[string]any{
 				"type": "tool",
 				"data": map[string]any{
-					"content":     strings.TrimSpace(resp.Body),
+					"content":      strings.TrimSpace(resp.Body),
 					"tool_call_id": resp.ID,
-					"name":        resp.Name,
+					"name":         resp.Name,
+				},
+			})
+		case ElementToolResult:
+			resp := doc.ToolResults[el.Index]
+			messages = append(messages, map[string]any{
+				"type": "tool",
+				"data": map[string]any{
+					"content":      strings.TrimSpace(resp.Body),
+					"tool_call_id": resp.ID,
+					"name":         resp.Name,
+					"result":       true,
+				},
+			})
+		case ElementToolError:
+			resp := doc.ToolErrors[el.Index]
+			messages = append(messages, map[string]any{
+				"type": "tool",
+				"data": map[string]any{
+					"content":      strings.TrimSpace(resp.Body),
+					"tool_call_id": resp.ID,
+					"name":         resp.Name,
+					"error":        true,
 				},
 			})
 		case ElementImage:
@@ -271,45 +392,65 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 	if len(doc.ToolDefs) > 0 {
 		var tools []any
 		for _, td := range doc.ToolDefs {
-			tools = append(tools, map[string]any{
-				"type": "function",
-				"name": td.Name,
-				"description": strings.TrimSpace(td.Description),
-				"parameters": parseJSONFallback(td.Description),
-			})
+			tools = append(tools, buildFlatToolDefinition(td))
 		}
 		out["tools"] = tools
 	}
-	if len(doc.Runtimes) > 0 {
-		rt := make(map[string]any)
-		for _, attr := range doc.Runtimes[0].Attrs {
-			rt[attr.Name.Local] = attr.Value
-		}
+	if rt := collectRuntime(doc); rt != nil {
 		out["runtime"] = rt
 	}
 	return out, nil
 }
 
+func collectRuntime(doc Document) map[string]any {
+	if len(doc.Runtimes) == 0 {
+		return nil
+	}
+	rt := make(map[string]any)
+	for _, runtime := range doc.Runtimes {
+		for _, attr := range runtime.Attrs {
+			key := normalizeRuntimeKey(attr.Name.Local)
+			rt[key] = parseRuntimeValue(attr.Value)
+		}
+	}
+	if len(rt) == 0 {
+		return nil
+	}
+	return rt
+}
+
 func buildImagePart(im Image, opts ConvertOptions) (map[string]any, error) {
+	limit := opts.MaxImageBytes
+	if limit == 0 {
+		limit = defaultMaxImageBytes
+	}
 	var data string
 	switch {
 	case strings.HasPrefix(im.Src, "data:"):
 		parts := strings.SplitN(im.Src, ",", 2)
 		if len(parts) == 2 {
-			data = parts[1]
+			payload := parts[1]
+			if err := enforceBase64Limit(payload, limit); err != nil {
+				return nil, fmt.Errorf("image data uri: %w", err)
+			}
+			data = payload
 		}
 	case im.Src != "":
-		src := im.Src
-		if opts.BaseDir != "" && !filepath.IsAbs(src) {
-			src = filepath.Join(opts.BaseDir, src)
+		src, err := resolveImagePath(im.Src, opts)
+		if err != nil {
+			return nil, err
 		}
-		bytes, err := os.ReadFile(src)
+		bytes, err := readFileWithLimit(src, limit)
 		if err != nil {
 			return nil, fmt.Errorf("read image %s: %w", src, err)
 		}
 		data = base64.StdEncoding.EncodeToString(bytes)
 	case im.Body != "":
-		data = base64.StdEncoding.EncodeToString([]byte(im.Body))
+		body := []byte(im.Body)
+		if err := enforceByteLimit(int64(len(body)), limit, "inline image body"); err != nil {
+			return nil, err
+		}
+		data = base64.StdEncoding.EncodeToString(body)
 	}
 	mime := im.Syntax
 	if mime == "" {
@@ -323,6 +464,106 @@ func buildImagePart(im Image, opts ConvertOptions) (map[string]any, error) {
 		"alt":    im.Alt,
 		"base64": data,
 	}, nil
+}
+
+func resolveImagePath(raw string, opts ConvertOptions) (string, error) {
+	src := filepath.Clean(raw)
+	base := strings.TrimSuffix(filepath.Clean(opts.BaseDir), string(filepath.Separator))
+	if opts.BaseDir != "" {
+		baseResolved, err := filepath.EvalSymlinks(base)
+		if err != nil {
+			return "", fmt.Errorf("resolve BaseDir %s: %w", opts.BaseDir, err)
+		}
+		if !filepath.IsAbs(src) {
+			src = filepath.Join(baseResolved, src)
+		}
+		resolved, err := filepath.EvalSymlinks(src)
+		if err != nil {
+			return "", fmt.Errorf("resolve image path %s: %w", raw, err)
+		}
+		rel, err := filepath.Rel(baseResolved, resolved)
+		if err != nil {
+			return "", fmt.Errorf("resolve image path %s: %w", raw, err)
+		}
+		if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			return "", fmt.Errorf("image path %s escapes BaseDir %s", raw, opts.BaseDir)
+		}
+		return resolved, nil
+	}
+	if filepath.IsAbs(src) && !opts.AllowAbsImagePaths {
+		return "", fmt.Errorf("absolute image path %s disallowed without AllowAbsImagePaths", raw)
+	}
+	if filepath.IsAbs(src) {
+		resolved, err := filepath.EvalSymlinks(src)
+		if err != nil {
+			return "", fmt.Errorf("resolve image path %s: %w", raw, err)
+		}
+		return resolved, nil
+	}
+	return src, nil
+}
+
+func readFileWithLimit(path string, limit int64) ([]byte, error) {
+	if limit <= 0 {
+		return os.ReadFile(path)
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err == nil && info.Size() > limit {
+		return nil, fmt.Errorf("file %s exceeds max size %d bytes", path, limit)
+	}
+	r := io.LimitReader(f, limit+1)
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > limit {
+		return nil, fmt.Errorf("file %s exceeds max size %d bytes", path, limit)
+	}
+	return data, nil
+}
+
+func enforceByteLimit(size int64, limit int64, label string) error {
+	if limit > 0 && size > limit {
+		return fmt.Errorf("%s exceeds max size %d bytes", label, limit)
+	}
+	return nil
+}
+
+func enforceBase64Limit(data string, limit int64) error {
+	if limit <= 0 {
+		return nil
+	}
+	clean := strings.TrimSpace(data)
+	if clean == "" {
+		return nil
+	}
+	if err := consumeBase64WithLimit(clean, base64.StdEncoding, limit); err != nil {
+		if strings.Contains(err.Error(), "illegal base64") || strings.Contains(err.Error(), "invalid base64") {
+			if errRaw := consumeBase64WithLimit(clean, base64.RawStdEncoding, limit); errRaw != nil {
+				return errRaw
+			}
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func consumeBase64WithLimit(data string, enc *base64.Encoding, limit int64) error {
+	r := base64.NewDecoder(enc, strings.NewReader(data))
+	n, err := io.Copy(io.Discard, io.LimitReader(r, limit+1))
+	if err != nil {
+		return err
+	}
+	if n > limit {
+		return fmt.Errorf("image payload exceeds max size %d bytes", limit)
+	}
+	return nil
 }
 
 func guessMime(path string) string {
@@ -344,6 +585,32 @@ func parseJSONFallback(body string) any {
 		return strings.TrimSpace(body)
 	}
 	return out
+}
+
+func parseJSONStrict(body string) (any, bool) {
+	var out any
+	if err := json.Unmarshal([]byte(strings.TrimSpace(body)), &out); err != nil {
+		return nil, false
+	}
+	return out, true
+}
+
+func parseJSONIfStruct(body string) (any, bool) {
+	val := parseJSONFallback(body)
+	switch val.(type) {
+	case map[string]any, []any:
+		return val, true
+	default:
+		return nil, false
+	}
+}
+
+func stripCDATA(body string) string {
+	if strings.HasPrefix(body, "<![CDATA[") && strings.HasSuffix(body, "]]>") {
+		body = strings.TrimPrefix(body, "<![CDATA[")
+		body = strings.TrimSuffix(body, "]]>")
+	}
+	return body
 }
 
 func attrsToMap(attrs []xml.Attr) map[string]string {
@@ -385,4 +652,74 @@ func roleToLangChain(role string) string {
 	default:
 		return "human"
 	}
+}
+
+func buildFlatToolDefinition(td ToolDefinition) map[string]any {
+	desc := stripCDATA(strings.TrimSpace(td.Description))
+	tool := map[string]any{
+		"type": "function",
+		"name": td.Name,
+	}
+	if desc != "" {
+		tool["description"] = desc
+	}
+	if params, ok := parseJSONIfStruct(desc); ok {
+		tool["parameters"] = params
+	}
+	if len(td.Attrs) > 0 {
+		tool["attrs"] = attrsToMap(td.Attrs)
+	}
+	return tool
+}
+
+func buildOpenAIToolDefinition(td ToolDefinition) map[string]any {
+	desc := stripCDATA(strings.TrimSpace(td.Description))
+	fn := map[string]any{
+		"name": td.Name,
+	}
+	if desc != "" {
+		fn["description"] = desc
+	}
+	if params, ok := parseJSONIfStruct(desc); ok {
+		fn["parameters"] = params
+	}
+	if len(td.Attrs) > 0 {
+		fn["attrs"] = attrsToMap(td.Attrs)
+	}
+	return map[string]any{
+		"type":     "function",
+		"function": fn,
+	}
+}
+
+// ImageFromBase64 builds an <img> node backed by a data URI.
+func ImageFromBase64(data string, mime string, alt string) Image {
+	if mime == "" {
+		mime = "application/octet-stream"
+	}
+	return Image{
+		Src:    "data:" + mime + ";base64," + data,
+		Alt:    alt,
+		Syntax: mime,
+	}
+}
+
+// ImageFromBytes builds an <img> node from raw bytes.
+func ImageFromBytes(raw []byte, mime string, alt string) Image {
+	return ImageFromBase64(base64.StdEncoding.EncodeToString(raw), mime, alt)
+}
+
+// ImageFromFile reads a local file and builds a data URI image.
+func ImageFromFile(path string, mime string, alt string) (Image, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return Image{}, err
+	}
+	if mime == "" {
+		mime = guessMime(path)
+	}
+	if mime == "" {
+		mime = "application/octet-stream"
+	}
+	return ImageFromBytes(raw, mime, alt), nil
 }

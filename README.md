@@ -15,7 +15,17 @@ Parity matrix vs. Python SDK (working list)
 - ✅ Encode options for header/indent/order/compact/whitespace.
 - 🟡 Parse options (whitespace preservation toggle) and parent hooks; more fixtures from Python SDK samples still to port.
 - 🟡 CI workflow/coverage thresholds and README examples mirroring Python usage (in progress).
+- 🟡 Experimental: diagram tags (graph/node/edge/layer/camera) parsed/encoded and exportable to scene JSON (deterministic ordering toggle) for renderers (deck.gl/Graphviz planned).
 - 🔴 Missing Python-level APIs: prompt builder/tag helpers, multimedia ingestion, tool/schema/runtime tags, format converters (dict/pydantic/OpenAI/LangChain), tracing backends, and fixtures parity.
+
+Python parity target
+- Upstream reference: `microsoft/poml` Python SDK @ commit `1e24b4262161f54b5ee30ac6de7ea7c0440f435f` (target_version in `ai/plans/python_parity.poml`).
+- Tag coverage: meta/role/task/input/document/style/messages/tool-definition/request/response/output-schema/runtime/image implemented; tool-result/error variants not yet modeled.
+- Converters: message_dict/dict/openai_chat/langchain implemented; pydantic/dataclass export pending.
+- Builders/helpers: role/task/input/doc/style/message/tool-definition/request/response/schema/runtime/image helpers present; higher-level prompt builders still TODO.
+- Multimedia: data-URI/image helpers and BaseDir-aware file ingestion present; broader multimedia (audio/video), MIME sniffing beyond extensions pending.
+- Tracing: TODO (set_trace/trace_artifact equivalents not yet wired).
+- CI/docs: GitHub Actions runs `gofmt` + `go test ./...`; coverage thresholds, parity badge, and expanded README examples are still pending.
 
 Milestones to reach Python parity
 1) **Tag coverage**: model additional tags used by Python SDK (message roles, tool-definition/request/response, output-schema, runtime, multimedia assets) and extend validation/AST to carry them.
@@ -27,11 +37,12 @@ Milestones to reach Python parity
 7) **Docs/CI**: document the above APIs in README with usage snippets matching Python, and keep CI workflow green across the expanded surface.
 
 Usage patterns
-- Parsing: `doc, _ := poml.ParseFile("x.poml")` (or `ParseReader/ParseString`).
+- Parsing: `doc, _ := poml.ParseFile("x.poml")` (or `ParseReader/ParseString`). Use `ParseFileStrict/ParseStringStrict/ParseReaderStrict` to enforce validation on read. Use `ParseFileFast/ParseStringFast/ParseReaderFast` to skip whitespace/comment capture for faster, lower-memory decode.
 - Walking: `doc.Walk(func(el Element, p ElementPayload) error { ... })`.
 - Mutations: `doc.Mutate(func(el Element, p ElementPayload, m *Mutator) error { m.ReplaceBody(el, "new"); m.Remove(el); m.InsertTaskAfter(el, "body"); return nil })`.
 - Encoding: `doc.Encode(w)` or `doc.EncodeWithOptions(w, EncodeOptions{Indent: "  ", IncludeHeader: true, PreserveOrder: true, PreserveWS: true})`; `doc.DumpFile("path", opts)` atomically writes to disk.
-- Validation: `if err := doc.Validate(); err != nil { ... }`.
+- Validation: `if err := doc.Validate(); err != nil { ... }`. Parser helper opts include `ParseReaderWithOptions(r, ParseOptions{Validate: true})` to enforce validation during decode when desired.
+- Converters: `Convert(doc, FormatOpenAIChat, ConvertOptions{BaseDir: "/assets", MaxImageBytes: 1<<20})` reads images relative to `BaseDir`, rejects path escapes, caps file size, and requires `AllowAbsImagePaths` for absolute paths.
 
 Next steps
 1) Add parent IDs/comments/whitespace preservation hooks for finer-grained round-trips.

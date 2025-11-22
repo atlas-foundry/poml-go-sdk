@@ -1,0 +1,96 @@
+{
+  "messages": [
+    {
+      "type": "human",
+      "data": {
+        "content": "Hello"
+      }
+    },
+    {
+      "type": "ai",
+      "data": {
+        "content": "Calling tool"
+      }
+    },
+    {
+      "type": "ai",
+      "data": {
+        "tool_calls": [
+          {
+            "id": "call_1",
+            "name": "calc",
+            "args": {
+              "x": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "tool",
+      "data": {
+        "content": "4",
+        "tool_call_id": "call_1",
+        "name": "calc"
+      }
+    },
+    {
+      "type": "tool",
+      "data": {
+        "content": "ok",
+        "tool_call_id": "call_1",
+        "name": "calc",
+        "result": true
+      }
+    },
+    {
+      "type": "tool",
+      "data": {
+        "content": "bad",
+        "tool_call_id": "call_1",
+        "name": "calc",
+        "error": true
+      }
+    },
+    {
+      "type": "human",
+      "data": {
+        "content": [
+          {
+            "type": "image",
+            "source_type": "base64",
+            "mime_type": "image/png",
+            "data": "AA=="
+          }
+        ]
+      }
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "y": {
+        "type": "number"
+      }
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "name": "calc",
+      "description": "{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"number\"}}}",
+      "parameters": {
+        "properties": {
+          "x": {
+            "type": "number"
+          }
+        },
+        "type": "object"
+      }
+    }
+  ],
+  "runtime": {
+    "temperature": 0.2,
+    "max_tokens": 5
+  }
+}

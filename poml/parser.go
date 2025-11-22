@@ -14,22 +14,25 @@ import (
 type ElementType string
 
 const (
-	ElementMeta     ElementType = "meta"
-	ElementRole     ElementType = "role"
-	ElementTask     ElementType = "task"
-	ElementInput    ElementType = "input"
-	ElementDocument ElementType = "document"
-	ElementStyle    ElementType = "style"
-	ElementHumanMsg ElementType = "human_msg"
-	ElementAssistantMsg ElementType = "assistant_msg"
-	ElementSystemMsg ElementType = "system_msg"
+	ElementMeta           ElementType = "meta"
+	ElementRole           ElementType = "role"
+	ElementTask           ElementType = "task"
+	ElementInput          ElementType = "input"
+	ElementDocument       ElementType = "document"
+	ElementStyle          ElementType = "style"
+	ElementHumanMsg       ElementType = "human_msg"
+	ElementAssistantMsg   ElementType = "assistant_msg"
+	ElementSystemMsg      ElementType = "system_msg"
 	ElementToolDefinition ElementType = "tool_definition"
 	ElementToolRequest    ElementType = "tool_request"
 	ElementToolResponse   ElementType = "tool_response"
+	ElementToolResult     ElementType = "tool_result"
+	ElementToolError      ElementType = "tool_error"
 	ElementOutputSchema   ElementType = "output_schema"
 	ElementRuntime        ElementType = "runtime"
-	ElementImage      ElementType = "image"
-	ElementUnknown  ElementType = "unknown"
+	ElementImage          ElementType = "image"
+	ElementDiagram        ElementType = "diagram"
+	ElementUnknown        ElementType = "unknown"
 )
 
 // Element tracks an entry's type and its position in the backing slices on Document.
@@ -49,21 +52,24 @@ type Element struct {
 // Document represents a POML file.
 // Elements preserves encountered order for role/task/input/document/style nodes.
 type Document struct {
-	Meta      Meta     `xml:"meta"`
-	Role      Block    `xml:"role"`
-	Tasks     []Block  `xml:"task"`
-	Inputs    []Input  `xml:"input"`
-	Documents []DocRef `xml:"document"`
-	Styles    []Style  `xml:"style"`
-	Messages  []Message
-	ToolDefs  []ToolDefinition
-	ToolReqs  []ToolRequest
-	ToolResps []ToolResponse
-	Runtimes  []Runtime
-	Schema    OutputSchema
-	Images    []Image
-	Elements  []Element
-	rawPrefix string // leading text before root (e.g., XML decl); kept for future extension
+	Meta        Meta     `xml:"meta"`
+	Role        Block    `xml:"role"`
+	Tasks       []Block  `xml:"task"`
+	Inputs      []Input  `xml:"input"`
+	Documents   []DocRef `xml:"document"`
+	Styles      []Style  `xml:"style"`
+	Messages    []Message
+	ToolDefs    []ToolDefinition
+	ToolReqs    []ToolRequest
+	ToolResps   []ToolResponse
+	ToolResults []ToolResult
+	ToolErrors  []ToolError
+	Runtimes    []Runtime
+	Schema      OutputSchema
+	Images      []Image
+	Diagrams    []Diagram
+	Elements    []Element
+	rawPrefix   string // leading text before root (e.g., XML decl); kept for future extension
 
 	nextID int // internal counter for element IDs
 }
@@ -103,11 +109,11 @@ type Style struct {
 
 // Image represents an <img> block (often used for multimedia).
 type Image struct {
-	Src     string     `xml:"src,attr"`
-	Alt     string     `xml:"alt,attr"`
-	Syntax  string     `xml:"syntax,attr"`
-	Body    string     `xml:",innerxml"`
-	Attrs   []xml.Attr `xml:",any,attr"`
+	Src    string     `xml:"src,attr"`
+	Alt    string     `xml:"alt,attr"`
+	Syntax string     `xml:"syntax,attr"`
+	Body   string     `xml:",innerxml"`
+	Attrs  []xml.Attr `xml:",any,attr"`
 }
 
 // Message represents <human-msg>, <assistant-msg>, or <system-msg>.
@@ -134,9 +140,25 @@ type ToolRequest struct {
 
 // ToolResponse captures a tool response.
 type ToolResponse struct {
-	ID   string     `xml:"id,attr"`
-	Name string     `xml:"name,attr"`
-	Body string     `xml:",innerxml"`
+	ID    string     `xml:"id,attr"`
+	Name  string     `xml:"name,attr"`
+	Body  string     `xml:",innerxml"`
+	Attrs []xml.Attr `xml:",any,attr"`
+}
+
+// ToolResult captures a tool call result (success).
+type ToolResult struct {
+	ID    string     `xml:"id,attr"`
+	Name  string     `xml:"name,attr"`
+	Body  string     `xml:",innerxml"`
+	Attrs []xml.Attr `xml:",any,attr"`
+}
+
+// ToolError captures an error from a tool call.
+type ToolError struct {
+	ID    string     `xml:"id,attr"`
+	Name  string     `xml:"name,attr"`
+	Body  string     `xml:",innerxml"`
 	Attrs []xml.Attr `xml:",any,attr"`
 }
 
@@ -172,9 +194,14 @@ type ParseOptions struct {
 	// PreserveWhitespace retains leading/trailing whitespace/comments between elements.
 	// When false, Leading/Trailing fields on Elements remain empty to reduce memory.
 	PreserveWhitespace bool
+	// Validate runs structural validation (meta/role/task, diagrams, etc.) after parsing.
+	// When false, parsing succeeds even if required fields are missing.
+	Validate bool
 }
 
 var defaultParseOptions = ParseOptions{PreserveWhitespace: true}
+var strictParseOptions = ParseOptions{PreserveWhitespace: true, Validate: true}
+var fastParseOptions = ParseOptions{PreserveWhitespace: false}
 
 type ErrorType string
 
@@ -222,6 +249,11 @@ func ParseString(body string) (Document, error) {
 	return parseWithOptions(strings.NewReader(body), defaultParseOptions)
 }
 
+// ParseStringFast decodes a POML document without whitespace/comment preservation for speed/memory.
+func ParseStringFast(body string) (Document, error) {
+	return parseWithOptions(strings.NewReader(body), fastParseOptions)
+}
+
 // ParseFile decodes a POML document from the given file path.
 func ParseFile(path string) (Document, error) {
 	f, err := os.Open(path)
@@ -232,14 +264,49 @@ func ParseFile(path string) (Document, error) {
 	return parseWithOptions(f, defaultParseOptions)
 }
 
+// ParseFileFast decodes a POML file without whitespace/comment preservation.
+func ParseFileFast(path string) (Document, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return Document{}, err
+	}
+	defer f.Close()
+	return parseWithOptions(f, fastParseOptions)
+}
+
 // ParseReader decodes a POML document from an io.Reader.
 func ParseReader(r io.Reader) (Document, error) {
 	return parseWithOptions(r, defaultParseOptions)
 }
 
+// ParseReaderFast decodes a POML document from an io.Reader without whitespace/comment preservation.
+func ParseReaderFast(r io.Reader) (Document, error) {
+	return parseWithOptions(r, fastParseOptions)
+}
+
 // ParseReaderWithOptions decodes a POML document with fidelity controls.
 func ParseReaderWithOptions(r io.Reader, opts ParseOptions) (Document, error) {
 	return parseWithOptions(r, opts)
+}
+
+// ParseStringStrict decodes a POML document with validation enabled.
+func ParseStringStrict(body string) (Document, error) {
+	return parseWithOptions(strings.NewReader(body), strictParseOptions)
+}
+
+// ParseFileStrict decodes a POML file with validation enabled.
+func ParseFileStrict(path string) (Document, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return Document{}, err
+	}
+	defer f.Close()
+	return parseWithOptions(f, strictParseOptions)
+}
+
+// ParseReaderStrict decodes a POML document from a reader with validation enabled.
+func ParseReaderStrict(r io.Reader) (Document, error) {
+	return parseWithOptions(r, strictParseOptions)
 }
 
 // Encode writes the POML document back to XML.
@@ -353,6 +420,98 @@ func (d *Document) AddStyle(outputs ...Output) int {
 	return idx
 }
 
+// AddMessage appends a message node with the given role/body.
+func (d *Document) AddMessage(role string, body string, attrs ...xml.Attr) int {
+	msg := Message{Role: role, Body: body, Attrs: attrs}
+	d.Messages = append(d.Messages, msg)
+	elType := ElementHumanMsg
+	switch role {
+	case "assistant":
+		elType = ElementAssistantMsg
+	case "system":
+		elType = ElementSystemMsg
+	}
+	idx := len(d.Messages) - 1
+	d.Elements = append(d.Elements, d.newElement(elType, idx, ""))
+	return idx
+}
+
+// AddToolDefinition appends a tool-definition.
+func (d *Document) AddToolDefinition(name, description string, attrs ...xml.Attr) int {
+	td := ToolDefinition{Name: name, Description: description, Attrs: attrs}
+	d.ToolDefs = append(d.ToolDefs, td)
+	idx := len(d.ToolDefs) - 1
+	d.Elements = append(d.Elements, d.newElement(ElementToolDefinition, idx, ""))
+	return idx
+}
+
+// AddToolRequest appends a tool-request entry.
+func (d *Document) AddToolRequest(id, name, params string, attrs ...xml.Attr) int {
+	tr := ToolRequest{ID: id, Name: name, Parameters: params, Attrs: attrs}
+	d.ToolReqs = append(d.ToolReqs, tr)
+	idx := len(d.ToolReqs) - 1
+	d.Elements = append(d.Elements, d.newElement(ElementToolRequest, idx, ""))
+	return idx
+}
+
+// AddToolResponse appends a tool-response entry.
+func (d *Document) AddToolResponse(id, name, body string, attrs ...xml.Attr) int {
+	tr := ToolResponse{ID: id, Name: name, Body: body, Attrs: attrs}
+	d.ToolResps = append(d.ToolResps, tr)
+	idx := len(d.ToolResps) - 1
+	d.Elements = append(d.Elements, d.newElement(ElementToolResponse, idx, ""))
+	return idx
+}
+
+// AddToolResult appends a tool-result entry.
+func (d *Document) AddToolResult(id, name, body string, attrs ...xml.Attr) int {
+	tr := ToolResult{ID: id, Name: name, Body: body, Attrs: attrs}
+	d.ToolResults = append(d.ToolResults, tr)
+	idx := len(d.ToolResults) - 1
+	d.Elements = append(d.Elements, d.newElement(ElementToolResult, idx, ""))
+	return idx
+}
+
+// AddToolError appends a tool-error entry.
+func (d *Document) AddToolError(id, name, body string, attrs ...xml.Attr) int {
+	te := ToolError{ID: id, Name: name, Body: body, Attrs: attrs}
+	d.ToolErrors = append(d.ToolErrors, te)
+	idx := len(d.ToolErrors) - 1
+	d.Elements = append(d.Elements, d.newElement(ElementToolError, idx, ""))
+	return idx
+}
+
+// AddOutputSchema sets the output schema and records ordering.
+func (d *Document) AddOutputSchema(body string, attrs ...xml.Attr) {
+	d.Schema = OutputSchema{Body: body, Attrs: attrs}
+	// remove prior schema entries to avoid duplicates in Elements
+	var filtered []Element
+	for _, el := range d.Elements {
+		if el.Type != ElementOutputSchema {
+			filtered = append(filtered, el)
+		}
+	}
+	d.Elements = filtered
+	d.Elements = append(d.Elements, d.newElement(ElementOutputSchema, -1, ""))
+}
+
+// AddRuntime appends a runtime entry with attributes.
+func (d *Document) AddRuntime(attrs ...xml.Attr) int {
+	rt := Runtime{Attrs: attrs}
+	d.Runtimes = append(d.Runtimes, rt)
+	idx := len(d.Runtimes) - 1
+	d.Elements = append(d.Elements, d.newElement(ElementRuntime, idx, ""))
+	return idx
+}
+
+// AddImage appends an image node.
+func (d *Document) AddImage(img Image) int {
+	d.Images = append(d.Images, img)
+	idx := len(d.Images) - 1
+	d.Elements = append(d.Elements, d.newElement(ElementImage, idx, ""))
+	return idx
+}
+
 // Validate ensures required metadata exists and inputs are well-formed.
 func (d Document) Validate() error {
 	var issues []string
@@ -441,6 +600,119 @@ func (d Document) Validate() error {
 			}
 		}
 	}
+	toolNames := make(map[string]struct{})
+	for _, td := range d.ToolDefs {
+		name := strings.TrimSpace(td.Name)
+		if name == "" {
+			issues = append(issues, "tool-definition name is required")
+			details = append(details, ValidationDetail{Element: ElementToolDefinition, Field: "name", Message: "missing name"})
+		}
+		if name != "" {
+			if _, ok := toolNames[name]; ok {
+				issues = append(issues, fmt.Sprintf("duplicate tool-definition name %q", name))
+				details = append(details, ValidationDetail{Element: ElementToolDefinition, Field: "name", Message: "duplicate name " + name})
+			}
+			toolNames[name] = struct{}{}
+		}
+	}
+	toolReqs := make(map[string]string)
+	for i, tr := range d.ToolReqs {
+		id := strings.TrimSpace(tr.ID)
+		name := strings.TrimSpace(tr.Name)
+		if id == "" {
+			issues = append(issues, "tool-request id is required")
+			details = append(details, ValidationDetail{Element: ElementToolRequest, Field: "id", Message: "missing id"})
+		}
+		if name == "" {
+			issues = append(issues, "tool-request name is required")
+			details = append(details, ValidationDetail{Element: ElementToolRequest, Field: "name", Message: "missing name"})
+		}
+		if name != "" {
+			if _, ok := toolNames[name]; !ok {
+				issues = append(issues, fmt.Sprintf("tool-request %q references unknown tool-definition %q", labelOrIndex(id, i), name))
+				details = append(details, ValidationDetail{Element: ElementToolRequest, Field: "name", Message: "unknown tool-definition " + name})
+			}
+		}
+		if id != "" {
+			if existing, ok := toolReqs[id]; ok {
+				issues = append(issues, fmt.Sprintf("duplicate tool-request id %q", id))
+				details = append(details, ValidationDetail{Element: ElementToolRequest, Field: "id", Message: "duplicate id " + id + " (also used by " + existing + ")"})
+			} else {
+				toolReqs[id] = name
+			}
+		}
+	}
+	for i, tr := range d.ToolResps {
+		id := strings.TrimSpace(tr.ID)
+		name := strings.TrimSpace(tr.Name)
+		if id == "" {
+			issues = append(issues, "tool-response id is required")
+			details = append(details, ValidationDetail{Element: ElementToolResponse, Field: "id", Message: "missing id"})
+		}
+		if name == "" {
+			issues = append(issues, "tool-response name is required")
+			details = append(details, ValidationDetail{Element: ElementToolResponse, Field: "name", Message: "missing name"})
+		}
+		validateToolReference("tool-response", i, id, name, toolNames, toolReqs, ElementToolResponse, &issues, &details)
+	}
+	for i, tr := range d.ToolResults {
+		id := strings.TrimSpace(tr.ID)
+		name := strings.TrimSpace(tr.Name)
+		if id == "" {
+			issues = append(issues, "tool-result id is required")
+			details = append(details, ValidationDetail{Element: ElementToolResult, Field: "id", Message: "missing id"})
+		}
+		if name == "" {
+			issues = append(issues, "tool-result name is required")
+			details = append(details, ValidationDetail{Element: ElementToolResult, Field: "name", Message: "missing name"})
+		}
+		validateToolReference("tool-result", i, id, name, toolNames, toolReqs, ElementToolResult, &issues, &details)
+	}
+	for i, tr := range d.ToolErrors {
+		id := strings.TrimSpace(tr.ID)
+		name := strings.TrimSpace(tr.Name)
+		if id == "" {
+			issues = append(issues, "tool-error id is required")
+			details = append(details, ValidationDetail{Element: ElementToolError, Field: "id", Message: "missing id"})
+		}
+		if name == "" {
+			issues = append(issues, "tool-error name is required")
+			details = append(details, ValidationDetail{Element: ElementToolError, Field: "name", Message: "missing name"})
+		}
+		validateToolReference("tool-error", i, id, name, toolNames, toolReqs, ElementToolError, &issues, &details)
+	}
+	if d.hasSchema() && strings.TrimSpace(d.Schema.Body) == "" && len(d.Schema.Attrs) == 0 {
+		issues = append(issues, "output-schema requires body or attributes")
+		details = append(details, ValidationDetail{Element: ElementOutputSchema, Message: "missing schema content"})
+	}
+	for _, img := range d.Images {
+		if strings.TrimSpace(img.Src) == "" && strings.TrimSpace(img.Body) == "" {
+			issues = append(issues, "img requires src or inline body")
+			details = append(details, ValidationDetail{Element: ElementImage, Field: "src", Message: "missing src/body"})
+		}
+	}
+	for i, dg := range d.Diagrams {
+		if err := ValidateDiagram(dg); err != nil {
+			var ve *ValidationError
+			if errors.As(err, &ve) {
+				for _, issue := range ve.Issues {
+					issues = append(issues, fmt.Sprintf("diagram[%d]: %s", i, issue))
+				}
+				for _, det := range ve.Details {
+					if det.Element == "" {
+						det.Element = ElementDiagram
+					}
+					if det.Message == "" && len(ve.Issues) > 0 {
+						det.Message = ve.Issues[0]
+					}
+					details = append(details, det)
+				}
+			} else {
+				issues = append(issues, fmt.Sprintf("diagram[%d]: %v", i, err))
+				details = append(details, ValidationDetail{Element: ElementDiagram, Message: err.Error()})
+			}
+		}
+	}
 	if len(issues) == 0 {
 		return nil
 	}
@@ -451,6 +723,35 @@ func (d Document) Validate() error {
 			Issues:  issues,
 			Details: details,
 		},
+	}
+}
+
+func labelOrIndex(id string, idx int) string {
+	if strings.TrimSpace(id) != "" {
+		return id
+	}
+	return fmt.Sprintf("#%d", idx)
+}
+
+func validateToolReference(kind string, idx int, id string, name string, toolNames map[string]struct{}, toolReqs map[string]string, element ElementType, issues *[]string, details *[]ValidationDetail) {
+	if name != "" {
+		if _, ok := toolNames[name]; !ok {
+			*issues = append(*issues, fmt.Sprintf("%s %q references unknown tool-definition %q", kind, labelOrIndex(id, idx), name))
+			*details = append(*details, ValidationDetail{Element: element, Field: "name", Message: "unknown tool-definition " + name})
+		}
+	}
+	if id == "" {
+		return
+	}
+	reqName, ok := toolReqs[id]
+	if !ok {
+		*issues = append(*issues, fmt.Sprintf("%s id %q does not match a tool-request", kind, id))
+		*details = append(*details, ValidationDetail{Element: element, Field: "id", Message: "missing tool-request for id " + id})
+		return
+	}
+	if name != "" && reqName != "" && name != reqName {
+		*issues = append(*issues, fmt.Sprintf("%s id %q uses tool %q but request used %q", kind, id, name, reqName))
+		*details = append(*details, ValidationDetail{Element: element, Field: "name", Message: "mismatched tool for id " + id})
 	}
 }
 
@@ -502,20 +803,23 @@ func (d *Document) Mutate(fn func(Element, ElementPayload, *Mutator) error) erro
 
 // ElementPayload resolves the concrete node for an Element.
 type ElementPayload struct {
-	Meta   *Meta
-	Role   *Block
-	Task   *Block
-	Input  *Input
-	DocRef *DocRef
-	Style  *Style
-	Image  *Image
-	Message *Message
-	ToolDef *ToolDefinition
-	ToolReq *ToolRequest
-	ToolResp *ToolResponse
-	Schema *OutputSchema
-	Runtime *Runtime
-	Raw    string
+	Meta       *Meta
+	Role       *Block
+	Task       *Block
+	Input      *Input
+	DocRef     *DocRef
+	Style      *Style
+	Image      *Image
+	Message    *Message
+	ToolDef    *ToolDefinition
+	ToolReq    *ToolRequest
+	ToolResp   *ToolResponse
+	ToolResult *ToolResult
+	ToolError  *ToolError
+	Schema     *OutputSchema
+	Runtime    *Runtime
+	Diagram    *Diagram
+	Raw        string
 }
 
 // Mutator wraps mutation helpers for a Document walk.
@@ -548,6 +852,20 @@ func (m *Mutator) ReplaceBody(el Element, body string) {
 			// Update first output body; callers can MarkModified for more complex changes.
 			d.Styles[el.Index].Outputs[0].Body = body
 		}
+	case ElementHumanMsg, ElementAssistantMsg, ElementSystemMsg:
+		if el.Index >= 0 && el.Index < len(d.Messages) {
+			d.Messages[el.Index].Body = body
+		}
+	case ElementToolResponse:
+		if el.Index >= 0 && el.Index < len(d.ToolResps) {
+			d.ToolResps[el.Index].Body = body
+		}
+	case ElementOutputSchema:
+		d.Schema.Body = body
+	case ElementImage:
+		if el.Index >= 0 && el.Index < len(d.Images) {
+			d.Images[el.Index].Body = body
+		}
 	}
 	m.modified = true
 }
@@ -576,6 +894,32 @@ func (m *Mutator) Remove(el Element) {
 		d.Role = Block{}
 	case ElementMeta:
 		d.Meta = Meta{}
+	case ElementHumanMsg, ElementAssistantMsg, ElementSystemMsg:
+		if el.Index >= 0 && el.Index < len(d.Messages) {
+			d.Messages = append(d.Messages[:el.Index], d.Messages[el.Index+1:]...)
+		}
+	case ElementToolDefinition:
+		if el.Index >= 0 && el.Index < len(d.ToolDefs) {
+			d.ToolDefs = append(d.ToolDefs[:el.Index], d.ToolDefs[el.Index+1:]...)
+		}
+	case ElementToolRequest:
+		if el.Index >= 0 && el.Index < len(d.ToolReqs) {
+			d.ToolReqs = append(d.ToolReqs[:el.Index], d.ToolReqs[el.Index+1:]...)
+		}
+	case ElementToolResponse:
+		if el.Index >= 0 && el.Index < len(d.ToolResps) {
+			d.ToolResps = append(d.ToolResps[:el.Index], d.ToolResps[el.Index+1:]...)
+		}
+	case ElementOutputSchema:
+		d.Schema = OutputSchema{}
+	case ElementRuntime:
+		if el.Index >= 0 && el.Index < len(d.Runtimes) {
+			d.Runtimes = append(d.Runtimes[:el.Index], d.Runtimes[el.Index+1:]...)
+		}
+	case ElementImage:
+		if el.Index >= 0 && el.Index < len(d.Images) {
+			d.Images = append(d.Images[:el.Index], d.Images[el.Index+1:]...)
+		}
 	}
 	for i, e := range d.Elements {
 		if e.ID == el.ID {
@@ -680,7 +1024,16 @@ func parseWithOptions(r io.Reader, opts ParseOptions) (Document, error) {
 				Message: fmt.Sprintf("parse poml: expected <poml> root, got <%s>", start.Name.Local),
 			}
 		}
-		return decodePoml(dec, opts)
+		doc, err := decodePoml(dec, opts)
+		if err != nil {
+			return Document{}, err
+		}
+		if opts.Validate {
+			if err := doc.Validate(); err != nil {
+				return Document{}, err
+			}
+		}
+		return doc, nil
 	}
 }
 
@@ -777,12 +1130,15 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 					el.Leading = leading
 				}
 				doc.Elements = append(doc.Elements, el)
-			case "human-msg", "assistant-msg", "system-msg":
+			case "human-msg", "assistant-msg", "system-msg", "ai-msg":
 				var msg Message
 				if err := dec.DecodeElement(&msg, &t); err != nil {
 					return doc, wrapXMLError(err, "<msg>")
 				}
 				msg.Role = strings.TrimSuffix(t.Name.Local, "-msg")
+				if t.Name.Local == "ai-msg" {
+					msg.Role = "assistant"
+				}
 				doc.Messages = append(doc.Messages, msg)
 				elType := ElementHumanMsg
 				switch msg.Role {
@@ -829,6 +1185,28 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 					el.Leading = leading
 				}
 				doc.Elements = append(doc.Elements, el)
+			case "tool-result":
+				var tr ToolResult
+				if err := dec.DecodeElement(&tr, &t); err != nil {
+					return doc, wrapXMLError(err, "<tool-result>")
+				}
+				doc.ToolResults = append(doc.ToolResults, tr)
+				el := doc.newElement(ElementToolResult, len(doc.ToolResults)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "tool-error":
+				var te ToolError
+				if err := dec.DecodeElement(&te, &t); err != nil {
+					return doc, wrapXMLError(err, "<tool-error>")
+				}
+				doc.ToolErrors = append(doc.ToolErrors, te)
+				el := doc.newElement(ElementToolError, len(doc.ToolErrors)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
 			case "output-schema":
 				var os OutputSchema
 				if err := dec.DecodeElement(&os, &t); err != nil {
@@ -858,6 +1236,17 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 				}
 				doc.Images = append(doc.Images, im)
 				el := doc.newElement(ElementImage, len(doc.Images)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "diagram":
+				var dg Diagram
+				if err := dec.DecodeElement(&dg, &t); err != nil {
+					return doc, wrapXMLError(err, "<diagram>")
+				}
+				doc.Diagrams = append(doc.Diagrams, dg)
+				el := doc.newElement(ElementDiagram, len(doc.Diagrams)-1, "")
 				if preserveWS {
 					el.Leading = leading
 				}
@@ -995,6 +1384,16 @@ func encodeElement(enc *xml.Encoder, out io.Writer, doc Document, el Element, op
 			return fmt.Errorf("encode tool response: index %d out of range", el.Index)
 		}
 		err = enc.EncodeElement(doc.ToolResps[el.Index], xml.StartElement{Name: xml.Name{Local: "tool-response"}})
+	case ElementToolResult:
+		if el.Index < 0 || el.Index >= len(doc.ToolResults) {
+			return fmt.Errorf("encode tool result: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.ToolResults[el.Index], xml.StartElement{Name: xml.Name{Local: "tool-result"}})
+	case ElementToolError:
+		if el.Index < 0 || el.Index >= len(doc.ToolErrors) {
+			return fmt.Errorf("encode tool error: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.ToolErrors[el.Index], xml.StartElement{Name: xml.Name{Local: "tool-error"}})
 	case ElementOutputSchema:
 		err = enc.EncodeElement(doc.Schema, xml.StartElement{Name: xml.Name{Local: "output-schema"}})
 	case ElementRuntime:
@@ -1007,6 +1406,11 @@ func encodeElement(enc *xml.Encoder, out io.Writer, doc Document, el Element, op
 			return fmt.Errorf("encode image: index %d out of range", el.Index)
 		}
 		err = enc.EncodeElement(doc.Images[el.Index], xml.StartElement{Name: xml.Name{Local: "img"}})
+	case ElementDiagram:
+		if el.Index < 0 || el.Index >= len(doc.Diagrams) {
+			return fmt.Errorf("encode diagram: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Diagrams[el.Index], xml.StartElement{Name: xml.Name{Local: "diagram"}})
 	case ElementUnknown:
 		if el.RawXML == "" {
 			return nil
@@ -1031,7 +1435,7 @@ func encodeElement(enc *xml.Encoder, out io.Writer, doc Document, el Element, op
 }
 
 // resolveOrderWithFallback returns the preferred element ordering.
-func (d Document) resolveOrderWithFallback(preserve bool) []Element {
+func (d *Document) resolveOrderWithFallback(preserve bool) []Element {
 	if preserve && len(d.Elements) > 0 {
 		return d.Elements
 	}
@@ -1039,12 +1443,12 @@ func (d Document) resolveOrderWithFallback(preserve bool) []Element {
 }
 
 // resolveOrder returns Elements with default ordering if none are recorded.
-func (d Document) resolveOrder() []Element {
+func (d *Document) resolveOrder() []Element {
 	return d.resolveOrderWithFallback(true)
 }
 
 // defaultElements builds a canonical ordering of known fields.
-func (d Document) defaultElements() []Element {
+func (d *Document) defaultElements() []Element {
 	var out []Element
 	if (d.Meta != Meta{}) {
 		out = append(out, d.newElement(ElementMeta, -1, ""))
@@ -1084,6 +1488,12 @@ func (d Document) defaultElements() []Element {
 	for i := range d.ToolResps {
 		out = append(out, d.newElement(ElementToolResponse, i, ""))
 	}
+	for i := range d.ToolResults {
+		out = append(out, d.newElement(ElementToolResult, i, ""))
+	}
+	for i := range d.ToolErrors {
+		out = append(out, d.newElement(ElementToolError, i, ""))
+	}
 	if d.hasSchema() {
 		out = append(out, d.newElement(ElementOutputSchema, -1, ""))
 	}
@@ -1092,6 +1502,9 @@ func (d Document) defaultElements() []Element {
 	}
 	for i := range d.Images {
 		out = append(out, d.newElement(ElementImage, i, ""))
+	}
+	for i := range d.Diagrams {
+		out = append(out, d.newElement(ElementDiagram, i, ""))
 	}
 	return out
 }
@@ -1143,6 +1556,14 @@ func (d Document) payloadFor(el Element) ElementPayload {
 		if el.Index >= 0 && el.Index < len(d.ToolResps) {
 			return ElementPayload{ToolResp: &d.ToolResps[el.Index]}
 		}
+	case ElementToolResult:
+		if el.Index >= 0 && el.Index < len(d.ToolResults) {
+			return ElementPayload{ToolResult: &d.ToolResults[el.Index]}
+		}
+	case ElementToolError:
+		if el.Index >= 0 && el.Index < len(d.ToolErrors) {
+			return ElementPayload{ToolError: &d.ToolErrors[el.Index]}
+		}
 	case ElementOutputSchema:
 		if d.hasSchema() {
 			return ElementPayload{Schema: &d.Schema}
@@ -1150,6 +1571,10 @@ func (d Document) payloadFor(el Element) ElementPayload {
 	case ElementRuntime:
 		if el.Index >= 0 && el.Index < len(d.Runtimes) {
 			return ElementPayload{Runtime: &d.Runtimes[el.Index]}
+		}
+	case ElementDiagram:
+		if el.Index >= 0 && el.Index < len(d.Diagrams) {
+			return ElementPayload{Diagram: &d.Diagrams[el.Index]}
 		}
 	case ElementUnknown:
 		return ElementPayload{Raw: el.RawXML}
@@ -1205,7 +1630,7 @@ func renderToken(tok xml.Token) string {
 // reindex updates element indices to match current slice state after mutations.
 func (d *Document) reindex() {
 	taskIdx, inputIdx, docIdx, styleIdx := 0, 0, 0, 0
-	msgIdx, toolDefIdx, toolReqIdx, toolRespIdx, runtimeIdx, imageIdx := 0, 0, 0, 0, 0, 0
+	msgIdx, toolDefIdx, toolReqIdx, toolRespIdx, toolResultIdx, toolErrorIdx, runtimeIdx, imageIdx, diagramIdx := 0, 0, 0, 0, 0, 0, 0, 0, 0
 	for i := range d.Elements {
 		switch d.Elements[i].Type {
 		case ElementTask:
@@ -1232,12 +1657,21 @@ func (d *Document) reindex() {
 		case ElementToolResponse:
 			d.Elements[i].Index = toolRespIdx
 			toolRespIdx++
+		case ElementToolResult:
+			d.Elements[i].Index = toolResultIdx
+			toolResultIdx++
+		case ElementToolError:
+			d.Elements[i].Index = toolErrorIdx
+			toolErrorIdx++
 		case ElementRuntime:
 			d.Elements[i].Index = runtimeIdx
 			runtimeIdx++
 		case ElementImage:
 			d.Elements[i].Index = imageIdx
 			imageIdx++
+		case ElementDiagram:
+			d.Elements[i].Index = diagramIdx
+			diagramIdx++
 		}
 	}
 }

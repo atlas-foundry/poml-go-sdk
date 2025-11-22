@@ -1,0 +1,62 @@
+{
+  "messages": [
+    {
+      "speaker": "human",
+      "content": "Hello"
+    },
+    {
+      "speaker": "assistant",
+      "content": "Calling tool"
+    },
+    {
+      "speaker": "tool",
+      "content": "4"
+    },
+    {
+      "speaker": "tool",
+      "content": "ok"
+    },
+    {
+      "speaker": "tool",
+      "content": {
+        "error": "bad",
+        "name": "calc"
+      }
+    },
+    {
+      "speaker": "human",
+      "content": {
+        "type": "image/png",
+        "alt": "tiny",
+        "base64": "AA=="
+      }
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "y": {
+        "type": "number"
+      }
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "name": "calc",
+      "description": "{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"number\"}}}",
+      "parameters": {
+        "properties": {
+          "x": {
+            "type": "number"
+          }
+        },
+        "type": "object"
+      }
+    }
+  ],
+  "runtime": {
+    "temperature": 0.2,
+    "max_tokens": 5
+  }
+}

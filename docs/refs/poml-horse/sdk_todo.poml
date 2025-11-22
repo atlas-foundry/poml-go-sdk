@@ -1,0 +1,67 @@
+<poml>
+  <meta>
+    <id>poml.horse.sdk.todo</id>
+    <version>0.1.0</version>
+    <owner>atl</owner>
+  </meta>
+
+  <role>
+    SDK TODOs for poml-horse (private; split by workstream; keep modular).
+  </role>
+
+  <task caption="Diagram AST & Validation">
+    - [ ] Add diagram/graph/node/edge/layer/camera structs to poml-go-sdk.
+    - [ ] Validate node/edge ids, required fields, directed flag, style attrs optional.
+    - [ ] Preserve unknown tags when validation disabled; add ParseOptions/Validate toggle.
+  </task>
+
+  <task caption="Scene Exporter">
+    - [ ] Implement POML diagram → scene JSON (nodes/edges/layers/camera/styles).
+    - [ ] Support deterministic ordering to aid golden tests.
+    - [ ] Expose Go interface for renderers (deck.gl, Graphviz, Three.js, glTF).
+  </task>
+
+  <task caption="Renderers & Exporters">
+    - [ ] Deck.gl/luma.gl scene JSON contract (document fields, palette).
+    - [ ] Graphviz/DOT exporter for SVG fallback.
+    - [ ] Stub interfaces/hooks for Three.js/glTF without implementation required.
+  </task>
+
+  <task caption="Converters (docs)">
+    - [ ] Markdown → POML converter (goldmark) for section/list/code/table/link/paragraph.
+    - [ ] POML → Markdown printer; minimize CDATA (only code blocks).
+    - [ ] Optional org-mode parser (go-org) behind converter interface.
+    - [ ] Tests: round-trips, unknown-tag passthrough, CDATA discipline.
+  </task>
+
+  <task caption="Fixtures & Tests">
+    - [ ] Golden POML diagrams (from seed) with expected scene JSON.
+    - [ ] Validation error cases (missing ids, dangling edges).
+    - [ ] Renderer contract tests (shape of JSON, required fields).
+    - [ ] Converter round-trip tests.
+  </task>
+
+  <task caption="Docs & Safeguards">
+    - [ ] Keep refs private; no public publishing.
+    - [ ] Add README note in refs/ to warn contributors.
+    - [ ] Document renderer contract (scene JSON fields) in POML (not md).
+  </task>
+
+  <notes><![CDATA[
+Use this as a backlog; mark items per workstream. Do not ship to public repos. Pair with plan.poml and seed files for context.
+  ]]></notes>
+
+  <style>
+    <output format="markdown">
+      <![CDATA[
+      ## SDK TODOs
+      - Diagram AST/validation
+      - Scene exporter
+      - Renderers
+      - Converters
+      - Fixtures/tests
+      - Docs/safeguards
+      ]]>
+    </output>
+  </style>
+</poml>

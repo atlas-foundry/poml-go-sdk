@@ -1,0 +1,102 @@
+<poml>
+  <meta>
+    <id>poml.horse.seed</id>
+    <version>0.1.0</version>
+    <owner>atl</owner>
+  </meta>
+
+  <role>
+    POML-first diagram pipeline seed – encode diagrams natively, export scene JSON, and render high-quality isometric graphs.
+  </role>
+
+  <task caption="Objectives"><![CDATA[
+  - Define native POML diagram schema (diagram/graph/node/edge/style/data/layer/camera) that round-trips via poml-go-sdk.
+  - Build modular Go adapter: POML → scene JSON → pluggable renderers (deck.gl/luma.gl primary; Graphviz/Mermaid/Three.js/glTF optional).
+  - Deliver MVP: render an aesthetically strong isometric graph from POML using deck.gl/luma.gl 2.5D, export SVG/PNG.
+  ]]></task>
+
+  <task caption="Schema (proposed)"><![CDATA[
+  <diagram id="" projection="isometric|orthographic" layout="dagre|force|manual" unit="m">
+    <graph>
+      <node id="" label="" group="" owner="" weight="" pct_complete="" x="" y="" z="">
+        <style color="" shape="" size="" stroke="" texture=""/>
+        <data key="tags">["telemetry","plan-driver"]</data>
+      </node>
+      <edge from="" to="" kind="depends|blocks|relates" directed="true|false" weight="">
+        <style stroke="" width="" dash="" curvature=""/>
+      </edge>
+    </graph>
+    <layer id="" z="" kind="grid|heatmap|image"/>
+    <camera azimuth="" elevation="" distance=""/>
+  </diagram>
+  ]]></task>
+
+  <task caption="Architecture (modular routes)"><![CDATA[
+  Core: POML → Go adapter → scene JSON (nodes/edges/style/camera/layers), renderer-agnostic.
+  Route A (primary): scene JSON → deck.gl/luma.gl (WebGL) with isometric camera preset; export SVG/PNG headlessly.
+  Route B: scene JSON → Three.js (or 3d-force-graph) for interactive/3D parity.
+  Route C: scene JSON → Graphviz/DOT for deterministic 2D fallback.
+  Route D: scene JSON → Mermaid for doc-friendly renders.
+  Route E (optional): scene JSON → glTF via Go emitter for pipeline assets.
+  Plugins: define Go `Renderer` interface so new routes register without touching schema.
+  ]]></task>
+
+  <task caption="Language spec alignment (OpenAI first, Microsoft second)">
+    - Terminology: align with OpenAI Assistants/Chat APIs for interoperability: `system/instructions` → `<role>`/`<policy>`; `messages` → `<message>` equivalents in diagram narratives; `tools` → `<tool>` entries with name/description/parameters(JSON schema); `response_format` → `<output-schema>` when strict JSON needed; `metadata` → `<data key>` for opaque attrs.
+    - Where Microsoft POML samples exist (microsoft/poml), prefer their tag naming for parity; otherwise follow OpenAI naming (tools/tool_calls, response_format).
+    - For personas: use `<persona id name archetype domain seniority>` plus traits/skills/policies/tools/contexts/guardrails/handoff/metrics to mirror agent profile constructs common in agentic ecosystems (Assistants, LangGraph/CrewAI).
+    - Keep CDATA minimal: only for code/pre blocks; otherwise plain text bodies and attributes.
+  </task>
+
+  <task caption="Work plan"><![CDATA[
+  1) Finalize schema in poml-go-sdk structs + validation; keep unknown-tag tolerance.
+  2) Implement scene JSON exporter + fixtures (golden POML → JSON).
+  3) Build deck.gl/luma.gl viewer (static HTML/JS) consuming scene JSON; isometric camera preset + style mapping.
+  4) Add Graphviz exporter; optional Three.js/glTF emitters.
+  5) Author `seed.prompt.poml` to brief OpenAI/Codex for automation to ~50% MVP.
+  ]]></task>
+
+  <task caption="MVP definition"><![CDATA[
+  - Input: POML `<diagram>` describing a small chain (nodes/edges/styles/camera).
+  - Process: Go adapter exports scene JSON; deck.gl/luma.gl renders isometric view.
+  - Output: Interactive and exported SVG/PNG with clean labels, gradients/shadows, anti-aliased strokes.
+  ]]></task>
+
+  <task caption="Sample diagram (minimal)"><![CDATA[
+  <diagram id="chain-sample" projection="isometric" layout="dagre" unit="u">
+    <graph>
+      <node id="chain-001" label="telemetry hooks" owner="Vishwakarma" weight="0.13" pct_complete="0.45" x="0" y="0" z="0">
+        <style color="#4fd1c5" shape="hex" size="1.2" stroke="#0f172a"/>
+        <data key="tags">["telemetry","plan-driver"]</data>
+      </node>
+      <node id="chain-005" label="metadata sweep" owner="Librarian" weight="0.10" pct_complete="0.60" x="2" y="1" z="0">
+        <style color="#a78bfa" shape="circle" size="1.0" stroke="#0f172a"/>
+        <data key="tags">["metadata","ci"]</data>
+      </node>
+      <edge from="chain-001" to="chain-005" kind="depends" directed="true" weight="0.4">
+        <style stroke="#475569" width="2" dash="solid" curvature="0.1"/>
+      </edge>
+    </graph>
+    <layer id="grid" z="-1" kind="grid"/>
+    <camera azimuth="35" elevation="30" distance="8"/>
+  </diagram>
+  ]]></task>
+
+  <notes><![CDATA[
+Private seed (poml-go-sdk local). Do not publish. Use poml-go-sdk parsing/unknown-element preservation to iterate safely; extend SDK to typed diagram structs when ready.
+  ]]></notes>
+
+  <style>
+    <output format="markdown">
+      <![CDATA[
+      ## Summary
+      - Objectives
+      - Schema
+      - Architecture
+      - Work plan
+      - MVP
+      - Sample diagram
+      ]]>
+    </output>
+  </style>
+</poml>

@@ -1,0 +1,19 @@
+<poml>
+  <meta>
+    <id>parity.basic</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <role>Helper</role>
+  <task>Compute a result</task>
+  <human-msg>Hello</human-msg>
+  <assistant-msg>Calling tool</assistant-msg>
+  <tool-definition name="calc"><![CDATA[{"type":"object","properties":{"x":{"type":"number"}}}]]></tool-definition>
+  <tool-request id="call_1" name="calc" parameters="{{ { x: 2 } }}"/>
+  <tool-response id="call_1" name="calc">4</tool-response>
+  <tool-result id="call_1" name="calc">ok</tool-result>
+  <tool-error id="call_1" name="calc">bad</tool-error>
+  <output-schema>{"type":"object","properties":{"y":{"type":"number"}}}</output-schema>
+  <runtime temperature="0.2" max-tokens="5"/>
+  <img src="data:image/png;base64,AA==" alt="tiny" syntax="image/png"/>
+</poml>

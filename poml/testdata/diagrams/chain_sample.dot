@@ -1,0 +1,5 @@
+digraph G {
+  "chain-001" [color="#0f172a",fillcolor="#4fd1c5",label="telemetry hooks",pos="0.000,0.000!",shape="hexagon",style="filled"];
+  "chain-005" [color="#0f172a",fillcolor="#a78bfa",label="metadata sweep",pos="2.000,1.000!",shape="circle",style="filled"];
+  "chain-001" -> "chain-005" [color="#475569",label="depends",penwidth="2",style="solid",weight="0.4"];
+}

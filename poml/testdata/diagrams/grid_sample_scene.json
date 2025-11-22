@@ -1,0 +1,79 @@
+{
+  "id": "grid-sample",
+  "nodes": [
+    {
+      "id": "a1",
+      "label": "A1",
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "a2",
+      "label": "A2",
+      "position": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "b1",
+      "label": "B1",
+      "position": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": "b2",
+      "label": "B2",
+      "position": [
+        1,
+        1,
+        0
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "a1",
+      "to": "a2",
+      "kind": "row",
+      "directed": false
+    },
+    {
+      "from": "a1",
+      "to": "b1",
+      "kind": "col",
+      "directed": false
+    },
+    {
+      "from": "a2",
+      "to": "b2",
+      "kind": "col",
+      "directed": false
+    },
+    {
+      "from": "b1",
+      "to": "b2",
+      "kind": "row",
+      "directed": false
+    }
+  ],
+  "layers": [
+    {
+      "id": "base",
+      "z": "0",
+      "kind": "grid"
+    }
+  ],
+  "camera": {
+    "azimuth": "0",
+    "elevation": "45",
+    "distance": "5"
+  }
+}

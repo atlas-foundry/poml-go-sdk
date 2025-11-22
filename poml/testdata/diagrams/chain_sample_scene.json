@@ -1,0 +1,76 @@
+{
+  "id": "chain-sample",
+  "nodes": [
+    {
+      "id": "chain-001",
+      "label": "telemetry hooks",
+      "owner": "Vishwakarma",
+      "weight": "0.13",
+      "pct_complete": "0.45",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "style": {
+        "color": "#4fd1c5",
+        "shape": "hex",
+        "size": "1.2",
+        "stroke": "#0f172a"
+      },
+      "tags": [
+        "telemetry",
+        "plan-driver"
+      ]
+    },
+    {
+      "id": "chain-005",
+      "label": "metadata sweep",
+      "owner": "Librarian",
+      "weight": "0.10",
+      "pct_complete": "0.60",
+      "position": [
+        2,
+        1,
+        0
+      ],
+      "style": {
+        "color": "#a78bfa",
+        "shape": "circle",
+        "size": "1.0",
+        "stroke": "#0f172a"
+      },
+      "tags": [
+        "metadata",
+        "ci"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "chain-001",
+      "to": "chain-005",
+      "kind": "depends",
+      "directed": true,
+      "weight": "0.4",
+      "style": {
+        "stroke": "#475569",
+        "width": "2",
+        "dash": "solid",
+        "curvature": "0.1"
+      }
+    }
+  ],
+  "layers": [
+    {
+      "id": "grid",
+      "z": "-1",
+      "kind": "grid"
+    }
+  ],
+  "camera": {
+    "azimuth": "35",
+    "elevation": "30",
+    "distance": "8"
+  }
+}

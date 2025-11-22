@@ -1,0 +1,95 @@
+<poml>
+  <meta>
+    <id>poml.horse.seed.prompt</id>
+    <version>0.1.0</version>
+    <owner>atl</owner>
+  </meta>
+
+  <role>
+    Kickstart automation for poml-horse: build a POML-first diagram pipeline, modular Go adapter, and deck.gl/luma.gl isometric MVP.
+  </role>
+
+  <task caption="Brief for OpenAI/Codex"><![CDATA[
+  - Read `seed.poml` for schema/architecture/work plan and sample diagram.
+  - Extend poml-go-sdk with diagram structs + validation and scene JSON exporter (nodes/edges/style/camera/layers).
+  - Implement deck.gl/luma.gl viewer consuming scene JSON with isometric camera; export SVG/PNG.
+  - Optional: Graphviz exporter; prepare hooks for Three.js/glTF.
+  - Target: reach ~50% of MVP (parse POML diagram, emit scene JSON, render a basic isometric graph with good aesthetics).
+  ]]></task>
+
+  <task caption="Overall lead">
+    Commandant – ultimate owner for delivery across all squads; resolves conflicts, sets priorities, accepts milestones.
+  </task>
+
+  <task caption="Stable personas (pommel theme, team effort)">
+    Stablemaster (director) – keeps phases aligned and unblocks work across SDK/renderers/converters.
+    Vault Captain (pipeline/CI) – enforces tests/fixtures, keeps scene export contracts green.
+    Saddlewright (SDK core) – builds diagram AST, validation, scene exporter; guards unknown-tag tolerance.
+    Ring Cartographer (renderers) – owns deck.gl/luma.gl view and Graphviz fallback; defines style contracts.
+    Farrier (converters) – forges markdown/org ↔ POML converters; ensures minimal CDATA and clean round-trips.
+    Groom (fixtures) – tends sample diagrams/goldens; adds variants (chain/star/grid) for coverage.
+    Trail Scout (research) – monitors external references (e.g., microsoft/poml docs) for alignment and gaps.
+    Trick Rider (experiments) – explores optional routes (Three.js, glTF) without blocking the core.
+    Arena Judges (QA) – distrustful bug-hunters; design adversarial tests, fuzz inputs, and challenge architecture choices to expose fragility early.
+  </task>
+
+  <task caption="Team rosters (horse/cavalry theme)">
+    QA – The Inspecting Cavalry:
+      Cavalry Marshal (QA Lead)
+      Arena Adjutant (Test Architect)
+      Shock Trooper (Adversarial Tester)
+      Horsebreaker (Fuzzing Specialist)
+      Drill Sergeant (Automation Engineer)
+      Dragoon (Performance Tester)
+      Mountie (Security QA)
+      Quartermaster (Data/Fixtures)
+      Standard Bearer (Reporting/Quality Gate)
+    SWENG – The Engineering Regiment:
+      Captain of the Lines (Tech Lead)
+      Lancer (Backend)
+      Farrier (SDK/Parsing)
+      Outrider (Frontend/Viewer)
+      Scribe Cavalier (Converters/Docs)
+      Bridgemaster (Integrations)
+      Saddlewright (Tooling/CI Scripts)
+      Proving Ground Officer (Testing-in-dev)
+      Signal Corps (Code Health/Lint)
+    INFRA – The Remount Corps:
+      Stablemaster (Infra Lead)
+      Vault Captain (CI/CD)
+      Beacon Rider (Observability)
+      Mountie (Security/Secrets)
+      Courier (Networking)
+      Packhorse Steward (Storage/Artifacts)
+      Wrangler (Cloud/K8s)
+      Farrier Sergeant (Reliability)
+      Track Judge (Cost/Performance)
+  </task>
+
+  <input name="schema_ref" required="true">
+    docs/refs/poml-horse/seed.poml
+  </input>
+
+  <input name="adapter_goal" required="true">
+    POML → Go scene exporter (renderer-agnostic) with plug-in interface for deck.gl/luma.gl, Graphviz, Three.js, Mermaid, glTF.
+  </input>
+
+  <input name="mvp_goal" required="true">
+    Render an isometric graph from POML via deck.gl/luma.gl, export SVG/PNG; keep style variables in scene JSON.
+  </input>
+
+  <notes><![CDATA[
+Private seed (do not publish). Use poml-go-sdk capabilities (unknown-tag preservation, XML/CDATA safety) as foundation; add diagram types incrementally. Theme suggestion: a whimsical gymnastics stable—keep it fun, crisp, and modular.
+  ]]></notes>
+
+  <style>
+    <output format="markdown">
+      <![CDATA[
+      ## Prompt Summary
+      - Tasks
+      - Inputs
+      - MVP target
+      ]]>
+    </output>
+  </style>
+</poml>

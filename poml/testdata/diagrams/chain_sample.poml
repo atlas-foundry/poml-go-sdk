@@ -1,0 +1,19 @@
+<poml>
+  <diagram id="chain-sample" projection="isometric" layout="dagre" unit="u">
+    <graph>
+      <node id="chain-001" label="telemetry hooks" owner="Vishwakarma" weight="0.13" pct_complete="0.45" x="0" y="0" z="0">
+        <style color="#4fd1c5" shape="hex" size="1.2" stroke="#0f172a"/>
+        <data key="tags">["telemetry","plan-driver"]</data>
+      </node>
+      <node id="chain-005" label="metadata sweep" owner="Librarian" weight="0.10" pct_complete="0.60" x="2" y="1" z="0">
+        <style color="#a78bfa" shape="circle" size="1.0" stroke="#0f172a"/>
+        <data key="tags">["metadata","ci"]</data>
+      </node>
+      <edge from="chain-001" to="chain-005" kind="depends" directed="true" weight="0.4">
+        <style stroke="#475569" width="2" dash="solid" curvature="0.1"/>
+      </edge>
+    </graph>
+    <layer id="grid" z="-1" kind="grid"/>
+    <camera azimuth="35" elevation="30" distance="8"/>
+  </diagram>
+</poml>

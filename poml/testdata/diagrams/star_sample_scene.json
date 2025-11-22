@@ -1,0 +1,86 @@
+{
+  "id": "star-sample",
+  "nodes": [
+    {
+      "id": "hub",
+      "label": "Hub",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "style": {
+        "shape": "circle",
+        "size": "1.2",
+        "color": "#0ea5e9"
+      }
+    },
+    {
+      "id": "leaf-a",
+      "label": "Leaf A",
+      "position": [
+        1,
+        0,
+        0
+      ],
+      "style": {
+        "shape": "square",
+        "size": "0.9",
+        "color": "#22c55e"
+      }
+    },
+    {
+      "id": "leaf-b",
+      "label": "Leaf B",
+      "position": [
+        -1,
+        0,
+        0
+      ],
+      "style": {
+        "shape": "square",
+        "size": "0.9",
+        "color": "#f97316"
+      }
+    },
+    {
+      "id": "leaf-c",
+      "label": "Leaf C",
+      "position": [
+        0,
+        1,
+        0
+      ],
+      "style": {
+        "shape": "square",
+        "size": "0.9",
+        "color": "#a855f7"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "hub",
+      "to": "leaf-a",
+      "kind": "relates",
+      "directed": true
+    },
+    {
+      "from": "hub",
+      "to": "leaf-b",
+      "kind": "relates",
+      "directed": true
+    },
+    {
+      "from": "hub",
+      "to": "leaf-c",
+      "kind": "relates",
+      "directed": true
+    }
+  ],
+  "camera": {
+    "azimuth": "20",
+    "elevation": "25",
+    "distance": "6"
+  }
+}
