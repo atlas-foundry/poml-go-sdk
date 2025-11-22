@@ -28,5 +28,21 @@
         "type": "video/mp4"
       }
     }
+  ],
+  "media": [
+    {
+      "alt": "clip",
+      "base64": "QQ==",
+      "source": "base64",
+      "syntax": "audio/mpeg",
+      "type": "audio/mpeg"
+    },
+    {
+      "alt": "vid",
+      "base64": "QQ==",
+      "source": "base64",
+      "syntax": "video/mp4",
+      "type": "video/mp4"
+    }
   ]
 }

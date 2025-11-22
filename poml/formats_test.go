@@ -190,6 +190,22 @@ func TestPydanticFormatSimple(t *testing.T) {
 	}
 }
 
+func TestPydanticIncludesMedia(t *testing.T) {
+	src := `<poml><img src="data:image/png;base64,AA==" alt="tiny" syntax="image/png"/></poml>`
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	outAny, err := Convert(doc, FormatPydantic, ConvertOptions{})
+	if err != nil {
+		t.Fatalf("convert pydantic: %v", err)
+	}
+	out := outAny.(dictOutput)
+	if len(out.Media) != 1 {
+		t.Fatalf("expected media array populated, got %d", len(out.Media))
+	}
+}
+
 func TestImageFormatsBasics(t *testing.T) {
 	raw, _ := base64.StdEncoding.DecodeString(pngData)
 	img := ImageFromBytes(raw, "image/png", "tiny")

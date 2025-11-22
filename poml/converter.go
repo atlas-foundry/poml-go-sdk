@@ -166,7 +166,35 @@ func convertDict(doc Document, opts ConvertOptions) (dictOutput, error) {
 
 // convertPydantic aligns with Python SDK pydantic export (mirrors dict structure with consistent field names).
 func convertPydantic(doc Document, opts ConvertOptions) (dictOutput, error) {
-	return convertDict(doc, opts)
+	out, err := convertDict(doc, opts)
+	if err != nil {
+		return dictOutput{}, err
+	}
+	if media := collectMedia(doc, opts); len(media) > 0 {
+		out.Media = media
+	}
+	return out, nil
+}
+
+func collectMedia(doc Document, opts ConvertOptions) []any {
+	var media []any
+	for _, el := range doc.resolveOrder() {
+		switch el.Type {
+		case ElementImage:
+			if part, err := buildImagePart(doc.Images[el.Index], opts); err == nil {
+				media = append(media, part)
+			}
+		case ElementAudio:
+			if part, err := buildMediaPart(doc.Audios[el.Index], opts); err == nil {
+				media = append(media, part)
+			}
+		case ElementVideo:
+			if part, err := buildMediaPart(doc.Videos[el.Index], opts); err == nil {
+				media = append(media, part)
+			}
+		}
+	}
+	return media
 }
 
 func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error) {

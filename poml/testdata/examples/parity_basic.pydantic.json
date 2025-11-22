@@ -60,5 +60,14 @@
   "runtime": {
     "max_tokens": 5,
     "temperature": 0.2
-  }
+  },
+  "media": [
+    {
+      "alt": "tiny",
+      "base64": "AA==",
+      "source": "base64",
+      "syntax": "image/png",
+      "type": "image/png"
+    }
+  ]
 }
