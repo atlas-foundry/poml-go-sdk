@@ -175,6 +175,21 @@ func TestMessageDictFormatSimple(t *testing.T) {
 	}
 }
 
+func TestPydanticFormatSimple(t *testing.T) {
+	doc, err := ParseString("<poml><human-msg>Hello world</human-msg></poml>")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	outAny, err := Convert(doc, FormatPydantic, ConvertOptions{})
+	if err != nil {
+		t.Fatalf("convert pydantic: %v", err)
+	}
+	out := outAny.(dictOutput)
+	if len(out.Messages) != 1 || out.Messages[0].Speaker != "human" {
+		t.Fatalf("pydantic messages mismatch: %+v", out.Messages)
+	}
+}
+
 func TestImageFormatsBasics(t *testing.T) {
 	raw, _ := base64.StdEncoding.DecodeString(pngData)
 	img := ImageFromBytes(raw, "image/png", "tiny")

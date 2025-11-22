@@ -25,7 +25,7 @@
       <item>✅ Encode options for header/indent/order/compact/whitespace.</item>
       <item>🟡 Parse options toggle whitespace; more fixtures from Python pending.</item>
       <item>🟡 CI/docs: coverage thresholds and README parity snippets pending.</item>
-      <item>🔴 Missing/still growing: richer multimedia, tracing, prompt builders, extended converters and fixtures.</item>
+      <item>🟡 Growing: multimedia across converters (audio/video supported), Pydantic format mirrors dict, tracing/prompt builders pending.</item>
     </list>
   </hint>
 

@@ -50,8 +50,10 @@ func Convert(doc Document, format Format, opts ConvertOptions) (any, error) {
 	switch format {
 	case FormatMessageDict:
 		return convertMessageDict(doc, opts)
-	case FormatDict, FormatPydantic:
+	case FormatDict:
 		return convertDict(doc, opts)
+	case FormatPydantic:
+		return convertPydantic(doc, opts)
 	case FormatOpenAIChat:
 		return convertOpenAIChat(doc, opts)
 	case FormatLangChain:
@@ -159,6 +161,11 @@ func convertDict(doc Document, opts ConvertOptions) (dictOutput, error) {
 		out.Runtime = rt
 	}
 	return out, nil
+}
+
+// convertPydantic mirrors convertDict for now; structured separately for future schema-specific tweaks.
+func convertPydantic(doc Document, opts ConvertOptions) (dictOutput, error) {
+	return convertDict(doc, opts)
 }
 
 func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error) {
