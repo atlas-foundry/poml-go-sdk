@@ -6,6 +6,7 @@
   </meta>
   <role>Consolidate the poml-go-sdk README into structured POML with parity goals and usage notes.</role>
   <task>Explain current scope, parity targets versus the Python SDK, milestones, and usage patterns for contributors.</task>
+  <hint caption="Rendered landing page">See README.mdx (the only allowed non-POML doc) for GitHub-friendly summary and links.</hint>
 
   <hint caption="Current scope">
     <list>

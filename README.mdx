@@ -1,0 +1,24 @@
+# poml-go-sdk
+
+This repo uses POML for all docs. The only non-POML doc allowed is this `README.mdx` so GitHub renders a landing page.
+
+- Full structured README: `README.poml`
+- Delivery plan: `PLAN.poml`
+- AI log: `AI.LOCK.poml`
+- Fit-for-purpose plan: `docs/fit_for_purpose.poml`
+- Agent rules: `AGENTS.poml`
+
+## Rules for contributors and agents
+
+- Do **not** add markdown/org/mdx files besides this `README.mdx`.
+- Author docs in POML (`*.poml`) using extended tags (hint/example/cp/object/list/etc.).
+- Keep new instructions in `AGENTS.poml` to stay discoverable for small-context agents.
+- When adding docs, link them from this README.mdx if they are high-signal.
+
+## Quick start
+
+```bash
+go test ./...
+```
+
+Converters honor `ConvertOptions{BaseDir, AllowAbsImagePaths, MaxImageBytes}` with symlink-aware containment and a 10MB default cap. Extended tags like `<hint>`, `<example>`, `<cp>`, `<object>`, and `<tool>` round-trip and emit user content across formats.

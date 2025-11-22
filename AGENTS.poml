@@ -1,0 +1,37 @@
+<poml>
+  <meta>
+    <id>agents.poml-go-sdk</id>
+    <version>0.1.0</version>
+    <owner>poml-go-sdk</owner>
+  </meta>
+  <role>Guardrails and quick pointers for automation agents working in poml-go-sdk.</role>
+
+  <task>Respect the doc format policy.</task>
+  <hint caption="Doc policy">
+    <list>
+      <item>Only `README.mdx` may exist as a non-POML doc for GitHub rendering. Do not add other markdown/org/mdx files.</item>
+      <item>All other docs belong in POML (`*.poml`) using extended tags (hint/example/cp/object/list/etc.).</item>
+      <item>Link high-signal docs from README.mdx for discoverability.</item>
+    </list>
+  </hint>
+
+  <task>Know the key POML docs.</task>
+  <hint caption="POML docs">
+    <list>
+      <item>`README.poml` — structured overview and usage guidance.</item>
+      <item>`PLAN.poml` — delivery phases and milestones.</item>
+      <item>`AI.LOCK.poml` — timeline/log of automated runs.</item>
+      <item>`docs/fit_for_purpose.poml` — validation goals/benchmarks/checks.</item>
+    </list>
+  </hint>
+
+  <task>Testing and safety.</task>
+  <hint caption="Testing">
+    <list>
+      <item>Run `go test ./...` (CI enforces coverage threshold with coverage.out parsing).</item>
+      <item>Converters enforce BaseDir containment and default 10MB image cap (override via `MaxImageBytes`).</item>
+    </list>
+  </hint>
+
+  <output-format>Compact agent guidance; keep updated when policies change.</output-format>
+</poml>
