@@ -141,6 +141,7 @@ type dictOutput struct {
 	Schema   any            `json:"schema,omitempty"`
 	Tools    []any          `json:"tools,omitempty"`
 	Runtime  map[string]any `json:"runtime,omitempty"`
+	Media    []any          `json:"media,omitempty"`
 }
 
 func convertDict(doc Document, opts ConvertOptions) (dictOutput, error) {
