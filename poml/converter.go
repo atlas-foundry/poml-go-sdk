@@ -588,6 +588,8 @@ func buildImagePart(im Image, opts ConvertOptions) (map[string]any, error) {
 		"type":   mime,
 		"alt":    im.Alt,
 		"base64": data,
+		"source": "base64",
+		"syntax": im.Syntax,
 	}, nil
 }
 
@@ -629,6 +631,8 @@ func buildMediaPart(m Media, opts ConvertOptions) (map[string]any, error) {
 		"type":   mime,
 		"alt":    m.Alt,
 		"base64": data,
+		"source": "base64",
+		"syntax": m.Syntax,
 	}, nil
 }
 

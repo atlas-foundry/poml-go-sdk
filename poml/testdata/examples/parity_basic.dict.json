@@ -26,25 +26,26 @@
     {
       "speaker": "human",
       "content": {
-        "type": "image/png",
         "alt": "tiny",
-        "base64": "AA=="
+        "base64": "AA==",
+        "source": "base64",
+        "syntax": "image/png",
+        "type": "image/png"
       }
     }
   ],
   "schema": {
-    "type": "object",
     "properties": {
       "y": {
         "type": "number"
       }
-    }
+    },
+    "type": "object"
   },
   "tools": [
     {
-      "type": "function",
-      "name": "calc",
       "description": "{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"number\"}}}",
+      "name": "calc",
       "parameters": {
         "properties": {
           "x": {
@@ -52,11 +53,12 @@
           }
         },
         "type": "object"
-      }
+      },
+      "type": "function"
     }
   ],
   "runtime": {
-    "temperature": 0.2,
-    "max_tokens": 5
+    "max_tokens": 5,
+    "temperature": 0.2
   }
 }

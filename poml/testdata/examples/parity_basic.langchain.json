@@ -1,84 +1,87 @@
 {
   "messages": [
     {
-      "type": "human",
       "data": {
         "content": "Hello"
-      }
+      },
+      "type": "human"
     },
     {
-      "type": "ai",
       "data": {
         "content": "Calling tool"
-      }
+      },
+      "type": "ai"
     },
     {
-      "type": "ai",
       "data": {
         "tool_calls": [
           {
-            "id": "call_1",
-            "name": "calc",
             "args": {
               "x": 2
-            }
+            },
+            "id": "call_1",
+            "name": "calc"
           }
         ]
-      }
+      },
+      "type": "ai"
     },
     {
-      "type": "tool",
       "data": {
         "content": "4",
-        "tool_call_id": "call_1",
-        "name": "calc"
-      }
+        "name": "calc",
+        "tool_call_id": "call_1"
+      },
+      "type": "tool"
     },
     {
-      "type": "tool",
       "data": {
         "content": "ok",
-        "tool_call_id": "call_1",
         "name": "calc",
-        "result": true
-      }
+        "result": true,
+        "tool_call_id": "call_1"
+      },
+      "type": "tool"
     },
     {
-      "type": "tool",
       "data": {
         "content": "bad",
-        "tool_call_id": "call_1",
+        "error": true,
         "name": "calc",
-        "error": true
-      }
+        "tool_call_id": "call_1"
+      },
+      "type": "tool"
     },
     {
-      "type": "human",
       "data": {
         "content": [
           {
-            "type": "image",
-            "source_type": "base64",
+            "data": "AA==",
             "mime_type": "image/png",
-            "data": "AA=="
+            "source_type": "base64",
+            "type": "image"
           }
         ]
-      }
+      },
+      "type": "human"
     }
   ],
+  "runtime": {
+    "max_tokens": 5,
+    "temperature": 0.2
+  },
   "schema": {
-    "type": "object",
     "properties": {
       "y": {
         "type": "number"
       }
-    }
+    },
+    "type": "object"
   },
   "tools": [
     {
-      "type": "function",
-      "name": "calc",
       "description": "{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"number\"}}}",
+      "name": "calc",
       "parameters": {
         "properties": {
           "x": {
@@ -86,11 +89,8 @@
           }
         },
         "type": "object"
-      }
+      },
+      "type": "function"
     }
-  ],
-  "runtime": {
-    "temperature": 0.2,
-    "max_tokens": 5
-  }
+  ]
 }

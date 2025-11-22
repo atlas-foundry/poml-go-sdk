@@ -28,6 +28,8 @@
       "content": {
         "alt": "tiny",
         "base64": "AA==",
+        "source": "base64",
+        "syntax": "image/png",
         "type": "image/png"
       }
     }

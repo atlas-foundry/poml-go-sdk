@@ -1,82 +1,81 @@
 {
+  "max_tokens": 5,
   "messages": [
     {
-      "role": "user",
-      "content": "Hello"
+      "content": "Hello",
+      "role": "user"
     },
     {
-      "role": "assistant",
       "content": "Calling tool",
+      "role": "assistant",
       "tool_calls": [
         {
-          "id": "call_1",
-          "type": "function",
           "function": {
-            "name": "calc",
-            "arguments": "{\"x\":2}"
-          }
+            "arguments": "{\"x\":2}",
+            "name": "calc"
+          },
+          "id": "call_1",
+          "type": "function"
         }
       ]
     },
     {
-      "role": "tool",
       "content": "4",
-      "tool_call_id": "call_1",
-      "name": "calc"
+      "name": "calc",
+      "role": "tool",
+      "tool_call_id": "call_1"
     },
     {
-      "role": "tool",
       "content": "ok",
-      "tool_call_id": "call_1",
       "name": "calc",
+      "role": "tool",
+      "tool_call_id": "call_1",
       "type": "result"
     },
     {
-      "role": "tool",
       "content": "bad",
-      "tool_call_id": "call_1",
       "name": "calc",
+      "role": "tool",
+      "tool_call_id": "call_1",
       "type": "error"
     },
     {
-      "role": "user",
       "content": [
         {
-          "type": "text",
-          "text": "tiny"
+          "text": "tiny",
+          "type": "text"
         },
         {
-          "type": "image_url",
           "image_url": {
             "url": "data:image/png;base64,AA=="
-          }
+          },
+          "type": "image_url"
         }
-      ]
+      ],
+      "role": "user"
     }
   ],
   "response_format": {
-    "type": "json_schema",
     "json_schema": {
       "name": "schema",
       "schema": {
-        "type": "object",
         "properties": {
           "y": {
             "type": "number"
           }
-        }
+        },
+        "type": "object"
       },
       "strict": true
-    }
+    },
+    "type": "json_schema"
   },
   "temperature": 0.2,
-  "max_tokens": 5,
   "tools": [
     {
-      "type": "function",
       "function": {
-        "name": "calc",
         "description": "{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"number\"}}}",
+        "name": "calc",
         "parameters": {
           "properties": {
             "x": {
@@ -85,7 +84,8 @@
           },
           "type": "object"
         }
-      }
+      },
+      "type": "function"
     }
   ]
 }
