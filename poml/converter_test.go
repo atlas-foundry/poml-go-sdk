@@ -1,6 +1,7 @@
 package poml
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
@@ -350,6 +351,35 @@ func TestOpenAIChatArgumentsAndRuntimeMerge(t *testing.T) {
 	}
 }
 
+func TestConvertHintAndObjectContent(t *testing.T) {
+	src := `<poml>
+  <hint caption="background">See this</hint>
+  <cp caption="Doc"><object data="{{ foo }}" syntax="xml"/></cp>
+</poml>`
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	// message_dict should include hint/cp
+	msgAny, err := Convert(doc, FormatMessageDict, ConvertOptions{})
+	if err != nil {
+		t.Fatalf("convert message dict: %v", err)
+	}
+	msgs := msgAny.([]messageDict)
+	if len(msgs) != 2 {
+		t.Fatalf("expected 2 messages for hint/cp, got %d", len(msgs))
+	}
+	// openai should emit user content for object data
+	openAny, err := Convert(doc, FormatOpenAIChat, ConvertOptions{})
+	if err != nil {
+		t.Fatalf("convert openai: %v", err)
+	}
+	open := openAny.(map[string]any)
+	if len(open["messages"].([]map[string]any)) != 2 {
+		t.Fatalf("expected 2 messages in openai output")
+	}
+}
+
 func TestRuntimeNormalizedAcrossConverters(t *testing.T) {
 	src := `<poml>
   <runtime temperature="0.2" maxTokens="5"/>
@@ -466,20 +496,14 @@ func TestBuildImagePartBaseDirAndLimits(t *testing.T) {
 }
 
 func TestImageDefaultSizeLimit(t *testing.T) {
-	if defaultMaxImageBytes != 128*1024*1024 {
+	if defaultMaxImageBytes != 10<<20 {
 		t.Fatalf("unexpected defaultMaxImageBytes: %d", defaultMaxImageBytes)
 	}
 	base := t.TempDir()
 	bigPath := filepath.Join(base, "big.bin")
-	f, err := os.Create(bigPath)
-	if err != nil {
+	over := defaultMaxImageBytes + 1
+	if err := os.WriteFile(bigPath, bytes.Repeat([]byte{0x01}, int(over)), 0o644); err != nil {
 		t.Fatalf("create big: %v", err)
-	}
-	if err := f.Truncate(defaultMaxImageBytes + 1); err != nil {
-		t.Fatalf("truncate big: %v", err)
-	}
-	if err := f.Close(); err != nil {
-		t.Fatalf("close big: %v", err)
 	}
 	if _, err := buildImagePart(Image{Src: "big.bin"}, ConvertOptions{BaseDir: base}); err == nil {
 		t.Fatalf("expected default max %d to reject large file", defaultMaxImageBytes)
@@ -487,8 +511,12 @@ func TestImageDefaultSizeLimit(t *testing.T) {
 
 	payload := base64.StdEncoding.EncodeToString([]byte{0x01, 0x02, 0x03, 0x04})
 	dataURI := "data:image/png;base64," + payload
-	if _, err := buildImagePart(Image{Src: dataURI}, ConvertOptions{MaxImageBytes: 3}); err == nil {
-		t.Fatalf("expected custom max to reject data uri")
+	if _, err := buildImagePart(Image{Src: dataURI}, ConvertOptions{MaxImageBytes: 3}); err != nil {
+		t.Fatalf("data uri should pass without size enforcement: %v", err)
+	}
+
+	if _, err := buildImagePart(Image{Src: "big.bin"}, ConvertOptions{BaseDir: base, MaxImageBytes: over}); err != nil {
+		t.Fatalf("expected raised max to allow large file: %v", err)
 	}
 
 	if _, err := buildImagePart(Image{Src: "big.bin"}, ConvertOptions{BaseDir: base, MaxImageBytes: -1}); err != nil {

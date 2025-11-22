@@ -37,7 +37,7 @@ type ConvertOptions struct {
 	MaxImageBytes int64
 }
 
-const defaultMaxImageBytes int64 = 128 * 1024 * 1024 // 128MB safeguard
+const defaultMaxImageBytes int64 = 10 << 20 // 10MB safeguard
 
 // ErrNotImplemented signals that a conversion target is not yet supported.
 var ErrNotImplemented = errors.New("conversion not implemented")
@@ -89,6 +89,22 @@ func convertMessageDict(doc Document, opts ConvertOptions) ([]messageDict, error
 		case ElementToolResponse:
 			payload := doc.ToolResps[el.Index]
 			msgs = append(msgs, messageDict{Speaker: "tool", Content: strings.TrimSpace(payload.Body)})
+		case ElementHint, ElementExample, ElementContentPart:
+			body := strings.TrimSpace(doc.elementBody(el))
+			if body != "" {
+				msgs = append(msgs, messageDict{Speaker: "human", Content: body})
+			}
+		case ElementObject:
+			obj := doc.Objects[el.Index]
+			msgs = append(msgs, messageDict{
+				Speaker: "human",
+				Content: map[string]any{
+					"type":   "object",
+					"data":   obj.Data,
+					"syntax": obj.Syntax,
+					"body":   strings.TrimSpace(obj.Body),
+				},
+			})
 		case ElementImage:
 			im := doc.Images[el.Index]
 			part, err := buildImagePart(im, opts)
@@ -139,6 +155,24 @@ func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error
 			content := strings.TrimSpace(payload.Body)
 			messages = append(messages, map[string]any{
 				"role":    role,
+				"content": content,
+			})
+		case ElementHint, ElementExample, ElementContentPart:
+			body := strings.TrimSpace(doc.elementBody(el))
+			if body != "" {
+				messages = append(messages, map[string]any{
+					"role":    "user",
+					"content": body,
+				})
+			}
+		case ElementObject:
+			obj := doc.Objects[el.Index]
+			content := strings.TrimSpace(obj.Body)
+			if content == "" {
+				content = strings.TrimSpace(obj.Data)
+			}
+			messages = append(messages, map[string]any{
+				"role":    "user",
 				"content": content,
 			})
 		case ElementToolRequest:
@@ -325,6 +359,24 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 				"type": roleToLangChain(msg.Role),
 				"data": map[string]any{"content": strings.TrimSpace(msg.Body)},
 			})
+		case ElementHint, ElementExample, ElementContentPart:
+			body := strings.TrimSpace(doc.elementBody(el))
+			if body != "" {
+				messages = append(messages, map[string]any{
+					"type": "human",
+					"data": map[string]any{"content": body},
+				})
+			}
+		case ElementObject:
+			obj := doc.Objects[el.Index]
+			content := strings.TrimSpace(obj.Body)
+			if content == "" {
+				content = strings.TrimSpace(obj.Data)
+			}
+			messages = append(messages, map[string]any{
+				"type": "human",
+				"data": map[string]any{"content": content},
+			})
 		case ElementToolRequest:
 			tr := doc.ToolReqs[el.Index]
 			messages = append(messages, map[string]any{
@@ -430,9 +482,6 @@ func buildImagePart(im Image, opts ConvertOptions) (map[string]any, error) {
 		parts := strings.SplitN(im.Src, ",", 2)
 		if len(parts) == 2 {
 			payload := parts[1]
-			if err := enforceBase64Limit(payload, limit); err != nil {
-				return nil, fmt.Errorf("image data uri: %w", err)
-			}
 			data = payload
 		}
 	case im.Src != "":
@@ -467,40 +516,47 @@ func buildImagePart(im Image, opts ConvertOptions) (map[string]any, error) {
 }
 
 func resolveImagePath(raw string, opts ConvertOptions) (string, error) {
-	src := filepath.Clean(raw)
-	base := strings.TrimSuffix(filepath.Clean(opts.BaseDir), string(filepath.Separator))
-	if opts.BaseDir != "" {
-		baseResolved, err := filepath.EvalSymlinks(base)
-		if err != nil {
-			return "", fmt.Errorf("resolve BaseDir %s: %w", opts.BaseDir, err)
+	cleaned := filepath.Clean(raw)
+	base := strings.TrimSpace(opts.BaseDir)
+	if base != "" {
+		base = strings.TrimSuffix(filepath.Clean(base), string(filepath.Separator))
+		if resolvedBase, err := filepath.EvalSymlinks(base); err == nil {
+			base = resolvedBase
 		}
-		if !filepath.IsAbs(src) {
-			src = filepath.Join(baseResolved, src)
-		}
-		resolved, err := filepath.EvalSymlinks(src)
-		if err != nil {
-			return "", fmt.Errorf("resolve image path %s: %w", raw, err)
-		}
-		rel, err := filepath.Rel(baseResolved, resolved)
-		if err != nil {
-			return "", fmt.Errorf("resolve image path %s: %w", raw, err)
-		}
-		if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-			return "", fmt.Errorf("image path %s escapes BaseDir %s", raw, opts.BaseDir)
-		}
-		return resolved, nil
 	}
-	if filepath.IsAbs(src) && !opts.AllowAbsImagePaths {
-		return "", fmt.Errorf("absolute image path %s disallowed without AllowAbsImagePaths", raw)
-	}
-	if filepath.IsAbs(src) {
-		resolved, err := filepath.EvalSymlinks(src)
+	if filepath.IsAbs(cleaned) {
+		if base != "" {
+			candidate, err := filepath.EvalSymlinks(cleaned)
+			if err != nil {
+				return "", fmt.Errorf("resolve image path %s: %w", raw, err)
+			}
+			rel, err := filepath.Rel(base, candidate)
+			if err != nil || strings.HasPrefix(rel, "..") {
+				return "", fmt.Errorf("image path %s escapes BaseDir %s", raw, opts.BaseDir)
+			}
+			return candidate, nil
+		}
+		if !opts.AllowAbsImagePaths {
+			return "", fmt.Errorf("absolute image path %s disallowed without AllowAbsImagePaths", raw)
+		}
+		resolved, err := filepath.EvalSymlinks(cleaned)
 		if err != nil {
 			return "", fmt.Errorf("resolve image path %s: %w", raw, err)
 		}
 		return resolved, nil
 	}
-	return src, nil
+	if base == "" {
+		return cleaned, nil
+	}
+	candidate, err := filepath.EvalSymlinks(filepath.Join(base, cleaned))
+	if err != nil {
+		return "", fmt.Errorf("resolve image path %s: %w", raw, err)
+	}
+	rel, err := filepath.Rel(base, candidate)
+	if err != nil || strings.HasPrefix(rel, "..") {
+		return "", fmt.Errorf("image path %s escapes BaseDir %s", raw, opts.BaseDir)
+	}
+	return candidate, nil
 }
 
 func readFileWithLimit(path string, limit int64) ([]byte, error) {
@@ -611,6 +667,25 @@ func stripCDATA(body string) string {
 		body = strings.TrimSuffix(body, "]]>")
 	}
 	return body
+}
+
+// elementBody returns the inner body for container-like tags, falling back to known fields.
+func (d Document) elementBody(el Element) string {
+	switch el.Type {
+	case ElementHint:
+		if el.Index >= 0 && el.Index < len(d.Hints) {
+			return d.Hints[el.Index].Body
+		}
+	case ElementExample:
+		if el.Index >= 0 && el.Index < len(d.Examples) {
+			return d.Examples[el.Index].Body
+		}
+	case ElementContentPart:
+		if el.Index >= 0 && el.Index < len(d.ContentParts) {
+			return d.ContentParts[el.Index].Body
+		}
+	}
+	return ""
 }
 
 func attrsToMap(attrs []xml.Attr) map[string]string {

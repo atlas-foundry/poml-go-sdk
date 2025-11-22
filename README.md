@@ -42,7 +42,8 @@ Usage patterns
 - Mutations: `doc.Mutate(func(el Element, p ElementPayload, m *Mutator) error { m.ReplaceBody(el, "new"); m.Remove(el); m.InsertTaskAfter(el, "body"); return nil })`.
 - Encoding: `doc.Encode(w)` or `doc.EncodeWithOptions(w, EncodeOptions{Indent: "  ", IncludeHeader: true, PreserveOrder: true, PreserveWS: true})`; `doc.DumpFile("path", opts)` atomically writes to disk.
 - Validation: `if err := doc.Validate(); err != nil { ... }`. Parser helper opts include `ParseReaderWithOptions(r, ParseOptions{Validate: true})` to enforce validation during decode when desired.
-- Converters: `Convert(doc, FormatOpenAIChat, ConvertOptions{BaseDir: "/assets", MaxImageBytes: 1<<20})` reads images relative to `BaseDir`, rejects path escapes, caps file size, and requires `AllowAbsImagePaths` for absolute paths.
+- Converters: `Convert(doc, FormatOpenAIChat, ConvertOptions{BaseDir: "/assets", MaxImageBytes: 1<<20})` reads images relative to `BaseDir` with symlink-aware containment, rejects path escapes, defaults to a 10MB cap for file reads (override via `MaxImageBytes`; negative disables; data URIs unaffected), and requires `AllowAbsImagePaths` for absolute paths when no `BaseDir` is provided. Hints/examples/content parts (`<hint>`, `<example>`, `<cp>`), tool aliases (`<tool>`), and object tags round-trip and are emitted as user content across converters.
+- Validation/fit-for-purpose: see `docs/fit_for_purpose.md` for goals/benchmarks/checks; CI should run strict parsing, converter golden comparisons, and security tests (path containment, size caps).
 
 Next steps
 1) Add parent IDs/comments/whitespace preservation hooks for finer-grained round-trips.

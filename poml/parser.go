@@ -29,6 +29,11 @@ const (
 	ElementToolResult     ElementType = "tool_result"
 	ElementToolError      ElementType = "tool_error"
 	ElementOutputSchema   ElementType = "output_schema"
+	ElementOutputFormat   ElementType = "output_format"
+	ElementHint           ElementType = "hint"
+	ElementExample        ElementType = "example"
+	ElementContentPart    ElementType = "content_part"
+	ElementObject         ElementType = "object"
 	ElementRuntime        ElementType = "runtime"
 	ElementImage          ElementType = "image"
 	ElementDiagram        ElementType = "diagram"
@@ -52,24 +57,29 @@ type Element struct {
 // Document represents a POML file.
 // Elements preserves encountered order for role/task/input/document/style nodes.
 type Document struct {
-	Meta        Meta     `xml:"meta"`
-	Role        Block    `xml:"role"`
-	Tasks       []Block  `xml:"task"`
-	Inputs      []Input  `xml:"input"`
-	Documents   []DocRef `xml:"document"`
-	Styles      []Style  `xml:"style"`
-	Messages    []Message
-	ToolDefs    []ToolDefinition
-	ToolReqs    []ToolRequest
-	ToolResps   []ToolResponse
-	ToolResults []ToolResult
-	ToolErrors  []ToolError
-	Runtimes    []Runtime
-	Schema      OutputSchema
-	Images      []Image
-	Diagrams    []Diagram
-	Elements    []Element
-	rawPrefix   string // leading text before root (e.g., XML decl); kept for future extension
+	Meta         Meta     `xml:"meta"`
+	Role         Block    `xml:"role"`
+	Tasks        []Block  `xml:"task"`
+	Inputs       []Input  `xml:"input"`
+	Documents    []DocRef `xml:"document"`
+	Styles       []Style  `xml:"style"`
+	OutFormats   []OutputFormat
+	Hints        []Hint
+	Examples     []Example
+	ContentParts []ContentPart
+	Objects      []ObjectTag
+	Messages     []Message
+	ToolDefs     []ToolDefinition
+	ToolReqs     []ToolRequest
+	ToolResps    []ToolResponse
+	ToolResults  []ToolResult
+	ToolErrors   []ToolError
+	Runtimes     []Runtime
+	Schema       OutputSchema
+	Images       []Image
+	Diagrams     []Diagram
+	Elements     []Element
+	rawPrefix    string // leading text before root (e.g., XML decl); kept for future extension
 
 	nextID int // internal counter for element IDs
 }
@@ -105,6 +115,38 @@ type DocRef struct {
 type Style struct {
 	Outputs []Output   `xml:"output"`
 	Attrs   []xml.Attr `xml:",any,attr"`
+}
+
+// OutputFormat is a simplified format hint (<output-format>...</output-format>).
+type OutputFormat struct {
+	Body  string     `xml:",innerxml"`
+	Attrs []xml.Attr `xml:",any,attr"`
+}
+
+// Hint represents a <hint> block that wraps supporting context.
+type Hint struct {
+	Body  string     `xml:",innerxml"`
+	Attrs []xml.Attr `xml:",any,attr"`
+}
+
+// Example represents an <example> block.
+type Example struct {
+	Body  string     `xml:",innerxml"`
+	Attrs []xml.Attr `xml:",any,attr"`
+}
+
+// ContentPart represents a captioned content part (<cp>).
+type ContentPart struct {
+	Body  string     `xml:",innerxml"`
+	Attrs []xml.Attr `xml:",any,attr"`
+}
+
+// ObjectTag represents an <object> wrapper for data payloads.
+type ObjectTag struct {
+	Data   string     `xml:"data,attr"`
+	Syntax string     `xml:"syntax,attr"`
+	Body   string     `xml:",innerxml"`
+	Attrs  []xml.Attr `xml:",any,attr"`
 }
 
 // Image represents an <img> block (often used for multimedia).
@@ -713,6 +755,30 @@ func (d Document) Validate() error {
 			}
 		}
 	}
+	for i, h := range d.Hints {
+		if strings.TrimSpace(h.Body) == "" {
+			issues = append(issues, fmt.Sprintf("hint[%d] requires body content", i))
+			details = append(details, ValidationDetail{Element: ElementHint, Message: "missing body"})
+		}
+	}
+	for i, ex := range d.Examples {
+		if strings.TrimSpace(ex.Body) == "" {
+			issues = append(issues, fmt.Sprintf("example[%d] requires body content", i))
+			details = append(details, ValidationDetail{Element: ElementExample, Message: "missing body"})
+		}
+	}
+	for i, cp := range d.ContentParts {
+		if strings.TrimSpace(cp.Body) == "" {
+			issues = append(issues, fmt.Sprintf("cp[%d] requires body content", i))
+			details = append(details, ValidationDetail{Element: ElementContentPart, Message: "missing body"})
+		}
+	}
+	for i, obj := range d.Objects {
+		if strings.TrimSpace(obj.Data) == "" && strings.TrimSpace(obj.Body) == "" {
+			issues = append(issues, fmt.Sprintf("object[%d] requires data or body", i))
+			details = append(details, ValidationDetail{Element: ElementObject, Message: "missing data/body"})
+		}
+	}
 	if len(issues) == 0 {
 		return nil
 	}
@@ -803,23 +869,28 @@ func (d *Document) Mutate(fn func(Element, ElementPayload, *Mutator) error) erro
 
 // ElementPayload resolves the concrete node for an Element.
 type ElementPayload struct {
-	Meta       *Meta
-	Role       *Block
-	Task       *Block
-	Input      *Input
-	DocRef     *DocRef
-	Style      *Style
-	Image      *Image
-	Message    *Message
-	ToolDef    *ToolDefinition
-	ToolReq    *ToolRequest
-	ToolResp   *ToolResponse
-	ToolResult *ToolResult
-	ToolError  *ToolError
-	Schema     *OutputSchema
-	Runtime    *Runtime
-	Diagram    *Diagram
-	Raw        string
+	Meta         *Meta
+	Role         *Block
+	Task         *Block
+	Input        *Input
+	DocRef       *DocRef
+	Style        *Style
+	OutputFormat *OutputFormat
+	Hint         *Hint
+	Example      *Example
+	ContentPart  *ContentPart
+	Object       *ObjectTag
+	Image        *Image
+	Message      *Message
+	ToolDef      *ToolDefinition
+	ToolReq      *ToolRequest
+	ToolResp     *ToolResponse
+	ToolResult   *ToolResult
+	ToolError    *ToolError
+	Schema       *OutputSchema
+	Runtime      *Runtime
+	Diagram      *Diagram
+	Raw          string
 }
 
 // Mutator wraps mutation helpers for a Document walk.
@@ -851,6 +922,10 @@ func (m *Mutator) ReplaceBody(el Element, body string) {
 		if el.Index >= 0 && el.Index < len(d.Styles) && len(d.Styles[el.Index].Outputs) > 0 {
 			// Update first output body; callers can MarkModified for more complex changes.
 			d.Styles[el.Index].Outputs[0].Body = body
+		}
+	case ElementOutputFormat:
+		if el.Index >= 0 && el.Index < len(d.OutFormats) {
+			d.OutFormats[el.Index].Body = body
 		}
 	case ElementHumanMsg, ElementAssistantMsg, ElementSystemMsg:
 		if el.Index >= 0 && el.Index < len(d.Messages) {
@@ -889,6 +964,10 @@ func (m *Mutator) Remove(el Element) {
 	case ElementStyle:
 		if el.Index >= 0 && el.Index < len(d.Styles) {
 			d.Styles = append(d.Styles[:el.Index], d.Styles[el.Index+1:]...)
+		}
+	case ElementOutputFormat:
+		if el.Index >= 0 && el.Index < len(d.OutFormats) {
+			d.OutFormats = append(d.OutFormats[:el.Index], d.OutFormats[el.Index+1:]...)
 		}
 	case ElementRole:
 		d.Role = Block{}
@@ -1108,13 +1187,13 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 					el.Leading = leading
 				}
 				doc.Elements = append(doc.Elements, el)
-			case "document":
+			case "document", "Document":
 				var dr DocRef
 				if err := dec.DecodeElement(&dr, &t); err != nil {
 					return doc, wrapXMLError(err, "<document>")
 				}
 				doc.Documents = append(doc.Documents, dr)
-				el := doc.newElement(ElementDocument, len(doc.Documents)-1, "")
+				el := doc.newElement(ElementDocument, len(doc.Documents)-1, t.Name.Local)
 				if preserveWS {
 					el.Leading = leading
 				}
@@ -1126,6 +1205,39 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 				}
 				doc.Styles = append(doc.Styles, st)
 				el := doc.newElement(ElementStyle, len(doc.Styles)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "hint":
+				var h Hint
+				if err := dec.DecodeElement(&h, &t); err != nil {
+					return doc, wrapXMLError(err, "<hint>")
+				}
+				doc.Hints = append(doc.Hints, h)
+				el := doc.newElement(ElementHint, len(doc.Hints)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "example":
+				var ex Example
+				if err := dec.DecodeElement(&ex, &t); err != nil {
+					return doc, wrapXMLError(err, "<example>")
+				}
+				doc.Examples = append(doc.Examples, ex)
+				el := doc.newElement(ElementExample, len(doc.Examples)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "cp":
+				var cp ContentPart
+				if err := dec.DecodeElement(&cp, &t); err != nil {
+					return doc, wrapXMLError(err, "<cp>")
+				}
+				doc.ContentParts = append(doc.ContentParts, cp)
+				el := doc.newElement(ElementContentPart, len(doc.ContentParts)-1, "")
 				if preserveWS {
 					el.Leading = leading
 				}
@@ -1152,13 +1264,13 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 					el.Leading = leading
 				}
 				doc.Elements = append(doc.Elements, el)
-			case "tool-definition":
+			case "tool-definition", "tool":
 				var td ToolDefinition
 				if err := dec.DecodeElement(&td, &t); err != nil {
 					return doc, wrapXMLError(err, "<tool-definition>")
 				}
 				doc.ToolDefs = append(doc.ToolDefs, td)
-				el := doc.newElement(ElementToolDefinition, len(doc.ToolDefs)-1, "")
+				el := doc.newElement(ElementToolDefinition, len(doc.ToolDefs)-1, t.Name.Local)
 				if preserveWS {
 					el.Leading = leading
 				}
@@ -1218,6 +1330,17 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 					el.Leading = leading
 				}
 				doc.Elements = append(doc.Elements, el)
+			case "output-format":
+				var of OutputFormat
+				if err := dec.DecodeElement(&of, &t); err != nil {
+					return doc, wrapXMLError(err, "<output-format>")
+				}
+				doc.OutFormats = append(doc.OutFormats, of)
+				el := doc.newElement(ElementOutputFormat, len(doc.OutFormats)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
 			case "runtime":
 				var rt Runtime
 				if err := dec.DecodeElement(&rt, &t); err != nil {
@@ -1236,6 +1359,17 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 				}
 				doc.Images = append(doc.Images, im)
 				el := doc.newElement(ElementImage, len(doc.Images)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "object", "Object":
+				var obj ObjectTag
+				if err := dec.DecodeElement(&obj, &t); err != nil {
+					return doc, wrapXMLError(err, "<object>")
+				}
+				doc.Objects = append(doc.Objects, obj)
+				el := doc.newElement(ElementObject, len(doc.Objects)-1, t.Name.Local)
 				if preserveWS {
 					el.Leading = leading
 				}
@@ -1351,12 +1485,31 @@ func encodeElement(enc *xml.Encoder, out io.Writer, doc Document, el Element, op
 		if el.Index < 0 || el.Index >= len(doc.Documents) {
 			return fmt.Errorf("encode document: index %d out of range", el.Index)
 		}
-		err = enc.EncodeElement(doc.Documents[el.Index], xml.StartElement{Name: xml.Name{Local: "document"}})
+		tag := "document"
+		if el.Name == "Document" {
+			tag = el.Name
+		}
+		err = enc.EncodeElement(doc.Documents[el.Index], xml.StartElement{Name: xml.Name{Local: tag}})
 	case ElementStyle:
 		if el.Index < 0 || el.Index >= len(doc.Styles) {
 			return fmt.Errorf("encode style: index %d out of range", el.Index)
 		}
 		err = enc.EncodeElement(doc.Styles[el.Index], xml.StartElement{Name: xml.Name{Local: "style"}})
+	case ElementHint:
+		if el.Index < 0 || el.Index >= len(doc.Hints) {
+			return fmt.Errorf("encode hint: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Hints[el.Index], xml.StartElement{Name: xml.Name{Local: "hint"}})
+	case ElementExample:
+		if el.Index < 0 || el.Index >= len(doc.Examples) {
+			return fmt.Errorf("encode example: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Examples[el.Index], xml.StartElement{Name: xml.Name{Local: "example"}})
+	case ElementContentPart:
+		if el.Index < 0 || el.Index >= len(doc.ContentParts) {
+			return fmt.Errorf("encode cp: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.ContentParts[el.Index], xml.StartElement{Name: xml.Name{Local: "cp"}})
 	case ElementHumanMsg, ElementAssistantMsg, ElementSystemMsg:
 		if el.Index < 0 || el.Index >= len(doc.Messages) {
 			return fmt.Errorf("encode message: index %d out of range", el.Index)
@@ -1373,7 +1526,11 @@ func encodeElement(enc *xml.Encoder, out io.Writer, doc Document, el Element, op
 		if el.Index < 0 || el.Index >= len(doc.ToolDefs) {
 			return fmt.Errorf("encode tool definition: index %d out of range", el.Index)
 		}
-		err = enc.EncodeElement(doc.ToolDefs[el.Index], xml.StartElement{Name: xml.Name{Local: "tool-definition"}})
+		tag := "tool-definition"
+		if el.Name == "tool" {
+			tag = el.Name
+		}
+		err = enc.EncodeElement(doc.ToolDefs[el.Index], xml.StartElement{Name: xml.Name{Local: tag}})
 	case ElementToolRequest:
 		if el.Index < 0 || el.Index >= len(doc.ToolReqs) {
 			return fmt.Errorf("encode tool request: index %d out of range", el.Index)
@@ -1396,6 +1553,11 @@ func encodeElement(enc *xml.Encoder, out io.Writer, doc Document, el Element, op
 		err = enc.EncodeElement(doc.ToolErrors[el.Index], xml.StartElement{Name: xml.Name{Local: "tool-error"}})
 	case ElementOutputSchema:
 		err = enc.EncodeElement(doc.Schema, xml.StartElement{Name: xml.Name{Local: "output-schema"}})
+	case ElementOutputFormat:
+		if el.Index < 0 || el.Index >= len(doc.OutFormats) {
+			return fmt.Errorf("encode output-format: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.OutFormats[el.Index], xml.StartElement{Name: xml.Name{Local: "output-format"}})
 	case ElementRuntime:
 		if el.Index < 0 || el.Index >= len(doc.Runtimes) {
 			return fmt.Errorf("encode runtime: index %d out of range", el.Index)
@@ -1406,6 +1568,15 @@ func encodeElement(enc *xml.Encoder, out io.Writer, doc Document, el Element, op
 			return fmt.Errorf("encode image: index %d out of range", el.Index)
 		}
 		err = enc.EncodeElement(doc.Images[el.Index], xml.StartElement{Name: xml.Name{Local: "img"}})
+	case ElementObject:
+		if el.Index < 0 || el.Index >= len(doc.Objects) {
+			return fmt.Errorf("encode object: index %d out of range", el.Index)
+		}
+		tag := "object"
+		if el.Name == "Object" {
+			tag = el.Name
+		}
+		err = enc.EncodeElement(doc.Objects[el.Index], xml.StartElement{Name: xml.Name{Local: tag}})
 	case ElementDiagram:
 		if el.Index < 0 || el.Index >= len(doc.Diagrams) {
 			return fmt.Errorf("encode diagram: index %d out of range", el.Index)
@@ -1468,6 +1639,18 @@ func (d *Document) defaultElements() []Element {
 	for i := range d.Styles {
 		out = append(out, d.newElement(ElementStyle, i, ""))
 	}
+	for i := range d.Hints {
+		out = append(out, d.newElement(ElementHint, i, ""))
+	}
+	for i := range d.Examples {
+		out = append(out, d.newElement(ElementExample, i, ""))
+	}
+	for i := range d.ContentParts {
+		out = append(out, d.newElement(ElementContentPart, i, ""))
+	}
+	for i := range d.OutFormats {
+		out = append(out, d.newElement(ElementOutputFormat, i, ""))
+	}
 	for i := range d.Messages {
 		// Preserve role-specific element types.
 		elType := ElementHumanMsg
@@ -1499,6 +1682,9 @@ func (d *Document) defaultElements() []Element {
 	}
 	for i := range d.Runtimes {
 		out = append(out, d.newElement(ElementRuntime, i, ""))
+	}
+	for i := range d.Objects {
+		out = append(out, d.newElement(ElementObject, i, ""))
 	}
 	for i := range d.Images {
 		out = append(out, d.newElement(ElementImage, i, ""))
@@ -1535,6 +1721,26 @@ func (d Document) payloadFor(el Element) ElementPayload {
 	case ElementStyle:
 		if el.Index >= 0 && el.Index < len(d.Styles) {
 			return ElementPayload{Style: &d.Styles[el.Index]}
+		}
+	case ElementHint:
+		if el.Index >= 0 && el.Index < len(d.Hints) {
+			return ElementPayload{Hint: &d.Hints[el.Index]}
+		}
+	case ElementExample:
+		if el.Index >= 0 && el.Index < len(d.Examples) {
+			return ElementPayload{Example: &d.Examples[el.Index]}
+		}
+	case ElementContentPart:
+		if el.Index >= 0 && el.Index < len(d.ContentParts) {
+			return ElementPayload{ContentPart: &d.ContentParts[el.Index]}
+		}
+	case ElementOutputFormat:
+		if el.Index >= 0 && el.Index < len(d.OutFormats) {
+			return ElementPayload{OutputFormat: &d.OutFormats[el.Index]}
+		}
+	case ElementObject:
+		if el.Index >= 0 && el.Index < len(d.Objects) {
+			return ElementPayload{Object: &d.Objects[el.Index]}
 		}
 	case ElementImage:
 		if el.Index >= 0 && el.Index < len(d.Images) {
@@ -1629,8 +1835,8 @@ func renderToken(tok xml.Token) string {
 
 // reindex updates element indices to match current slice state after mutations.
 func (d *Document) reindex() {
-	taskIdx, inputIdx, docIdx, styleIdx := 0, 0, 0, 0
-	msgIdx, toolDefIdx, toolReqIdx, toolRespIdx, toolResultIdx, toolErrorIdx, runtimeIdx, imageIdx, diagramIdx := 0, 0, 0, 0, 0, 0, 0, 0, 0
+	taskIdx, inputIdx, docIdx, styleIdx, hintIdx, exIdx, cpIdx, outFmtIdx := 0, 0, 0, 0, 0, 0, 0, 0
+	msgIdx, toolDefIdx, toolReqIdx, toolRespIdx, toolResultIdx, toolErrorIdx, runtimeIdx, objIdx, imageIdx, diagramIdx := 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	for i := range d.Elements {
 		switch d.Elements[i].Type {
 		case ElementTask:
@@ -1645,6 +1851,18 @@ func (d *Document) reindex() {
 		case ElementStyle:
 			d.Elements[i].Index = styleIdx
 			styleIdx++
+		case ElementHint:
+			d.Elements[i].Index = hintIdx
+			hintIdx++
+		case ElementExample:
+			d.Elements[i].Index = exIdx
+			exIdx++
+		case ElementContentPart:
+			d.Elements[i].Index = cpIdx
+			cpIdx++
+		case ElementOutputFormat:
+			d.Elements[i].Index = outFmtIdx
+			outFmtIdx++
 		case ElementHumanMsg, ElementAssistantMsg, ElementSystemMsg:
 			d.Elements[i].Index = msgIdx
 			msgIdx++
@@ -1666,6 +1884,9 @@ func (d *Document) reindex() {
 		case ElementRuntime:
 			d.Elements[i].Index = runtimeIdx
 			runtimeIdx++
+		case ElementObject:
+			d.Elements[i].Index = objIdx
+			objIdx++
 		case ElementImage:
 			d.Elements[i].Index = imageIdx
 			imageIdx++

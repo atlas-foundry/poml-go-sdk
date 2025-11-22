@@ -43,6 +43,21 @@ func TestConverterParityFixtures(t *testing.T) {
 	}
 }
 
+func TestParseUpstreamExamplesWithExtendedTags(t *testing.T) {
+	paths := []string{
+		filepath.Join("testdata", "examples", "101_explain_character.poml"),
+		filepath.Join("testdata", "examples", "206_expense_send_email.poml"),
+	}
+	for _, p := range paths {
+		p := p
+		t.Run(filepath.Base(p), func(t *testing.T) {
+			if _, err := ParseFile(p); err != nil {
+				t.Fatalf("parse %s: %v", p, err)
+			}
+		})
+	}
+}
+
 func assertJSONEqual(t *testing.T, actual any, expectedPath string) {
 	t.Helper()
 	expected := loadJSON(t, expectedPath)

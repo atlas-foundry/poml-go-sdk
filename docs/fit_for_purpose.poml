@@ -1,0 +1,37 @@
+<poml>
+  <meta>
+    <id>fit-for-purpose.poml-go-sdk</id>
+    <version>0.1.0</version>
+    <owner>poml-go-sdk</owner>
+  </meta>
+  <role>Fit-for-purpose validation plan captured in POML.</role>
+  <task>Define goals, benchmarks, and checks to confirm poml-go-sdk meets parity and safety expectations.</task>
+
+  <hint caption="Goals">
+    <list>
+      <item>Validate poml-go-sdk is fit for purpose for prompt authoring with parity to Python SDK.</item>
+      <item>Ensure safety (path containment, size caps) and structural correctness across tags.</item>
+      <item>Demonstrate converter fidelity against upstream examples and expected outputs.</item>
+    </list>
+  </hint>
+
+  <hint caption="Benchmarks">
+    <list>
+      <item>Coverage >= baseline (82.6%) with added fixtures.</item>
+      <item>`/usr/local/go/bin/go test -cover ./...` within target runtime (recorded in AI.LOCK).</item>
+      <item>Parity fixtures from Python examples (message_dict/dict/openai_chat/langchain) match JSON expecteds.</item>
+      <item>Security tests (symlink escape, size cap) pass.</item>
+    </list>
+  </hint>
+
+  <hint caption="Checks">
+    <list>
+      <item>Strict parsing/validation enabled for CI run.</item>
+      <item>Converter JSON outputs compared to golden fixtures.</item>
+      <item>Random sampling of upstream examples to parse/encode round-trip.</item>
+      <item>Manual doc walkthrough for new tags (hint/example/cp/object).</item>
+    </list>
+  </hint>
+
+  <output-format>Checklist-style markdown embedded for CI and review.</output-format>
+</poml>

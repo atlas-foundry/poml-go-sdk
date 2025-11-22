@@ -1,0 +1,55 @@
+<poml>
+  <meta>
+    <id>readme.poml-go-sdk</id>
+    <version>0.1.0</version>
+    <owner>poml-go-sdk</owner>
+  </meta>
+  <role>Consolidate the poml-go-sdk README into structured POML with parity goals and usage notes.</role>
+  <task>Explain current scope, parity targets versus the Python SDK, milestones, and usage patterns for contributors.</task>
+
+  <hint caption="Current scope">
+    <list>
+      <item>Parser/encoder for POML (strict XML, CDATA-safe, preserves unknown elements/attrs, optional whitespace/comments).</item>
+      <item>AST helpers: ordered Elements with stable IDs/parent hooks, Walk/Mutate APIs, builders, validation (meta/role/task), encode options (order/whitespace/header/indent/compact).</item>
+      <item>Parsers for string/file/reader; role/task/input accessors.</item>
+      <item>Tests: round-trip, malformed input, large docs, builder/mutation coverage.</item>
+    </list>
+  </hint>
+
+  <hint caption="Parity matrix vs Python SDK">
+    <list>
+      <item>✅ Preserve unknown elements/attrs, CDATA, element order, whitespace/comments when requested.</item>
+      <item>✅ Validation for required meta/role/task plus unique inputs/doc/style fields; structured error type.</item>
+      <item>✅ Walk/Mutate with stable element IDs and lookup helpers.</item>
+      <item>✅ Encode options for header/indent/order/compact/whitespace.</item>
+      <item>🟡 Parse options toggle whitespace; more fixtures from Python pending.</item>
+      <item>🟡 CI/docs: coverage thresholds and README parity snippets pending.</item>
+      <item>🔴 Missing/still growing: richer multimedia, tracing, prompt builders, extended converters and fixtures.</item>
+    </list>
+  </hint>
+
+  <hint caption="Milestones to parity">
+    <list>
+      <item>Tag coverage for additional Python tags and multimedia assets.</item>
+      <item>Format converters for message_dict/dict/openai_chat/langchain/pydantic with tool-calls/runtime/schema propagation.</item>
+      <item>Builder/tag helpers to mirror Python Prompt APIs.</item>
+      <item>Multimedia ingestion and MIME detection; data URI/base64 handling.</item>
+      <item>Tracing hooks (set_trace/trace_artifact equivalents).</item>
+      <item>Fixtures/tests for Python examples; CI with coverage thresholds.</item>
+      <item>README/docs updates and published module release.</item>
+    </list>
+  </hint>
+
+  <hint caption="Usage patterns">
+    <list>
+      <item>Parse: ParseFile/ParseReader/ParseString (strict or fast variants).</item>
+      <item>Walk: doc.Walk(...) with ElementPayload for ordered traversal.</item>
+      <item>Mutate: doc.Mutate(...) with ReplaceBody/Remove/Insert helpers.</item>
+      <item>Encode: doc.Encode or EncodeWithOptions (indent/header/order/whitespace/compact).</item>
+      <item>Validate: doc.Validate or Parse*Strict to enforce required sections.</item>
+      <item>Convert: Convert(doc, FormatOpenAIChat, ConvertOptions{BaseDir: "/assets", MaxImageBytes: 1<<20}) with path containment, default 10MB cap, AllowAbsImagePaths toggle; emits hint/example/cp/object content as user context.</item>
+    </list>
+  </hint>
+
+  <output-format>Markdown-style guidance for contributors and parity tracking.</output-format>
+</poml>

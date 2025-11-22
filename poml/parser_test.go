@@ -479,6 +479,167 @@ func TestBuilderAndValidation(t *testing.T) {
 	}
 }
 
+func TestValidateToolEvents(t *testing.T) {
+	makeDoc := func() Document {
+		return Document{
+			Meta:  Meta{ID: "tool.demo", Version: "1", Owner: "me"},
+			Role:  Block{Body: "role"},
+			Tasks: []Block{{Body: "task"}},
+		}
+	}
+	tests := []struct {
+		name     string
+		prepare  func(d *Document)
+		wantErr  bool
+		wantText string
+	}{
+		{
+			name: "valid tool flow",
+			prepare: func(d *Document) {
+				d.ToolDefs = []ToolDefinition{{Name: "calc", Description: "{}"}}
+				d.ToolReqs = []ToolRequest{{ID: "call_1", Name: "calc", Parameters: "{}"}}
+				d.ToolResps = []ToolResponse{{ID: "call_1", Name: "calc", Body: "ok"}}
+				d.ToolResults = []ToolResult{{ID: "call_1", Name: "calc", Body: "result"}}
+				d.ToolErrors = []ToolError{{ID: "call_1", Name: "calc", Body: "err"}}
+			},
+		},
+		{
+			name: "missing tool request",
+			prepare: func(d *Document) {
+				d.ToolDefs = []ToolDefinition{{Name: "calc", Description: "{}"}}
+				d.ToolResps = []ToolResponse{{ID: "call_1", Name: "calc", Body: "ok"}}
+			},
+			wantErr:  true,
+			wantText: "tool-response id",
+		},
+		{
+			name: "unknown tool definition in response",
+			prepare: func(d *Document) {
+				d.ToolReqs = []ToolRequest{{ID: "call_1", Name: "calc", Parameters: "{}"}}
+				d.ToolResps = []ToolResponse{{ID: "call_1", Name: "calc", Body: "ok"}}
+			},
+			wantErr:  true,
+			wantText: "unknown tool-definition",
+		},
+		{
+			name: "mismatched tool name for id",
+			prepare: func(d *Document) {
+				d.ToolDefs = []ToolDefinition{{Name: "calc", Description: "{}"}}
+				d.ToolReqs = []ToolRequest{{ID: "call_1", Name: "calc", Parameters: "{}"}}
+				d.ToolResps = []ToolResponse{{ID: "call_1", Name: "other", Body: "ok"}}
+			},
+			wantErr:  true,
+			wantText: "uses tool",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doc := makeDoc()
+			tt.prepare(&doc)
+			err := doc.Validate()
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected validation error")
+				}
+				var pe *POMLError
+				if !errors.As(err, &pe) || pe.Type != ErrValidate {
+					t.Fatalf("expected POMLError validate, got %v", err)
+				}
+				if tt.wantText != "" && !strings.Contains(err.Error(), tt.wantText) {
+					t.Fatalf("expected error to mention %q, got %v", tt.wantText, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected validation error: %v", err)
+			}
+		})
+	}
+}
+
+func TestToolAliasParsesAndEncodes(t *testing.T) {
+	src := `<poml><tool name="calc" description="add"><![CDATA[{"type":"object"}]]></tool></poml>`
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(doc.ToolDefs) != 1 || doc.ToolDefs[0].Name != "calc" {
+		t.Fatalf("tool alias not parsed: %+v", doc.ToolDefs)
+	}
+	var buf bytes.Buffer
+	if err := doc.EncodeWithOptions(&buf, EncodeOptions{IncludeHeader: false, PreserveOrder: true, PreserveWS: true}); err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	if !strings.Contains(buf.String(), "<tool name=\"calc\"") {
+		t.Fatalf("expected tool tag preserved, got: %s", buf.String())
+	}
+}
+
+func TestOutputFormatAndDocumentAlias(t *testing.T) {
+	src := `<poml><output-format>plain text</output-format><Document src="file://x.doc"/></poml>`
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(doc.OutFormats) != 1 || !strings.Contains(doc.OutFormats[0].Body, "plain") {
+		t.Fatalf("output-format not parsed: %+v", doc.OutFormats)
+	}
+	if len(doc.Documents) != 1 || doc.Documents[0].Src != "file://x.doc" {
+		t.Fatalf("document alias not parsed: %+v", doc.Documents)
+	}
+	var buf bytes.Buffer
+	if err := doc.EncodeWithOptions(&buf, EncodeOptions{IncludeHeader: false, PreserveOrder: true, PreserveWS: true}); err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "<output-format>plain text</output-format>") {
+		t.Fatalf("output-format not preserved, got: %s", out)
+	}
+	if !strings.Contains(out, "<Document src=\"file://x.doc\"></Document>") {
+		t.Fatalf("Document alias not preserved, got: %s", out)
+	}
+}
+
+func TestHintExampleContentPartObjectRoundTrip(t *testing.T) {
+	src := `<poml>
+  <hint caption="Background"><![CDATA[<p>context</p>]]></hint>
+  <example id="ex1"><input>foo</input></example>
+  <cp caption="Doc"><object data="{{ foo }}" syntax="xml"/></cp>
+</poml>`
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(doc.Hints) != 1 || len(doc.Examples) != 1 || len(doc.ContentParts) != 1 {
+		t.Fatalf("expected hint/example/cp parsed, got %+v %+v %+v", doc.Hints, doc.Examples, doc.ContentParts)
+	}
+	if !strings.Contains(doc.ContentParts[0].Body, "<object") {
+		t.Fatalf("expected cp body to contain object tag: %s", doc.ContentParts[0].Body)
+	}
+	var buf bytes.Buffer
+	if err := doc.EncodeWithOptions(&buf, EncodeOptions{IncludeHeader: false, PreserveOrder: true, PreserveWS: true}); err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "<hint") || !strings.Contains(out, "<example") || !strings.Contains(out, "<cp") || !strings.Contains(out, "<object") {
+		t.Fatalf("expected hint/example/cp/object in output, got: %s", out)
+	}
+}
+
+func TestValidateObjectRequiresDataOrBody(t *testing.T) {
+	doc := Document{
+		Meta:  Meta{ID: "v", Version: "1", Owner: "me"},
+		Role:  Block{Body: "role"},
+		Tasks: []Block{{Body: "task"}},
+		Objects: []ObjectTag{{
+			Syntax: "xml",
+		}},
+	}
+	if err := doc.Validate(); err == nil {
+		t.Fatalf("expected validation error for missing object data/body")
+	}
+}
+
 func TestValidateMetaRoleTasks(t *testing.T) {
 	doc := Document{}
 	if err := doc.Validate(); err == nil {

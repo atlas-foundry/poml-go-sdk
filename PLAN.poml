@@ -1,0 +1,72 @@
+<poml>
+  <meta>
+    <id>plan.poml-go-sdk</id>
+    <version>0.1.0</version>
+    <owner>poml-go-sdk</owner>
+  </meta>
+  <role>Structured delivery plan for poml-go-sdk with phases, exits, and execution notes.</role>
+
+  <task>Phase 0 — Unblock & Baseline</task>
+  <cp caption="Phase 0 details">
+    <list>
+      <item>Fix go.sum (go mod tidy or fetch go-org), ensure tests pass.</item>
+      <item>Record baseline coverage via `/usr/local/go/bin/go test -cover ./...` in AI.LOCK.mdx.</item>
+    </list>
+  </cp>
+
+  <task>Phase 1 — Security & Robustness Hardening</task>
+  <cp caption="Phase 1 details">
+    <list>
+      <item>Image path containment with EvalSymlinks/Rel checks; AllowAbsImagePaths respected.</item>
+      <item>Default image size cap (MaxImageBytes default, negative disables).</item>
+      <item>Tool event validation: responses/results/errors must match tool-requests/definitions.</item>
+      <item>Exit: tests pass; README/CHANGELOG note safety limits.</item>
+    </list>
+  </cp>
+
+  <task>Phase 2 — Parity Surface Expansion</task>
+  <cp caption="Phase 2 details">
+    <list>
+      <item>Tag coverage for missing Python tags and multimedia types.</item>
+      <item>Converters parity (MessageDict/Dict/OpenAIChat/LangChain/Pydantic), runtime merge rules.</item>
+      <item>Builder/tag helpers mirroring Python prompt helpers.</item>
+      <item>Multimedia MIME sniffing and ingestion rules; tracing hooks.</item>
+      <item>Exit: APIs mirrored; converter outputs match fixtures; validation updated.</item>
+    </list>
+  </cp>
+
+  <task>Phase 3 — Fixtures, Tests, and CI</task>
+  <cp caption="Phase 3 details">
+    <list>
+      <item>Port Python fixtures/tests into poml/testdata/examples and examples_parity_test.go.</item>
+      <item>Golden tests for encoding/rendering; deterministic ordering toggles.</item>
+      <item>CI workflow: gofmt, go test -cover ./..., optional staticcheck, coverage threshold.</item>
+      <item>Exit: CI green with coverage threshold; fixtures guard regressions.</item>
+    </list>
+  </cp>
+
+  <task>Phase 4 — Documentation & Release Readiness</task>
+  <cp caption="Phase 4 details">
+    <list>
+      <item>README parity snippets (parse/encode, converters, builders, multimedia, tracing).</item>
+      <item>Image path rules and default size cap documented.</item>
+      <item>Versioning and release notes; runnable Go examples mirroring Python snippets.</item>
+      <item>Exit: docs aligned; examples runnable; release checklist complete.</item>
+    </list>
+  </cp>
+
+  <task>Phase 5 — Polishing & Stretch</task>
+  <cp caption="Phase 5 details">
+    <list>
+      <item>Renderer polish, performance benchmarks, observability hooks.</item>
+      <item>Exit: no known perf/UX blockers; optional features documented.</item>
+    </list>
+  </cp>
+
+  <runtime track="security">A</runtime>
+  <runtime track="parity">B</runtime>
+  <runtime track="fixtures">C</runtime>
+  <runtime track="polish">D</runtime>
+
+  <output-format>Canonical execution script for codex agents; preserve ordering.</output-format>
+</poml>
