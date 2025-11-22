@@ -8,12 +8,7 @@
     },
     {
       "data": {
-        "content": "Calling tool"
-      },
-      "type": "ai"
-    },
-    {
-      "data": {
+        "content": "Calling tool",
         "tool_calls": [
           {
             "args": {

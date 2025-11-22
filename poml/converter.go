@@ -455,16 +455,26 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 			})
 		case ElementToolRequest:
 			tr := doc.ToolReqs[el.Index]
-			messages = append(messages, map[string]any{
-				"type": "ai",
-				"data": map[string]any{
-					"tool_calls": []any{map[string]any{
-						"id":   tr.ID,
-						"name": tr.Name,
-						"args": parseLooseJSON(normalizeToolArgs(tr.Parameters)),
-					}},
-				},
-			})
+			call := map[string]any{
+				"id":   tr.ID,
+				"name": tr.Name,
+				"args": parseLooseJSON(normalizeToolArgs(tr.Parameters)),
+			}
+			if len(messages) > 0 && messages[len(messages)-1]["type"] == "ai" {
+				last := messages[len(messages)-1]
+				data := last["data"].(map[string]any)
+				existing, _ := data["tool_calls"].([]any)
+				data["tool_calls"] = append(existing, call)
+				last["data"] = data
+				messages[len(messages)-1] = last
+			} else {
+				messages = append(messages, map[string]any{
+					"type": "ai",
+					"data": map[string]any{
+						"tool_calls": []any{call},
+					},
+				})
+			}
 		case ElementToolResponse:
 			resp := doc.ToolResps[el.Index]
 			messages = append(messages, map[string]any{
