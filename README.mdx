@@ -1,3 +1,182 @@
+<p align="center">
+  <a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml">
+    <img src="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
+  </a>
+  <a href="https://codecov.io/gh/atlas-foundry/poml-go-sdk">
+    <img src="https://codecov.io/gh/atlas-foundry/poml-go-sdk/branch/main/graph/badge.svg" alt="Coverage" />
+  </a>
+  <a href="https://github.com/atlas-foundry/poml-go-sdk/releases">
+    <img src="https://img.shields.io/github/v/release/atlas-foundry/poml-go-sdk?logo=github&color=4c1" alt="Release" />
+  </a>
+  <a href="https://pkg.go.dev/github.com/atlas-foundry/poml-go-sdk">
+    <img src="https://pkg.go.dev/badge/github.com/atlas-foundry/poml-go-sdk.svg" alt="Go Reference" />
+  </a>
+  <a href="https://goreportcard.com/report/github.com/atlas-foundry/poml-go-sdk">
+    <img src="https://goreportcard.com/badge/github.com/atlas-foundry/poml-go-sdk" alt="Go Report Card" />
+  </a>
+  <a href="https://microsoft.github.io/poml">
+    <img src="https://img.shields.io/badge/POML-Supported-8a2be2.svg?logo=microsoft" alt="POML Supported" />
+  </a>
+  <a href="https://www.conventionalcommits.org/">
+    <img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-ff69b4.svg" alt="Conventional Commits" />
+  </a>
+</p>
+
+# ✨ poml-go-sdk
+
+A delightful Go SDK for **POML — Prompt Orchestration Markup Language**.
+We speak POML natively, faithfully, and with a little spark of fun ✨
+
+> **Note:** This repo uses POML for all docs.
+> The only non-POML doc allowed is this `README.mdx`.
+
+* Full structured README: `README.poml`
+* Delivery plan: `PLAN.poml`
+* AI log: `AI.LOCK.poml`
+* Fit-for-purpose plan: `docs/fit_for_purpose.poml`
+* Agent rules: `AGENTS.poml`
+* Multimedia examples: `poml/testdata/examples/*`
+
+---
+
+## 💖 What is POML?
+
+POML is a structured, spec-driven language for orchestrating AI prompts.
+Imagine Markdown grew up, went to design school, and now runs a creative studio.
+
+It’s:
+
+* declarative
+* expressive
+* type-safe
+* multi-modal
+* and *way* nicer to maintain than a giant prompt blob
+
+This SDK brings POML’s power to Go.
+
+---
+
+## 🚀 Quick Start
+
+```bash
+go test ./...
+```
+
+or use the parser:
+
+```go
+doc, err := poml.ParseFile("story.poml")
+if err != nil {
+    panic(err)
+}
+
+if err := poml.Validate(doc); err != nil {
+    panic(err)
+}
+
+output, _ := poml.Render(doc)
+fmt.Println(output)
+```
+
+---
+
+## 🎁 Features
+
+* Fully spec-aligned parser
+* Semantic validator
+* Renderer + transformations
+* Round-trip fidelity for extended tags (`<hint>`, `<example>`, `<cp>`, `<object>`, `<tool>`)
+* Safety features (symlink-aware BaseDir checks, 10MB cap defaults, override options)
+* Strong test suite with example parity checks
+* Elegant, friendly API
+
+---
+
+## 💜 Contributors Welcome!
+
+This project lives because amazing humans contribute to it.
+And we want *you* here too — whether you’re:
+
+* new to Go
+* new to POML
+* new to open source
+* or just vibing by and curious
+
+Seriously, come help!
+Open a PR, file an issue, add test cases, tweak docs — we’re chill, fast to respond, and very “let’s build cool stuff together.”
+Think early-20s-dev-energy: coffee, music, excitement, and lots of emojis 💫
+
+---
+
+## 🎨 Conventional Commits Cheat Sheet
+
+```
+feat: add something new ✨
+fix: squish a bug 🐛
+docs: improve docs 📘
+chore: misc tasks 🧹
+test: add/modify tests 🧪
+ci: workflow updates ⚙️
+refactor: structural changes 🧠
+```
+
+Breaking changes:
+
+```
+feat!: something major changed
+```
+
+---
+
+## 🧱 Project Structure
+
+```
+poml/
+  parser.go
+  renderer.go
+  tools/
+  testdata/
+docs/
+.github/
+```
+
+Everything important is discoverable and documented inside POML files.
+
+---
+
+## 🛡️ Media & Safety Rules
+
+Converters enforce:
+
+* BaseDir containment
+* Optional absolute path allowance
+* 10MB default caps for image/audio/video (override via ConvertOptions)
+* Proper emission across formats
+
+---
+
+## 📚 Want to Explore the Spec?
+
+POML official site:
+👉 [https://microsoft.github.io/poml](https://microsoft.github.io/poml)
+
+---
+
+## 📜 License
+
+MIT — do cool things, responsibly.
+
+---
+
+## 🌟 Final Thought
+
+If you’re thinking “Should I open a PR?” the answer is YES.
+Let’s build something wonderful together ✨💖
+
+
+
+
+
 # poml-go-sdk
 
 This repo uses POML for all docs. The only non-POML doc allowed is this `README.mdx` so GitHub renders a landing page.
