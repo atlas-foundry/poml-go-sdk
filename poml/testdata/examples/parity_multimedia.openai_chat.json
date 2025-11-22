@@ -1,0 +1,38 @@
+{
+  "messages": [
+    {
+      "content": "Test multimedia ingestion",
+      "role": "system"
+    },
+    {
+      "content": "Handle audio and video assets consistently across converters.",
+      "role": "user"
+    },
+    {
+      "content": [
+        {
+          "audio": {
+            "alt": "clip",
+            "base64": "QQ==",
+            "type": "audio/mpeg"
+          },
+          "type": "input_audio"
+        }
+      ],
+      "role": "user"
+    },
+    {
+      "content": [
+        {
+          "type": "input_video",
+          "video": {
+            "alt": "vid",
+            "base64": "QQ==",
+            "type": "video/mp4"
+          }
+        }
+      ],
+      "role": "user"
+    }
+  ]
+}

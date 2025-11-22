@@ -30,6 +30,8 @@ const (
 	ElementToolError      ElementType = "tool_error"
 	ElementOutputSchema   ElementType = "output_schema"
 	ElementOutputFormat   ElementType = "output_format"
+	ElementAudio          ElementType = "audio"
+	ElementVideo          ElementType = "video"
 	ElementHint           ElementType = "hint"
 	ElementExample        ElementType = "example"
 	ElementContentPart    ElementType = "content_part"
@@ -68,6 +70,8 @@ type Document struct {
 	Examples     []Example
 	ContentParts []ContentPart
 	Objects      []ObjectTag
+	Audios       []Media
+	Videos       []Media
 	Messages     []Message
 	ToolDefs     []ToolDefinition
 	ToolReqs     []ToolRequest
@@ -218,6 +222,15 @@ type Runtime struct {
 // Output holds a single output format entry.
 type Output struct {
 	Format string     `xml:"format,attr"`
+	Body   string     `xml:",innerxml"`
+	Attrs  []xml.Attr `xml:",any,attr"`
+}
+
+// Media represents audio/video payloads.
+type Media struct {
+	Src    string     `xml:"src,attr"`
+	Alt    string     `xml:"alt,attr"`
+	Syntax string     `xml:"syntax,attr"`
 	Body   string     `xml:",innerxml"`
 	Attrs  []xml.Attr `xml:",any,attr"`
 }
@@ -875,6 +888,8 @@ type ElementPayload struct {
 	Input        *Input
 	DocRef       *DocRef
 	Style        *Style
+	Audio        *Media
+	Video        *Media
 	OutputFormat *OutputFormat
 	Hint         *Hint
 	Example      *Example
@@ -1363,6 +1378,28 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 					el.Leading = leading
 				}
 				doc.Elements = append(doc.Elements, el)
+			case "audio":
+				var au Media
+				if err := dec.DecodeElement(&au, &t); err != nil {
+					return doc, wrapXMLError(err, "<audio>")
+				}
+				doc.Audios = append(doc.Audios, au)
+				el := doc.newElement(ElementAudio, len(doc.Audios)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "video":
+				var vd Media
+				if err := dec.DecodeElement(&vd, &t); err != nil {
+					return doc, wrapXMLError(err, "<video>")
+				}
+				doc.Videos = append(doc.Videos, vd)
+				el := doc.newElement(ElementVideo, len(doc.Videos)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
 			case "object", "Object":
 				var obj ObjectTag
 				if err := dec.DecodeElement(&obj, &t); err != nil {
@@ -1551,6 +1588,16 @@ func encodeElement(enc *xml.Encoder, out io.Writer, doc Document, el Element, op
 			return fmt.Errorf("encode tool error: index %d out of range", el.Index)
 		}
 		err = enc.EncodeElement(doc.ToolErrors[el.Index], xml.StartElement{Name: xml.Name{Local: "tool-error"}})
+	case ElementAudio:
+		if el.Index < 0 || el.Index >= len(doc.Audios) {
+			return fmt.Errorf("encode audio: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Audios[el.Index], xml.StartElement{Name: xml.Name{Local: "audio"}})
+	case ElementVideo:
+		if el.Index < 0 || el.Index >= len(doc.Videos) {
+			return fmt.Errorf("encode video: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Videos[el.Index], xml.StartElement{Name: xml.Name{Local: "video"}})
 	case ElementOutputSchema:
 		err = enc.EncodeElement(doc.Schema, xml.StartElement{Name: xml.Name{Local: "output-schema"}})
 	case ElementOutputFormat:
@@ -1683,6 +1730,12 @@ func (d *Document) defaultElements() []Element {
 	for i := range d.Runtimes {
 		out = append(out, d.newElement(ElementRuntime, i, ""))
 	}
+	for i := range d.Audios {
+		out = append(out, d.newElement(ElementAudio, i, ""))
+	}
+	for i := range d.Videos {
+		out = append(out, d.newElement(ElementVideo, i, ""))
+	}
 	for i := range d.Objects {
 		out = append(out, d.newElement(ElementObject, i, ""))
 	}
@@ -1721,6 +1774,14 @@ func (d Document) payloadFor(el Element) ElementPayload {
 	case ElementStyle:
 		if el.Index >= 0 && el.Index < len(d.Styles) {
 			return ElementPayload{Style: &d.Styles[el.Index]}
+		}
+	case ElementAudio:
+		if el.Index >= 0 && el.Index < len(d.Audios) {
+			return ElementPayload{Audio: &d.Audios[el.Index]}
+		}
+	case ElementVideo:
+		if el.Index >= 0 && el.Index < len(d.Videos) {
+			return ElementPayload{Video: &d.Videos[el.Index]}
 		}
 	case ElementHint:
 		if el.Index >= 0 && el.Index < len(d.Hints) {
@@ -1836,7 +1897,7 @@ func renderToken(tok xml.Token) string {
 // reindex updates element indices to match current slice state after mutations.
 func (d *Document) reindex() {
 	taskIdx, inputIdx, docIdx, styleIdx, hintIdx, exIdx, cpIdx, outFmtIdx := 0, 0, 0, 0, 0, 0, 0, 0
-	msgIdx, toolDefIdx, toolReqIdx, toolRespIdx, toolResultIdx, toolErrorIdx, runtimeIdx, objIdx, imageIdx, diagramIdx := 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	msgIdx, toolDefIdx, toolReqIdx, toolRespIdx, toolResultIdx, toolErrorIdx, runtimeIdx, audioIdx, videoIdx, objIdx, imageIdx, diagramIdx := 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	for i := range d.Elements {
 		switch d.Elements[i].Type {
 		case ElementTask:
@@ -1884,6 +1945,12 @@ func (d *Document) reindex() {
 		case ElementRuntime:
 			d.Elements[i].Index = runtimeIdx
 			runtimeIdx++
+		case ElementAudio:
+			d.Elements[i].Index = audioIdx
+			audioIdx++
+		case ElementVideo:
+			d.Elements[i].Index = videoIdx
+			videoIdx++
 		case ElementObject:
 			d.Elements[i].Index = objIdx
 			objIdx++

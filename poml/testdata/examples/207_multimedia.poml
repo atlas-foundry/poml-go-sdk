@@ -1,0 +1,13 @@
+<poml>
+  <meta>
+    <id>examples.multimedia</id>
+    <version>1.0.0</version>
+    <owner>poml-go-sdk</owner>
+  </meta>
+  <role>System guidance for multimedia</role>
+  <task>Handle audio and video assets consistently across converters.</task>
+  <system-msg>Test multimedia ingestion</system-msg>
+  <human-msg>Handle audio and video assets consistently across converters.</human-msg>
+  <audio src="data:audio/mpeg;base64,QQ==" alt="clip" syntax="audio/mpeg" />
+  <video src="data:video/mp4;base64,QQ==" alt="vid" syntax="video/mp4" />
+</poml>

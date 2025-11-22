@@ -1,0 +1,42 @@
+{
+  "messages": [
+    {
+      "data": {
+        "content": "Test multimedia ingestion"
+      },
+      "type": "system"
+    },
+    {
+      "data": {
+        "content": "Handle audio and video assets consistently across converters."
+      },
+      "type": "human"
+    },
+    {
+      "data": {
+        "content": [
+          {
+            "data": "QQ==",
+            "mime_type": "audio/mpeg",
+            "source_type": "base64",
+            "type": "audio"
+          }
+        ]
+      },
+      "type": "human"
+    },
+    {
+      "data": {
+        "content": [
+          {
+            "data": "QQ==",
+            "mime_type": "video/mp4",
+            "source_type": "base64",
+            "type": "video"
+          }
+        ]
+      },
+      "type": "human"
+    }
+  ]
+}

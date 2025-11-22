@@ -58,6 +58,32 @@ func TestParseUpstreamExamplesWithExtendedTags(t *testing.T) {
 	}
 }
 
+func TestConverterParityMultimedia(t *testing.T) {
+	fixture := filepath.Join("testdata", "examples", "207_multimedia.poml")
+	doc, err := ParseFile(fixture)
+	if err != nil {
+		t.Fatalf("parse fixture: %v", err)
+	}
+	cases := []struct {
+		name     string
+		format   Format
+		expected string
+	}{
+		{"message_dict", FormatMessageDict, filepath.Join("testdata", "examples", "parity_multimedia.message_dict.json")},
+		{"openai_chat", FormatOpenAIChat, filepath.Join("testdata", "examples", "parity_multimedia.openai_chat.json")},
+		{"langchain", FormatLangChain, filepath.Join("testdata", "examples", "parity_multimedia.langchain.json")},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := Convert(doc, tc.format, ConvertOptions{})
+			if err != nil {
+				t.Fatalf("convert %s: %v", tc.name, err)
+			}
+			assertJSONEqual(t, out, tc.expected)
+		})
+	}
+}
+
 func assertJSONEqual(t *testing.T, actual any, expectedPath string) {
 	t.Helper()
 	expected := loadJSON(t, expectedPath)

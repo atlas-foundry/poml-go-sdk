@@ -355,19 +355,21 @@ func TestConvertHintAndObjectContent(t *testing.T) {
 	src := `<poml>
   <hint caption="background">See this</hint>
   <cp caption="Doc"><object data="{{ foo }}" syntax="xml"/></cp>
+  <audio src="data:audio/mpeg;base64,QQ==" alt="clip"/>
+  <video src="data:video/mp4;base64,QQ==" alt="vid"/>
 </poml>`
 	doc, err := ParseString(src)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	// message_dict should include hint/cp
+	// message_dict should include hint/cp/audio/video
 	msgAny, err := Convert(doc, FormatMessageDict, ConvertOptions{})
 	if err != nil {
 		t.Fatalf("convert message dict: %v", err)
 	}
 	msgs := msgAny.([]messageDict)
-	if len(msgs) != 2 {
-		t.Fatalf("expected 2 messages for hint/cp, got %d", len(msgs))
+	if len(msgs) != 4 {
+		t.Fatalf("expected 4 messages for hint/cp/audio/video, got %d", len(msgs))
 	}
 	// openai should emit user content for object data
 	openAny, err := Convert(doc, FormatOpenAIChat, ConvertOptions{})
@@ -375,7 +377,7 @@ func TestConvertHintAndObjectContent(t *testing.T) {
 		t.Fatalf("convert openai: %v", err)
 	}
 	open := openAny.(map[string]any)
-	if len(open["messages"].([]map[string]any)) != 2 {
+	if len(open["messages"].([]map[string]any)) != 4 {
 		t.Fatalf("expected 2 messages in openai output")
 	}
 }

@@ -605,13 +605,15 @@ func TestHintExampleContentPartObjectRoundTrip(t *testing.T) {
   <hint caption="Background"><![CDATA[<p>context</p>]]></hint>
   <example id="ex1"><input>foo</input></example>
   <cp caption="Doc"><object data="{{ foo }}" syntax="xml"/></cp>
+  <audio src="data:audio/mpeg;base64,QQ==" alt="clip"/>
+  <video src="data:video/mp4;base64,QQ==" alt="vid"/>
 </poml>`
 	doc, err := ParseString(src)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	if len(doc.Hints) != 1 || len(doc.Examples) != 1 || len(doc.ContentParts) != 1 {
-		t.Fatalf("expected hint/example/cp parsed, got %+v %+v %+v", doc.Hints, doc.Examples, doc.ContentParts)
+	if len(doc.Hints) != 1 || len(doc.Examples) != 1 || len(doc.ContentParts) != 1 || len(doc.Audios) != 1 || len(doc.Videos) != 1 {
+		t.Fatalf("expected hint/example/cp/audio/video parsed, got %+v %+v %+v %d %d", doc.Hints, doc.Examples, doc.ContentParts, len(doc.Audios), len(doc.Videos))
 	}
 	if !strings.Contains(doc.ContentParts[0].Body, "<object") {
 		t.Fatalf("expected cp body to contain object tag: %s", doc.ContentParts[0].Body)

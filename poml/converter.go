@@ -35,9 +35,12 @@ type ConvertOptions struct {
 	AllowAbsImagePaths bool
 	// MaxImageBytes caps bytes read before Base64 encoding; zero applies a default cap, negative disables the cap.
 	MaxImageBytes int64
+	// MaxMediaBytes caps bytes read for audio/video; zero applies a default cap, negative disables the cap.
+	MaxMediaBytes int64
 }
 
 const defaultMaxImageBytes int64 = 10 << 20 // 10MB safeguard
+const defaultMaxMediaBytes int64 = 10 << 20 // 10MB safeguard for audio/video
 
 // ErrNotImplemented signals that a conversion target is not yet supported.
 var ErrNotImplemented = errors.New("conversion not implemented")
@@ -108,6 +111,20 @@ func convertMessageDict(doc Document, opts ConvertOptions) ([]messageDict, error
 		case ElementImage:
 			im := doc.Images[el.Index]
 			part, err := buildImagePart(im, opts)
+			if err != nil {
+				return nil, err
+			}
+			msgs = append(msgs, messageDict{Speaker: "human", Content: part})
+		case ElementAudio:
+			au := doc.Audios[el.Index]
+			part, err := buildMediaPart(au, opts)
+			if err != nil {
+				return nil, err
+			}
+			msgs = append(msgs, messageDict{Speaker: "human", Content: part})
+		case ElementVideo:
+			vd := doc.Videos[el.Index]
+			part, err := buildMediaPart(vd, opts)
 			if err != nil {
 				return nil, err
 			}
@@ -226,6 +243,30 @@ func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error
 				"tool_call_id": resp.ID,
 				"name":         resp.Name,
 				"type":         "error",
+			})
+		case ElementAudio:
+			au := doc.Audios[el.Index]
+			part, err := buildMediaPart(au, opts)
+			if err != nil {
+				return nil, err
+			}
+			messages = append(messages, map[string]any{
+				"role": "user",
+				"content": []any{
+					map[string]any{"type": "input_audio", "audio": part},
+				},
+			})
+		case ElementVideo:
+			vd := doc.Videos[el.Index]
+			part, err := buildMediaPart(vd, opts)
+			if err != nil {
+				return nil, err
+			}
+			messages = append(messages, map[string]any{
+				"role": "user",
+				"content": []any{
+					map[string]any{"type": "input_video", "video": part},
+				},
 			})
 		case ElementImage:
 			im := doc.Images[el.Index]
@@ -367,6 +408,34 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 					"data": map[string]any{"content": body},
 				})
 			}
+		case ElementAudio:
+			au := doc.Audios[el.Index]
+			part, err := buildMediaPart(au, opts)
+			if err != nil {
+				return nil, err
+			}
+			messages = append(messages, map[string]any{
+				"type": "human",
+				"data": map[string]any{
+					"content": []any{
+						map[string]any{"type": "audio", "source_type": "base64", "mime_type": part["type"], "data": part["base64"]},
+					},
+				},
+			})
+		case ElementVideo:
+			vd := doc.Videos[el.Index]
+			part, err := buildMediaPart(vd, opts)
+			if err != nil {
+				return nil, err
+			}
+			messages = append(messages, map[string]any{
+				"type": "human",
+				"data": map[string]any{
+					"content": []any{
+						map[string]any{"type": "video", "source_type": "base64", "mime_type": part["type"], "data": part["base64"]},
+					},
+				},
+			})
 		case ElementObject:
 			obj := doc.Objects[el.Index]
 			content := strings.TrimSpace(obj.Body)
@@ -515,6 +584,47 @@ func buildImagePart(im Image, opts ConvertOptions) (map[string]any, error) {
 	}, nil
 }
 
+func buildMediaPart(m Media, opts ConvertOptions) (map[string]any, error) {
+	limit := opts.MaxMediaBytes
+	if limit == 0 {
+		limit = defaultMaxMediaBytes
+	}
+	var data string
+	switch {
+	case strings.HasPrefix(m.Src, "data:"):
+		parts := strings.SplitN(m.Src, ",", 2)
+		if len(parts) == 2 {
+			payload := parts[1]
+			data = payload
+		}
+	case m.Src != "":
+		src, err := resolveMediaPath(m.Src, opts)
+		if err != nil {
+			return nil, err
+		}
+		bytes, err := readFileWithLimit(src, limit)
+		if err != nil {
+			return nil, fmt.Errorf("read media %s: %w", src, err)
+		}
+		data = base64.StdEncoding.EncodeToString(bytes)
+	case m.Body != "":
+		body := []byte(m.Body)
+		if err := enforceByteLimit(int64(len(body)), limit, "inline media body"); err != nil {
+			return nil, err
+		}
+		data = base64.StdEncoding.EncodeToString(body)
+	}
+	mime := m.Syntax
+	if mime == "" {
+		mime = guessMediaMime(m.Src)
+	}
+	return map[string]any{
+		"type":   mime,
+		"alt":    m.Alt,
+		"base64": data,
+	}, nil
+}
+
 func resolveImagePath(raw string, opts ConvertOptions) (string, error) {
 	cleaned := filepath.Clean(raw)
 	base := strings.TrimSpace(opts.BaseDir)
@@ -557,6 +667,10 @@ func resolveImagePath(raw string, opts ConvertOptions) (string, error) {
 		return "", fmt.Errorf("image path %s escapes BaseDir %s", raw, opts.BaseDir)
 	}
 	return candidate, nil
+}
+
+func resolveMediaPath(raw string, opts ConvertOptions) (string, error) {
+	return resolveImagePath(raw, opts)
 }
 
 func readFileWithLimit(path string, limit int64) ([]byte, error) {
@@ -633,6 +747,25 @@ func guessMime(path string) string {
 		return "image/gif"
 	}
 	return ""
+}
+
+func guessMediaMime(path string) string {
+	ext := strings.ToLower(filepath.Ext(path))
+	switch ext {
+	case ".mp3":
+		return "audio/mpeg"
+	case ".wav":
+		return "audio/wav"
+	case ".ogg":
+		return "audio/ogg"
+	case ".mp4":
+		return "video/mp4"
+	case ".mov":
+		return "video/quicktime"
+	case ".webm":
+		return "video/webm"
+	}
+	return "application/octet-stream"
 }
 
 func parseJSONFallback(body string) any {

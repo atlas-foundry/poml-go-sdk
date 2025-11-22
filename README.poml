@@ -48,7 +48,8 @@
       <item>Mutate: doc.Mutate(...) with ReplaceBody/Remove/Insert helpers.</item>
       <item>Encode: doc.Encode or EncodeWithOptions (indent/header/order/whitespace/compact).</item>
       <item>Validate: doc.Validate or Parse*Strict to enforce required sections.</item>
-      <item>Convert: Convert(doc, FormatOpenAIChat, ConvertOptions{BaseDir: "/assets", MaxImageBytes: 1<<20}) with path containment, default 10MB cap, AllowAbsImagePaths toggle; emits hint/example/cp/object content as user context.</item>
+      <item>Convert: Convert(doc, FormatOpenAIChat, ConvertOptions{BaseDir: "/assets", MaxImageBytes: 1<<20, MaxMediaBytes: 1<<20}) with path containment (symlink-aware), default 10MB caps for image/audio/video (override/disable via MaxImageBytes/MaxMediaBytes), AllowAbsImagePaths toggle; emits hint/example/cp/object and audio/video content as user context.</item>
+      <item>Fixtures: multimedia parity at poml/testdata/examples/207_multimedia.poml with golden outputs in parity_multimedia.*.json.</item>
     </list>
   </hint>
 

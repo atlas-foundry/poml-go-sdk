@@ -7,6 +7,7 @@ This repo uses POML for all docs. The only non-POML doc allowed is this `README.
 - AI log: `AI.LOCK.poml`
 - Fit-for-purpose plan: `docs/fit_for_purpose.poml`
 - Agent rules: `AGENTS.poml`
+- Multimedia parity fixtures: `poml/testdata/examples/207_multimedia.poml` and goldens
 
 ## Rules for contributors and agents
 
@@ -14,6 +15,7 @@ This repo uses POML for all docs. The only non-POML doc allowed is this `README.
 - Author docs in POML (`*.poml`) using extended tags (hint/example/cp/object/list/etc.).
 - Keep new instructions in `AGENTS.poml` to stay discoverable for small-context agents.
 - When adding docs, link them from this README.mdx if they are high-signal.
+- Media rules: converters enforce BaseDir containment, default 10MB caps for image/audio/video (override via MaxImageBytes/MaxMediaBytes), and emit multimedia across formats.
 
 ## Quick start
 
