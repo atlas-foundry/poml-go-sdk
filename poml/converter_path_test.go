@@ -40,6 +40,16 @@ func TestResolveMediaPathAllowsAbsoluteWhenEnabled(t *testing.T) {
 	}
 }
 
+func TestResolveMediaPathRejectsAbsoluteWhenDisabled(t *testing.T) {
+	target := filepath.Join(t.TempDir(), "media.bin")
+	if err := os.WriteFile(target, []byte("ok"), 0o600); err != nil {
+		t.Fatalf("write media: %v", err)
+	}
+	if _, err := resolveMediaPath(target, ConvertOptions{AllowAbsImagePaths: false}); err == nil {
+		t.Fatalf("expected absolute path rejection")
+	}
+}
+
 func TestResolveImagePathRejectsSymlinkEscape(t *testing.T) {
 	base := t.TempDir()
 	outside := t.TempDir()
