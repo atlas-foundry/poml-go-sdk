@@ -1,0 +1,9 @@
+<poml>
+  <meta><id>semantic.ext.nested</id><version>1</version><owner>oss</owner></meta>
+  <role>r</role>
+  <task>t</task>
+  <unknown-tag foo="bar">
+    <nested-unknown>payload</nested-unknown>
+    <!-- comment should be preserved -->
+  </unknown-tag>
+</poml>

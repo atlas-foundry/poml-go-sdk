@@ -150,6 +150,46 @@ func TestSemanticFixtureExtendedUnknowns(t *testing.T) {
 	}
 }
 
+func TestSemanticExtendedNestedUnknowns(t *testing.T) {
+	p := filepath.Join("testdata", "semantic", "mixed_extended_nested.poml")
+	doc, err := ParseReaderWithOptions(strings.NewReader(readFile(t, p)), ParseOptions{
+		PreserveWhitespace: true,
+		Validate:           false,
+		Extended:           ExtendedStrict,
+	})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	// Extended off should drop unknowns in conversion.
+	if out, err := Convert(doc, FormatMessageDict, ConvertOptions{Extended: ExtendedOff}); err != nil {
+		t.Fatalf("convert extended off: %v", err)
+	} else if msgs, ok := out.([]messageDict); ok {
+		for _, m := range msgs {
+			if payload, ok := m.Content.(map[string]any); ok && payload["type"] == "unknown" {
+				t.Fatalf("expected unknown to be omitted when ExtendedOff")
+			}
+		}
+	}
+	// Extended lenient should surface unknown payloads.
+	out, err := Convert(doc, FormatMessageDict, ConvertOptions{Extended: ExtendedLenient})
+	if err != nil {
+		t.Fatalf("convert extended lenient: %v", err)
+	}
+	msgs, ok := out.([]messageDict)
+	if !ok {
+		t.Fatalf("unexpected type %T", out)
+	}
+	found := false
+	for _, m := range msgs {
+		if payload, ok := m.Content.(map[string]any); ok && payload["type"] == "unknown" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected unknown element to be surfaced in extended lenient")
+	}
+}
+
 // Table-driven semantic coverage across path/limit/schema/runtime axes.
 func TestSemanticMatrixFixtures(t *testing.T) {
 	cases := []struct {
