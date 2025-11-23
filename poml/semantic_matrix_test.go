@@ -55,6 +55,12 @@ func TestSemanticConvertWithBaseDirAndCaps(t *testing.T) {
 	if _, err := Convert(doc, FormatMessageDict, optsTight); err == nil {
 		t.Fatalf("expected convert to fail under tight limits")
 	}
+
+	// Negative limits disable caps and should permit oversized assets.
+	optsUnlimited := ConvertOptions{BaseDir: base, MaxImageBytes: -1, MaxMediaBytes: -1}
+	if _, err := Convert(doc, FormatMessageDict, optsUnlimited); err != nil {
+		t.Fatalf("convert with unlimited caps: %v", err)
+	}
 }
 
 func TestSemanticBaseDirEscapeRejected(t *testing.T) {
@@ -88,4 +94,21 @@ func bytesOf(ch byte, n int) []byte {
 		b[i] = ch
 	}
 	return b
+}
+
+// Fixture-based semantic test to ensure BaseDir + caps work on disk assets.
+func TestSemanticFixtureAssets(t *testing.T) {
+	doc, err := ParseFile(filepath.Join("testdata", "semantic", "base_dir_ok.poml"))
+	if err != nil {
+		t.Fatalf("parse fixture: %v", err)
+	}
+	base := filepath.Join("testdata", "semantic")
+	opts := ConvertOptions{BaseDir: base, MaxImageBytes: 64, MaxMediaBytes: 64}
+	if _, err := Convert(doc, FormatMessageDict, opts); err != nil {
+		t.Fatalf("convert fixture: %v", err)
+	}
+	optsTight := ConvertOptions{BaseDir: base, MaxImageBytes: 8, MaxMediaBytes: 8}
+	if _, err := Convert(doc, FormatMessageDict, optsTight); err == nil {
+		t.Fatalf("expected tight caps to fail for fixture")
+	}
 }

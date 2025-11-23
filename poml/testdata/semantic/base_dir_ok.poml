@@ -1,0 +1,8 @@
+<poml>
+  <meta><id>semantic.asset</id><version>1</version><owner>oss</owner></meta>
+  <role>r</role>
+  <task>t</task>
+  <image src="assets/payload.bin" alt="bin"/>
+  <audio src="assets/payload.bin" syntax="audio/wav"/>
+  <video src="assets/payload.bin" syntax="video/mp4"/>
+</poml>
