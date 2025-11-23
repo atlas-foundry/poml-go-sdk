@@ -206,6 +206,33 @@ jobs:
           docker run --rm --platform=linux/${{ matrix.arch }} poml-e2e:${TAG}-${{ matrix.arch }}
 
   # =====================================================
+  # 2b. MACOS TESTS (Apple Silicon)
+  # =====================================================
+  macos:
+    name: macOS Build & Test (Apple Silicon)
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+
+      - name: Verify formatting
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "❌ gofmt check failed:"
+            gofmt -l .
+            exit 1
+          fi
+
+      - name: Run tests
+        run: go test ./...
+
+  # =====================================================
   # 3. DOCS BUILD
   # =====================================================
   docs:
