@@ -40,6 +40,8 @@ jobs:
           go mod tidy
           git diff --exit-code || (echo "❌ go mod tidy produced changes"; exit 1)
 
+          
+
       - name: Verify formatting
         run: |
           if [ -n "$(gofmt -l .)" ]; then
@@ -51,7 +53,7 @@ jobs:
       - name: Lint (golangci-lint)
         uses: golangci/golangci-lint-action@v6
         with:
-          version: latest
+          version: v1.65.0
           args: --timeout=5m
 
       - name: Vulnerability scan (govulncheck)
