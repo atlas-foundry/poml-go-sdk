@@ -207,6 +207,9 @@ Endpoints:
 * `/health` — readiness ping
 * `/inspect` — doc summary (meta + element counts)
 * `/ast` — serialized `poml.Document` (ordered elements preserved)
+* `/validate` — structured validation result (line/column details)
+* `/convert?format=dict|openai_chat|langchain|message_dict|pydantic` — on-demand conversion
+* `/search?tag=&attr=&text=` — filter elements by tag, attribute, or body text
 
 Roadmap highlights (see `meta.plan.poml`):
 * Search endpoints (tag/attr/text), validation error details, conversions on demand.
