@@ -163,6 +163,13 @@ func DiagramToSceneWithOptions(d Diagram, opts SceneExportOptions) (Scene, error
 	scene := Scene{
 		ID:     d.ID,
 		Camera: SceneCamera{Azimuth: d.Camera.Azimuth, Elevation: d.Camera.Elevation, Distance: d.Camera.Distance},
+		Meta:   make(map[string]any),
+	}
+	if m := attrsMap(d.Attrs); len(m) > 0 {
+		scene.Meta["diagram_attrs"] = m
+	}
+	if m := attrsMap(d.Camera.Attrs); len(m) > 0 {
+		scene.Meta["camera_attrs"] = m
 	}
 	nodes := append([]DiagramNode(nil), d.Graph.Nodes...)
 	edges := append([]DiagramEdge(nil), d.Graph.Edges...)
@@ -233,6 +240,9 @@ func DiagramToSceneWithOptions(d Diagram, opts SceneExportOptions) (Scene, error
 			Kind:  l.Kind,
 			Attrs: attrsMap(l.Attrs),
 		})
+	}
+	if len(scene.Meta) == 0 {
+		scene.Meta = nil
 	}
 	return scene, nil
 }

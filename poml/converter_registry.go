@@ -141,9 +141,22 @@ func registerDefaultConverters(reg *ConverterRegistry) {
 			default:
 				return nil, fmt.Errorf("diagram->poml converter expects Diagram or []Diagram, got %T", input)
 			}
-			doc := Document{Diagrams: diagrams}
+			baseDoc := Document{}
+			if v, ok := opts["base_document"]; ok {
+				switch b := v.(type) {
+				case Document:
+					baseDoc = b
+				case *Document:
+					if b != nil {
+						baseDoc = *b
+					}
+				default:
+					return nil, fmt.Errorf("base_document must be Document or *Document, got %T", v)
+				}
+			}
+			baseDoc.Diagrams = diagrams
 			var sb strings.Builder
-			if err := doc.EncodeWithOptions(&sb, EncodeOptions{Indent: indent, IncludeHeader: true, PreserveOrder: true}); err != nil {
+			if err := baseDoc.EncodeWithOptions(&sb, EncodeOptions{Indent: indent, IncludeHeader: true, PreserveOrder: true}); err != nil {
 				return nil, err
 			}
 			return sb.String(), nil
@@ -258,6 +271,12 @@ func sceneToDiagram(scene Scene) Diagram {
 			Elevation: scene.Camera.Elevation,
 			Distance:  scene.Camera.Distance,
 		},
+	}
+	if m := attrsFromMeta(scene.Meta, "diagram_attrs"); len(m) > 0 {
+		diagram.Attrs = m
+	}
+	if m := attrsFromMeta(scene.Meta, "camera_attrs"); len(m) > 0 {
+		diagram.Camera.Attrs = m
 	}
 	for _, n := range scene.Nodes {
 		node := DiagramNode{
@@ -376,4 +395,28 @@ func decodeSceneJSON(body []byte) (any, error) {
 		return nil, err
 	}
 	return scenes, nil
+}
+
+func attrsFromMeta(meta map[string]any, key string) []xml.Attr {
+	if len(meta) == 0 {
+		return nil
+	}
+	raw, ok := meta[key]
+	if !ok || raw == nil {
+		return nil
+	}
+	m := make(map[string]string)
+	switch v := raw.(type) {
+	case map[string]string:
+		for k, val := range v {
+			m[k] = val
+		}
+	case map[string]any:
+		for k, val := range v {
+			if s, ok := val.(string); ok {
+				m[k] = s
+			}
+		}
+	}
+	return attrsFromMap(m)
 }

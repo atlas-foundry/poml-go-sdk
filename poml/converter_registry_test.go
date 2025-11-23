@@ -105,3 +105,62 @@ func TestRegisterDuplicateConverter(t *testing.T) {
 		t.Fatalf("expected duplicate error, got %v", err)
 	}
 }
+
+func TestDiagramRoundTripWithBaseDocument(t *testing.T) {
+	reg := NewConverterRegistry()
+	registerDefaultConverters(reg)
+
+	const pomlDoc = `<poml>
+  <meta><id>diagram.doc</id><version>1.0</version><owner>qa</owner></meta>
+  <role>diagram role</role>
+  <task>diagram task</task>
+  <diagram id="diag-attrs" custom="root-attr">
+    <graph>
+      <node id="n1" x="1" y="2" z="3" custom="yes"/>
+    </graph>
+    <camera azimuth="10" elevation="20" distance="30" tilt="5"/>
+  </diagram>
+</poml>`
+
+	ctx := context.Background()
+	diagramsAny, err := reg.Convert(ctx, "poml", "diagram", pomlDoc, nil)
+	if err != nil {
+		t.Fatalf("poml->diagram: %v", err)
+	}
+	diagrams := diagramsAny.([]Diagram)
+	baseDoc, err := ParseString(pomlDoc)
+	if err != nil {
+		t.Fatalf("parse base: %v", err)
+	}
+
+	sceneAny, err := reg.Convert(ctx, "diagram", "scene", diagrams, nil)
+	if err != nil {
+		t.Fatalf("diagram->scene: %v", err)
+	}
+	scenes := sceneAny.([]Scene)
+	if scenes[0].Meta == nil || scenes[0].Meta["diagram_attrs"] == nil || scenes[0].Meta["camera_attrs"] == nil {
+		t.Fatalf("expected diagram and camera attrs in scene meta: %#v", scenes[0].Meta)
+	}
+
+	backDiagAny, err := reg.Convert(ctx, "scene", "diagram", scenes, nil)
+	if err != nil {
+		t.Fatalf("scene->diagram: %v", err)
+	}
+	backDiagrams := backDiagAny.([]Diagram)
+	if len(backDiagrams[0].Attrs) == 0 || len(backDiagrams[0].Camera.Attrs) == 0 {
+		t.Fatalf("expected attrs round-tripped onto diagram: %#v", backDiagrams[0])
+	}
+
+	outPomlAny, err := reg.Convert(ctx, "diagram", "poml", backDiagrams, map[string]any{"base_document": baseDoc})
+	if err != nil {
+		t.Fatalf("diagram->poml with base doc: %v", err)
+	}
+	outPoml := outPomlAny.(string)
+	parsed, err := ParseString(outPoml)
+	if err != nil {
+		t.Fatalf("parse round-tripped poml: %v", err)
+	}
+	if parsed.Meta.ID != "diagram.doc" || strings.TrimSpace(parsed.Role.Body) != "diagram role" || len(parsed.Tasks) != 1 {
+		t.Fatalf("context not preserved in round-trip: meta=%#v role=%q tasks=%d", parsed.Meta, parsed.Role.Body, len(parsed.Tasks))
+	}
+}
