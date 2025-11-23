@@ -20,6 +20,7 @@
       <item>Paritȳ: mirror Microsoft POML docs (meta/components/trace/extended) with explicit % coverage.</item>
       <item>Proof: runnable examples (CLI, builder, converters, tracing) with goldens and VHS demos.</item>
       <item>Safety: document BaseDir/media caps, tool-call validation, and tracing hygiene.</item>
+      <item>MCP: document `poml mcp` endpoints (health/inspect/ast now; search/diff/patch/watch planned) and provide a VHS demo once stable.</item>
     </list>
   </task>
 
