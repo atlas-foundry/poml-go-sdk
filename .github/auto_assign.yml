@@ -1,0 +1,15 @@
+addReviewers: true
+addAssignees: true
+
+reviewers:
+
+* atlas-foundry-bot
+
+assignees:
+
+* atlas-foundry-bot
+
+skipKeywords:
+
+* wip
+* draft

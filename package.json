@@ -1,0 +1,21 @@
+{
+"name": "poml-go-sdk-release-tools",
+"private": true,
+"version": "0.0.0-development",
+"scripts": {
+"prepare": "husky install",
+"release": "semantic-release",
+"lint:commits": "commitlint --from=HEAD~1 --to=HEAD"
+},
+"devDependencies": {
+"semantic-release": "^23.0.0",
+"@semantic-release/changelog": "^6.0.0",
+"@semantic-release/git": "^12.0.0",
+"@semantic-release/github": "^9.0.0",
+"@semantic-release/commit-analyzer": "^11.0.0",
+"@semantic-release/release-notes-generator": "^12.0.0",
+"husky": "^9.0.0",
+"@commitlint/cli": "^19.0.0",
+"@commitlint/config-conventional": "^19.0.0"
+}
+}

@@ -4,42 +4,263 @@ on:
   pull_request:
   push:
     branches: [main]
+    tags:
+      - "v*"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *"
+
 
 jobs:
+
+  # =====================================================
+  # 1. BUILD + TEST + LINT (Matrix)
+  # =====================================================
   build:
+    name: Build & Test (Go ${{ matrix.go }})
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ["1.22", "1.23", "1.24", "1.25"]
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: ${{ matrix.go }}
+          cache: true
+
+      - name: go mod tidy consistency
+        run: |
+          go mod tidy
+          git diff --exit-code || (echo "❌ go mod tidy produced changes"; exit 1)
+
       - name: Verify formatting
         run: |
           if [ -n "$(gofmt -l .)" ]; then
+            echo "❌ gofmt check failed:"
             gofmt -l .
             exit 1
           fi
+
+      - name: Lint (golangci-lint)
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+
+      - name: Vulnerability scan (govulncheck)
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-input: ${{ matrix.go }}
+
       - name: Verify fit-for-purpose plan present
+        run: test -f docs/fit_for_purpose.poml
+
+      - name: Run tests with coverage
+        run: go test -coverprofile=coverage.out ./...
+
+      - name: Enforce coverage ≥80%
         run: |
-          test -f docs/fit_for_purpose.poml
-      - name: Test with coverage (>=80%)
+          THRESHOLD=80.0
+          TOTAL=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+          RESULT=$(printf "%.2f" "$TOTAL")
+          echo "Coverage: $RESULT% (threshold: $THRESHOLD%)"
+          awk "BEGIN {exit !($RESULT < $THRESHOLD)}" && {
+            echo "❌ Coverage $RESULT% below threshold"
+            exit 1
+          }
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.out
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  # =====================================================
+  # 2. E2E TESTS (Docker Matrix)
+  # =====================================================
+  e2e:
+    name: POML Semantic E2E (Docker Matrix)
+    runs-on: ubuntu-latest
+    needs: build
+
+    strategy:
+      fail-fast: false
+      matrix:
+        base: ["debian:stable", "alpine:3.20", "ubuntu:24.04"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
         run: |
-          go test -coverprofile=coverage.out ./...
-          python3 - <<'PY'
-import os, subprocess, sys
-limit = float(os.environ.get("COVERAGE_THRESHOLD", "78.0"))
-report = subprocess.check_output(["go", "tool", "cover", "-func=coverage.out"], text=True)
-total = None
-for line in report.splitlines():
-    if line.startswith("total:"):
-        total = line.split()[-1]
-        break
-if total is None or not total.endswith("%"):
-    sys.exit("failed to parse coverage report:\n" + report)
-pct = float(total.rstrip("%"))
-if pct < limit:
-    sys.exit(f"coverage {pct}% below threshold {limit}%")
-print(f"coverage {pct}% (threshold {limit}%)")
-PY
+          cat <<'EOF' > Dockerfile
+          FROM ${matrix.base}
+
+          RUN apk add --no-cache go git || \
+              (apt-get update && apt-get install -y golang git) || true
+
+          WORKDIR /sdk
+          COPY . .
+
+          RUN cat <<'EOT' > semantic_test.go
+          package main
+
+          import (
+            "os"
+            "path/filepath"
+            "fmt"
+            sdk "github.com/atlas-foundry/poml-go-sdk"
+          )
+
+          func main() {
+            files := []string{}
+            filepath.Walk("poml/testdata", func(path string, info os.FileInfo, err error) error {
+              if err == nil && !info.IsDir() && filepath.Ext(path) == ".poml" {
+                files = append(files, path)
+              }
+              return nil
+            })
+
+            if len(files) == 0 {
+              panic("no .poml test files found")
+            }
+
+            for _, f := range files {
+              data, _ := os.ReadFile(f)
+              doc, err := sdk.Parse(data)
+              if err != nil {
+                panic(fmt.Sprintf("parse error in %s: %v", f, err))
+              }
+              if err := sdk.Validate(doc); err != nil {
+                panic(fmt.Sprintf("semantic error in %s: %v", f, err))
+              }
+            }
+
+            println("OK")
+          }
+          EOT
+
+          RUN go build semantic_test.go
+          EOF
+
+          docker build -t poml-e2e:${{ matrix.base }} .
+
+      - name: Run E2E Test
+        run: docker run --rm poml-e2e:${{ matrix.base }}
+
+  # =====================================================
+  # 3. DOCS BUILD
+  # =====================================================
+  docs:
+    name: Build Docs
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install MDX
+        run: npm install --global @mdx-js/mdx
+
+      - name: Generate docs
+        run: |
+          mkdir -p build/docs
+          mdx README.mdx > build/docs/index.html
+
+      - name: Upload Docs Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: poml-docs
+          path: build/docs
+
+  # =====================================================
+  # 4. NIGHTLY DOCS
+  # =====================================================
+  nightly_docs:
+    name: Nightly Docs Rebuild
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p nightly/docs
+          mdx README.mdx > nightly/docs/index.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nightly-docs
+          path: nightly/docs
+
+  # =====================================================
+  # 5. SEMANTIC RELEASE
+  # =====================================================
+  release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    needs: [build, e2e, docs]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install semantic-release
+        run: |
+          npm install -g semantic-release \
+            @semantic-release/changelog \
+            @semantic-release/git \
+            @semantic-release/github \
+            @semantic-release/commit-analyzer \
+            @semantic-release/release-notes-generator
+
+      - name: Run semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: semantic-release
+
+  # =====================================================
+  # 6. RELEASE BINARIES
+  # =====================================================
+  release_binaries:
+    name: Build Release Binaries
+    runs-on: ubuntu-latest
+    needs: release
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Build binaries
+        run: |
+          mkdir dist
+          GOOS=linux   GOARCH=amd64 go build -o dist/poml-go-sdk-linux-amd64   .
+          GOOS=darwin  GOARCH=arm64 go build -o dist/poml-go-sdk-macos-arm64   .
+          GOOS=windows GOARCH=amd64 go build -o dist/poml-go-sdk-windows-amd64.exe .
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
