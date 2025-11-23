@@ -1,0 +1,8 @@
+<poml>
+  <meta><id>semantic.media.odd</id><version>1</version><owner>oss</owner></meta>
+  <role>r</role>
+  <task>t</task>
+  <img src="assets/payload.unknownext" alt="odd-ext"/>
+  <audio src="assets/payload.unknownext" syntax="audio/wav"/>
+  <video src="assets/payload.unknownext" syntax="video/mp4"/>
+</poml>

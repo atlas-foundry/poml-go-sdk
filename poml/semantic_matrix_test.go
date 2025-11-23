@@ -203,6 +203,16 @@ func TestSemanticMatrixFixtures(t *testing.T) {
 			file: filepath.Join("testdata", "semantic", "runtime_schema_multi.poml"),
 			opts: ConvertOptions{BaseDir: "testdata/semantic"},
 		},
+		{
+			name: "media-mime-odd",
+			file: filepath.Join("testdata", "semantic", "media_mime_odd.poml"),
+			opts: ConvertOptions{BaseDir: "testdata/semantic", MaxImageBytes: 1 << 20, MaxMediaBytes: 1 << 20},
+		},
+		{
+			name: "media-empty-body",
+			file: filepath.Join("testdata", "semantic", "media_empty_body.poml"),
+			opts: ConvertOptions{BaseDir: "testdata/semantic"},
+		},
 	}
 
 	for _, tc := range cases {

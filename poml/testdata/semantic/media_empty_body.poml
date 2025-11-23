@@ -1,0 +1,8 @@
+<poml>
+  <meta><id>semantic.media.empty</id><version>1</version><owner>oss</owner></meta>
+  <role>r</role>
+  <task>t</task>
+  <img alt="empty-body"></img>
+  <audio syntax="audio/wav"></audio>
+  <video syntax="video/mp4"></video>
+</poml>
