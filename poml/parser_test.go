@@ -5,7 +5,9 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -318,6 +320,76 @@ func containsRaw(elems []Element, raw string) bool {
 		}
 	}
 	return false
+}
+
+func TestLosslessUnknownAndOrderRoundTrip(t *testing.T) {
+	src := `<poml>
+  <meta><id>lossless.test</id><version>1.0.0</version><owner>qa</owner></meta>
+  <role>r</role>
+  <task>t1</task>
+  <unknown foo="bar"><![CDATA[extra payload]]></unknown>
+  <task>t2</task>
+</poml>`
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	var buf bytes.Buffer
+	if err := doc.EncodeWithOptions(&buf, EncodeOptions{IncludeHeader: false, PreserveOrder: true, PreserveWS: true}); err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	rt, err := ParseString(buf.String())
+	if err != nil {
+		t.Fatalf("round-trip parse: %v", err)
+	}
+	var unknowns int
+	for _, el := range rt.Elements {
+		if el.Type == ElementUnknown {
+			unknowns++
+		}
+	}
+	if unknowns != 1 {
+		t.Fatalf("expected 1 unknown element, got %d", unknowns)
+	}
+	// Compare against canonical golden by compacting both.
+	golden := strings.TrimSpace(readFile(t, filepath.Join("testdata", "golden", "lossless_unknowns.golden")))
+	got := strings.TrimSpace(buf.String())
+	if !xmlStructurallyEqual(t, golden, got) {
+		t.Fatalf("lossless mismatch\nwant:\n%s\n\ngot:\n%s", golden, got)
+	}
+}
+
+func xmlStructurallyEqual(t *testing.T, a, b string) bool {
+	t.Helper()
+	normalize := func(s string) string {
+		var buf bytes.Buffer
+		dec := xml.NewDecoder(strings.NewReader(s))
+		enc := xml.NewEncoder(&buf)
+		for {
+			tok, err := dec.Token()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				t.Fatalf("decode xml: %v", err)
+			}
+			switch tkn := tok.(type) {
+			case xml.CharData:
+				if err := enc.EncodeToken(xml.CharData(bytes.TrimSpace(tkn))); err != nil {
+					t.Fatalf("encode char data: %v", err)
+				}
+			default:
+				if err := enc.EncodeToken(tkn); err != nil {
+					t.Fatalf("encode token: %v", err)
+				}
+			}
+		}
+		if err := enc.Flush(); err != nil {
+			t.Fatalf("flush: %v", err)
+		}
+		return buf.String()
+	}
+	return normalize(a) == normalize(b)
 }
 
 func TestParseReaderAndEncodeAllElements(t *testing.T) {
