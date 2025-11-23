@@ -1,0 +1,6 @@
+<poml>
+  <meta><id>semantic.unc</id><version>1</version><owner>oss</owner></meta>
+  <role>r</role>
+  <task>t</task>
+  <img src="\\host\share\img.bin" alt="unc"/>
+</poml>

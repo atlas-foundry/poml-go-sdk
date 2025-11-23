@@ -187,6 +187,12 @@ func TestSemanticMatrixFixtures(t *testing.T) {
 			opts:      ConvertOptions{AllowAbsImagePaths: false},
 			expectErr: true,
 		},
+		{
+			name:      "unc-path-disallowed",
+			file:      filepath.Join("testdata", "semantic", "base_dir_unc.poml"),
+			opts:      ConvertOptions{AllowAbsImagePaths: false},
+			expectErr: true,
+		},
 	}
 
 	for _, tc := range cases {
@@ -227,5 +233,45 @@ func TestSemanticAbsoluteAllowedWithFile(t *testing.T) {
 	}
 	if _, err := Convert(doc, FormatDict, ConvertOptions{AllowAbsImagePaths: true}); err != nil {
 		t.Fatalf("convert abs allowed: %v", err)
+	}
+}
+
+func TestSemanticInlineImageLimit(t *testing.T) {
+	doc := Document{
+		Meta:     Meta{ID: "inline", Version: "1", Owner: "oss"},
+		Role:     Block{Body: "r"},
+		Tasks:    []Block{{Body: "t"}},
+		Images:   []Image{{Body: "0123456789", Alt: "inline"}},
+		Elements: []Element{{Type: ElementMeta}, {Type: ElementRole}, {Type: ElementTask, Index: 0}, {Type: ElementImage, Index: 0}},
+	}
+	if _, err := Convert(doc, FormatDict, ConvertOptions{MaxImageBytes: 5}); err == nil {
+		t.Fatalf("expected inline image to exceed limit")
+	}
+	if _, err := Convert(doc, FormatDict, ConvertOptions{MaxImageBytes: 16}); err != nil {
+		t.Fatalf("expected inline image to succeed with higher limit: %v", err)
+	}
+}
+
+func TestSemanticSymlinkEscape(t *testing.T) {
+	base := t.TempDir()
+	outside := t.TempDir()
+	target := filepath.Join(outside, "file.bin")
+	if err := os.WriteFile(target, []byte("x"), 0o600); err != nil {
+		t.Fatalf("write target: %v", err)
+	}
+	link := filepath.Join(base, "link.bin")
+	if err := os.Symlink(target, link); err != nil {
+		t.Skipf("symlink not supported: %v", err)
+	}
+
+	doc := Document{
+		Meta:     Meta{ID: "symlink", Version: "1", Owner: "oss"},
+		Role:     Block{Body: "r"},
+		Tasks:    []Block{{Body: "t"}},
+		Images:   []Image{{Src: "link.bin"}},
+		Elements: []Element{{Type: ElementMeta}, {Type: ElementRole}, {Type: ElementTask, Index: 0}, {Type: ElementImage, Index: 0}},
+	}
+	if _, err := Convert(doc, FormatDict, ConvertOptions{BaseDir: base}); err == nil {
+		t.Fatalf("expected symlink escape to be rejected")
 	}
 }
