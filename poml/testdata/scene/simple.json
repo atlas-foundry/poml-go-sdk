@@ -1,0 +1,10 @@
+{
+  "id": "s1",
+  "nodes": [
+    {"id": "n1", "label": "A"},
+    {"id": "n2", "label": "B"}
+  ],
+  "edges": [
+    {"from": "n1", "to": "n2", "kind": "depends", "directed": true}
+  ]
+}

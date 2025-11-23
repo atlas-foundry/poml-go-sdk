@@ -155,15 +155,6 @@ func readFile(t *testing.T, path string) string {
 	return string(b)
 }
 
-func assertJSONEqualRaw(t *testing.T, actualBytes []byte, expectedPath string) {
-	t.Helper()
-	var actual any
-	if err := json.Unmarshal(actualBytes, &actual); err != nil {
-		t.Fatalf("unmarshal actual: %v", err)
-	}
-	assertJSONEqual(t, actual, expectedPath)
-}
-
 func prettyJSON(t *testing.T, v any) string {
 	t.Helper()
 	raw, err := json.MarshalIndent(v, "", "  ")

@@ -70,6 +70,16 @@
     </list>
   </task>
 
+  <task caption="MCP / CLI roadmap">
+    <list>
+      <item>CLI: ship `poml` binary; subcommands: `mcp` (serve), future `convert`, `validate`, `render`.</item>
+      <item>MCP server features (phased): health/inspect/ast (done); search by tag/attr/text; validation errors with line/column; conversions (Chat/LangChain/dict); tool-def/req introspection; diagram extraction.</item>
+      <item>Safety: BaseDir/media cap signals; unknown-tag preservation; round-trip check endpoint; optional auth token.</item>
+      <item>DX: OTEL tracing/metrics; watch/reload and SSE/WebSocket push; patch/diff endpoints; examples registry/goldens; lint rules endpoint.</item>
+      <item>Docs: README + docs/doc_plan.poml alignment; VHS demo of `poml mcp` once endpoints stabilize.</item>
+    </list>
+  </task>
+
   <log>
     <entry date="2025-11-23" actor="ai.architect">Merged lossless plan with original badge/test roadmap to retain CI quality goals while pursuing lossless parity.</entry>
     <entry date="2025-11-22" actor="ai.architect">Replaced badge roadmap with lossless round-trip plan aligned with registry and adapter separation.</entry>

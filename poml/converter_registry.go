@@ -442,6 +442,14 @@ func decodeSceneJSON(body []byte) (any, error) {
 	return scenes, nil
 }
 
+func encodeSceneJSON(scene Scene) (string, error) {
+	b, err := json.Marshal(scene)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
 func attrsFromMeta(meta map[string]any, key string) []xml.Attr {
 	if len(meta) == 0 {
 		return nil
