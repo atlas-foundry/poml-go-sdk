@@ -36,6 +36,7 @@
       <item>Limits/DoS hardening (Medium, limit): Tests for base64 size limits and negative/zero limit semantics.</item>
       <item>Docs pipeline (Medium, docs): MDX render smoke test (npx mdx README.mdx).</item>
       <item>Lint/vuln badges (Low, monitoring): golangci-lint/govulncheck/go vet jobs and badges.</item>
+      <item>Quality spec badge (Low, governance): Link go.quality.poml into CI/docs; add checks for unchecked errors, context propagation, race-free patterns, and deterministic tests.</item>
     </list>
   </task>
 
@@ -45,7 +46,7 @@
       <item>2) Golden render/converter tests and parser fast/strict differentials.</item>
       <item>3) Extend semantic E2E for limits/BaseDir; add arm64 runner and matrix badge.</item>
       <item>4) Concurrency tests + builder tables; add go vet job/badge.</item>
-      <item>5) Docs smoke test; keep lint/vuln badges green.</item>
+      <item>5) Docs smoke test; keep lint/vuln badges green; surface go.quality.poml in READMEs and CI links.</item>
     </list>
   </task>
 
@@ -54,6 +55,7 @@
       <item>gofmt + go test ./... required.</item>
       <item>Golden fixtures kept deterministic; add/update via scripts.</item>
       <item>Optional: fuzz parse→encode round-trips to harden extras handling.</item>
+      <item>Reference go.quality.poml for reviews: unchecked errors, bounds checks, race-free patterns, context propagation, deterministic tests/fuzzing, no hardcoded secrets.</item>
     </list>
   </task>
 
