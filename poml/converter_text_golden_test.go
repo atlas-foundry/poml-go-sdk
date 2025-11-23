@@ -1,6 +1,10 @@
 package poml
 
-import "testing"
+import (
+	"bytes"
+	"path/filepath"
+	"testing"
+)
 
 func TestConvertMarkdownToPOMLGolden(t *testing.T) {
 	md := `# role
@@ -15,15 +19,7 @@ Paragraph text.`
 	if err != nil {
 		t.Fatalf("convert markdown: %v", err)
 	}
-	if got := doc.Role.Body; got != "role" {
-		t.Fatalf("role mismatch: %q", got)
-	}
-	if len(doc.Tasks) != 3 {
-		t.Fatalf("expected 3 tasks (two headings + paragraph), got %d", len(doc.Tasks))
-	}
-	if doc.Tasks[0].Body != "task one" || doc.Tasks[1].Body != "task two" {
-		t.Fatalf("tasks mismatch: %#v", doc.Tasks)
-	}
+	assertDocMatchesGolden(t, doc, filepath.Join("testdata", "golden", "markdown_to_poml.poml"))
 }
 
 func TestConvertOrgToPOMLGolden(t *testing.T) {
@@ -35,13 +31,24 @@ func TestConvertOrgToPOMLGolden(t *testing.T) {
 	if err != nil {
 		t.Fatalf("convert org: %v", err)
 	}
-	if got := doc.Role.Body; got != "* role" { // go-org writer preserves heading markers
-		t.Fatalf("role mismatch: %q", got)
+	assertDocMatchesGolden(t, doc, filepath.Join("testdata", "golden", "org_to_poml.poml"))
+}
+
+func assertDocMatchesGolden(t *testing.T, doc Document, goldenPath string) {
+	t.Helper()
+	var gotBuf bytes.Buffer
+	if err := doc.EncodeWithOptions(&gotBuf, EncodeOptions{IncludeHeader: false, PreserveOrder: false, PreserveWS: true, Compact: true}); err != nil {
+		t.Fatalf("encode: %v", err)
 	}
-	if len(doc.Tasks) != 2 {
-		t.Fatalf("expected 2 tasks, got %d", len(doc.Tasks))
+	goldenDoc, err := ParseFile(goldenPath)
+	if err != nil {
+		t.Fatalf("parse golden %s: %v", goldenPath, err)
 	}
-	if doc.Tasks[0].Body != "** task one" || doc.Tasks[1].Body != "** task two" {
-		t.Fatalf("tasks mismatch: %#v", doc.Tasks)
+	var wantBuf bytes.Buffer
+	if err := goldenDoc.EncodeWithOptions(&wantBuf, EncodeOptions{IncludeHeader: false, PreserveOrder: false, PreserveWS: true, Compact: true}); err != nil {
+		t.Fatalf("encode golden: %v", err)
+	}
+	if gotBuf.String() != wantBuf.String() {
+		t.Fatalf("golden mismatch for %s:\nwant:\n%s\n\ngot:\n%s", goldenPath, wantBuf.String(), gotBuf.String())
 	}
 }
