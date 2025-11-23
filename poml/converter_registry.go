@@ -177,19 +177,7 @@ func (c basicConverter) From() string { return c.from }
 func (c basicConverter) To() string   { return c.to }
 func (c basicConverter) Convert(ctx context.Context, input any, opts map[string]any) (any, error) {
 	return c.fn(ctx, input, opts)
-}package poml
-
-import (
-	"context"
-	"encoding/json"
-	"encoding/xml"
-	"errors"
-	"fmt"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
-)
+}
 
 // Converter turns input of one format into another (e.g., poml -> diagram -> scene -> scenejson).
 // It is intentionally generic to keep the SDK pluggable for downstream renderers and importers.
