@@ -14,6 +14,7 @@ import (
 
 	"github.com/atlas-foundry/poml-go-sdk/poml"
 	"github.com/fsnotify/fsnotify"
+	"github.com/gorilla/websocket"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
 )
@@ -29,6 +30,8 @@ type Server struct {
 	sourcePath string
 	mu         sync.RWMutex
 	watcher    *fsnotify.Watcher
+	wsMu       sync.Mutex
+	wsClients  map[*websocket.Conn]struct{}
 }
 
 type inspectSummary struct {
@@ -49,6 +52,7 @@ func New(doc poml.Document, sourcePath string, tp trace.TracerProvider) *Server 
 		mux:        http.NewServeMux(),
 		tracer:     tp.Tracer("github.com/atlas-foundry/poml-go-sdk/mcp"),
 		sourcePath: sourcePath,
+		wsClients:  make(map[*websocket.Conn]struct{}),
 	}
 	s.mux.HandleFunc("/health", s.health)
 	s.mux.HandleFunc("/inspect", s.inspect)
@@ -62,6 +66,7 @@ func New(doc poml.Document, sourcePath string, tp trace.TracerProvider) *Server 
 	s.mux.HandleFunc("/diff", s.diff)
 	s.mux.HandleFunc("/patch", s.patch)
 	s.mux.HandleFunc("/watch", s.watch)
+	s.mux.HandleFunc("/ws", s.ws)
 	if sourcePath != "" {
 		if w, err := fsnotify.NewWatcher(); err == nil {
 			_ = w.Add(sourcePath)
@@ -87,6 +92,7 @@ func (s *Server) updateDoc(doc poml.Document) {
 	s.doc = doc
 	s.once = sync.Once{}
 	s.mu.Unlock()
+	s.broadcastSummary("update")
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
@@ -557,6 +563,69 @@ func (s *Server) reload() (poml.Document, error) {
 		return poml.Document{}, err
 	}
 	return doc, nil
+}
+
+var wsUpgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
+func (s *Server) ws(w http.ResponseWriter, r *http.Request) {
+	conn, err := wsUpgrader.Upgrade(w, r, nil)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("upgrade failed: %v", err), http.StatusBadRequest)
+		return
+	}
+	s.registerWS(conn)
+	defer s.unregisterWS(conn)
+
+	// send initial summary
+	s.sendWSSummary(conn, "initial")
+
+	// keep the connection alive; ignore incoming messages
+	for {
+		if _, _, err := conn.NextReader(); err != nil {
+			return
+		}
+	}
+}
+
+func (s *Server) registerWS(c *websocket.Conn) {
+	s.wsMu.Lock()
+	s.wsClients[c] = struct{}{}
+	s.wsMu.Unlock()
+}
+
+func (s *Server) unregisterWS(c *websocket.Conn) {
+	s.wsMu.Lock()
+	delete(s.wsClients, c)
+	s.wsMu.Unlock()
+	_ = c.Close()
+}
+
+func (s *Server) sendWSSummary(c *websocket.Conn, event string) {
+	doc := s.snapshot()
+	payload := map[string]any{
+		"event":   event,
+		"summary": buildSummary(doc),
+	}
+	_ = c.WriteJSON(payload)
+}
+
+func (s *Server) broadcastSummary(event string) {
+	s.wsMu.Lock()
+	clients := make([]*websocket.Conn, 0, len(s.wsClients))
+	for c := range s.wsClients {
+		clients = append(clients, c)
+	}
+	s.wsMu.Unlock()
+
+	for _, c := range clients {
+		s.sendWSSummary(c, event)
+	}
 }
 
 func writeJSON(w http.ResponseWriter, v any) {

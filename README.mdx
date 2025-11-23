@@ -216,6 +216,7 @@ Endpoints:
 * `/diff` — compare two POML bodies (POST json: {"a":"...","b":"..."})
 * `/patch` — minimal edits for role/task/messages (POST json: {"tag":"role|task|human_msg|assistant_msg|system_msg","index":0,"body":"..."})
 * `/watch` — SSE stream that pushes summaries when the source file changes (enabled when `--file` is provided)
+* `/ws` — WebSocket endpoint that streams summaries (initial + on change) when `--file` is provided
 
 Roadmap highlights (see `meta.plan.poml`):
 * Search endpoints (tag/attr/text), validation error details, conversions on demand.
