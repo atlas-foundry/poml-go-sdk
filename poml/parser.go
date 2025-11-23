@@ -637,6 +637,15 @@ func (d *Document) AddImage(img Image) int {
 
 // Validate ensures required metadata exists and inputs are well-formed.
 func (d Document) Validate() error {
+	return d.ValidateWithOptions(ValidateOptions{Extended: ExtendedOff})
+}
+
+// ValidateOptions allows toggling validation behavior, including extended support.
+type ValidateOptions struct {
+	Extended ExtendedMode
+}
+
+func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 	var issues []string
 	var details []ValidationDetail
 	metaCount, roleCount, taskCount := 0, 0, len(d.Tasks)
@@ -650,6 +659,11 @@ func (d Document) Validate() error {
 				roleCount++
 			case ElementTask:
 				taskCount++
+			case ElementUnknown:
+				if opts.Extended == ExtendedOff {
+					issues = append(issues, fmt.Sprintf("unknown element <%s>", el.Name))
+					details = append(details, ValidationDetail{Element: ElementUnknown, Message: "unknown element " + el.Name})
+				}
 			}
 		}
 	}
@@ -1509,16 +1523,26 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 				}
 				doc.Elements = append(doc.Elements, el)
 			default:
-				// Preserve unknown elements as raw where possible.
-				raw, err := consumeRaw(dec, t)
-				if err != nil {
-					return doc, wrapXMLError(err, fmt.Sprintf("<%s>", t.Name.Local))
+				if opts.Extended == ExtendedOff {
+					// Preserve unknown elements as raw where possible.
+					raw, err := consumeRaw(dec, t)
+					if err != nil {
+						return doc, wrapXMLError(err, fmt.Sprintf("<%s>", t.Name.Local))
+					}
+					el := doc.newElement(ElementUnknown, -1, t.Name.Local, raw)
+					if preserveWS {
+						el.Leading = leading
+					}
+					doc.Elements = append(doc.Elements, el)
+				} else {
+					// Extended: store as unknown but mark name and skip raw if strict validation will handle it.
+					raw, _ := consumeRaw(dec, t)
+					el := doc.newElement(ElementUnknown, -1, t.Name.Local, raw)
+					if preserveWS {
+						el.Leading = leading
+					}
+					doc.Elements = append(doc.Elements, el)
 				}
-				el := doc.newElement(ElementUnknown, -1, t.Name.Local, raw)
-				if preserveWS {
-					el.Leading = leading
-				}
-				doc.Elements = append(doc.Elements, el)
 			}
 			if preserveWS && lastElement != nil && pending != "" {
 				lastElement.Trailing = pending
