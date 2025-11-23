@@ -1,9 +1,23 @@
-## [1.0.1](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.0.0...v1.0.1) (2025-11-23)
+## [1.1.0](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.0.0...v1.1.0) (2025-11-23)
 
+### Features
 
-### Bug Fixes
+* add OpenTelemetry tracing hooks and span tests for parse/validate/convert (opt-in, no behavioral change by default)
+* add VHS demos and documentation plan/roadmap to guide onboarding
 
-* add missing tools/render-mdx.mjs script ([da7e80d](https://github.com/atlas-foundry/poml-go-sdk/commit/da7e80d92e2b2339b9ea09a3fd496cc66da23580))
+### CI/CD
+
+* align Linux/macOS/Windows/vet/release jobs on Go 1.25.4 with go mod tidy + coverage on all
+* drop Codecov upload; keep coverage as CI artifact
+
+### Documentation
+
+* refresh badges, add doc strategy section, roadmap, spec coverage notes
+* add docs plan (POML), VHS tapes/GIFs, and clarify semver expectations
+
+### Build/Tooling
+
+* add missing docs render script for MDX
 
 # 1.0.0 (2025-11-23)
 
