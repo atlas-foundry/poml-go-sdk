@@ -119,6 +119,10 @@ jobs:
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      - name: Login to GitHub Container Registry
+        env:
+          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "${CR_PAT}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Build Docker image
         run: |
@@ -198,12 +202,14 @@ jobs:
           RUN go version && go build semantic_test.go
           EOF
 
-          docker buildx build --platform=linux/${ARCH} --build-arg BASE_IMAGE="${BASE}" --build-arg GO_VERSION="1.25.4" -t poml-e2e:${TAG}-${ARCH} .
+          IMAGE="ghcr.io/${{ github.repository_owner }}/poml-e2e:${TAG}-${ARCH}"
+          docker buildx build --platform=linux/${ARCH} --build-arg BASE_IMAGE="${BASE}" --build-arg GO_VERSION="1.25.4" -t "${IMAGE}" --push .
 
       - name: Run E2E Test
         run: |
           TAG=$(echo "${{ matrix.base }}" | tr ':' '-')
-          docker run --rm --platform=linux/${{ matrix.arch }} poml-e2e:${TAG}-${{ matrix.arch }}
+          IMAGE="ghcr.io/${{ github.repository_owner }}/poml-e2e:${TAG}-${{ matrix.arch }}"
+          docker run --rm --platform=linux/${{ matrix.arch }} "${IMAGE}"
 
   # =====================================================
   # 2b. MACOS TESTS (Apple Silicon)
