@@ -112,6 +112,18 @@ jobs:
           ARG BASE_IMAGE
           FROM ${BASE_IMAGE}
 
+          ARG GO_VERSION=1.25.0
+          RUN case "$(uname -s)" in \
+                Linux) ;; \
+                *) echo "unsupported OS"; exit 1 ;; \
+              esac && \
+              arch=$(uname -m) && \
+              url="https://go.dev/dl/go${GO_VERSION}.linux-${arch}.tar.gz" && \
+              curl -sSfL "$url" -o /tmp/go.tgz && \
+              rm -rf /usr/local/go && \
+              tar -C /usr/local -xzf /tmp/go.tgz && \
+              ln -sf /usr/local/go/bin/go /usr/bin/go
+
           RUN apk add --no-cache go git || \
               (apt-get update && apt-get install -y golang git) || true
 
@@ -156,10 +168,11 @@ jobs:
           }
           EOT
 
-          RUN go build semantic_test.go
+          ENV PATH=/usr/local/go/bin:$PATH
+          RUN go version && go build semantic_test.go
           EOF
 
-          docker build --build-arg BASE_IMAGE="${BASE}" -t poml-e2e:${TAG} .
+          docker build --build-arg BASE_IMAGE="${BASE}" --build-arg GO_VERSION="1.25.0" -t poml-e2e:${TAG} .
 
       - name: Run E2E Test
         run: |
