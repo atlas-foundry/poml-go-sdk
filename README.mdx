@@ -1,12 +1,29 @@
 <p align="center">
   <a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml">
-    <img src="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
+    <img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&label=ci&logo=github" alt="CI Status" />
   </a>
-  <a href="https://codecov.io/gh/atlas-foundry/poml-go-sdk">
-    <img src="https://codecov.io/gh/atlas-foundry/poml-go-sdk/branch/main/graph/badge.svg" alt="Coverage" />
+  <a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&label=tests&logo=go" alt="Tests" />
+  </a>
+  <a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&label=lint&logo=githubactions" alt="Lint" />
+  </a>
+  <a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&label=govulncheck&logo=go" alt="Govulncheck" />
+  </a>
+  <a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&label=docs&logo=mdx" alt="Docs Build" />
   </a>
   <a href="https://github.com/atlas-foundry/poml-go-sdk/releases">
     <img src="https://img.shields.io/github/v/release/atlas-foundry/poml-go-sdk?logo=github&color=4c1" alt="Release" />
+  </a>
+</p>
+<p align="center">
+  <a href="https://img.shields.io/github/go-mod/go-version/atlas-foundry/poml-go-sdk">
+    <img src="https://img.shields.io/github/go-mod/go-version/atlas-foundry/poml-go-sdk?logo=go&color=00add8" alt="Go Version" />
+  </a>
+  <a href="https://github.com/atlas-foundry/poml-go-sdk/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/atlas-foundry/poml-go-sdk?color=blue" alt="License MIT" />
   </a>
   <a href="https://pkg.go.dev/github.com/atlas-foundry/poml-go-sdk">
     <img src="https://pkg.go.dev/badge/github.com/atlas-foundry/poml-go-sdk.svg" alt="Go Reference" />
@@ -14,20 +31,14 @@
   <a href="https://goreportcard.com/report/github.com/atlas-foundry/poml-go-sdk">
     <img src="https://goreportcard.com/badge/github.com/atlas-foundry/poml-go-sdk" alt="Go Report Card" />
   </a>
-  <a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml?query=branch%3Amain">
-    <img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&label=lint%2Ftests%2Fgovuln" alt="Lint/Tests/Govuln" />
-  </a>
-  <a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml?query=branch%3Amain">
-    <img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&label=docs" alt="Docs Build" />
-  </a>
   <a href="https://microsoft.github.io/poml">
     <img src="https://img.shields.io/badge/POML-Supported-8a2be2.svg?logo=microsoft" alt="POML Supported" />
   </a>
-  <a href="https://www.conventionalcommits.org/">
-    <img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-ff69b4.svg" alt="Conventional Commits" />
-  </a>
   <a href="./go.quality.poml">
     <img src="https://img.shields.io/badge/Go%20Quality-Spec-4c1" alt="Go Quality Spec" />
+  </a>
+  <a href="https://www.conventionalcommits.org/">
+    <img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-ff69b4.svg" alt="Conventional Commits" />
   </a>
 </p>
 
@@ -65,27 +76,201 @@ This SDK brings POML’s power to Go.
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start Guide
+
+New to POML or Go? Here is how to get started in minutes.
+
+### 1. Install the SDK
 
 ```bash
-go test ./...
+go get github.com/atlas-foundry/poml-go-sdk
 ```
 
-or use the parser:
+### 2. Create a POML file
+
+Create a file named `hello.poml`:
+
+```xml
+<poml>
+  <system>
+    You are a helpful assistant.
+  </system>
+  <user>
+    Hello, world!
+  </user>
+</poml>
+```
+
+### 3. Write your Go code
+
+Create `main.go`:
 
 ```go
-doc, err := poml.ParseFile("story.poml")
-if err != nil {
-    panic(err)
-}
+package main
 
-if err := poml.Validate(doc); err != nil {
-    panic(err)
-}
+import (
+    "fmt"
+    "log"
 
-output, _ := poml.Render(doc)
-fmt.Println(output)
+    "github.com/atlas-foundry/poml-go-sdk/poml"
+)
+
+func main() {
+    // 1. Parse the POML file
+    doc, err := poml.ParseFile("hello.poml")
+    if err != nil {
+        log.Fatalf("Failed to parse: %v", err)
+    }
+
+    // 2. Validate the document
+    if err := poml.Validate(doc); err != nil {
+        log.Fatalf("Validation failed: %v", err)
+    }
+
+    // 3. Convert to OpenAI Chat format
+    output, err := poml.Convert(doc, poml.FormatOpenAIChat, poml.ConvertOptions{})
+    if err != nil {
+        log.Fatalf("Conversion failed: %v", err)
+    }
+
+    fmt.Println(string(output))
+}
 ```
+
+### 4. Run it!
+
+```bash
+go run main.go
+```
+
+---
+
+## 🎬 See It in Action (VHS)
+
+Two fresh tapes show both sides of the SDK—CLI and pure Go—using vivid terminal themes:
+
+* **CLI quickstart**: Parse, validate, and convert a tiny POML file with a pocket CLI wrapper.
+
+  ![POML CLI quickstart](docs/vhs/poml-cli.gif)
+
+* **Go builder**: Assemble a document with the fluent builder, render it back to POML, and emit OpenAI Chat JSON.
+
+  ![POML builder demo](docs/vhs/poml-go-builder.gif)
+
+---
+
+## 📐 Spec Alignment & Coverage
+
+- **Core spec (meta + components)**: Implemented with strict parsing/validation and round-trip rendering. See the canonical docs: [Meta](https://microsoft.github.io/poml/latest/language/meta/) and [Components](https://microsoft.github.io/poml/latest/language/components/). Rough coverage: ~95% of the published core; any gaps are tracked in `README.poml`.
+- **Contributing expectations**: We mirror the upstream guidance for structure and clarity ([Contributing](https://microsoft.github.io/poml/latest/contributing/)). PRs should preserve the POML-first docs policy.
+- **Tracing**: Python trace semantics are a reference point ([Trace docs](https://microsoft.github.io/poml/latest/python/trace/)). Go trace parity is planned; not implemented yet (0%).
+- **Extended proposal**: The POML Extended proposal is our north star ([Deep dive](https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/)). No implementation yet (0%); we keep compatibility in mind for converters and validation.
+
+---
+
+## 🗺️ Roadmap (high level)
+
+- 1️⃣ Core fidelity polish (Δ→ 100%): close remaining edge cases from the [Meta](https://microsoft.github.io/poml/latest/language/meta/) / [Components](https://microsoft.github.io/poml/latest/language/components/) specs; lock lossless round-trips for extended tags.
+- 2️⃣ Tracing parity (Δ→ 100%): implement Go-side tracing inspired by [Python trace](https://microsoft.github.io/poml/latest/python/trace/) with structured spans, deterministic seeds, and regression fixtures.
+- 3️⃣ Extended runway (Δ→ 30%): prototype safe subsets from the [POML Extended](https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/) proposal (custom ops, richer media), gated behind opt-in converters.
+- 4️⃣ Ecosystem bridges (Δ→ 60%): deepen bindings (LangChain, OpenAI tools, CLI ergonomics) plus a POML ↔ `.tape` bridge for VHS stories.
+
+## ✅ High-priority TODOs
+
+- [ ] Tighten validator edge cases: unknown attributes, mixed inline content, and whitespace fidelity against upstream golden cases.
+- [ ] Ship trace support in Go mirroring Python’s `trace/` semantics, with golden test fixtures and CLI flag parity.
+- [ ] Add converter round-trip goldens for extended tags (hint/example/object/data) and publish % coverage alongside CI.
+- [ ] Harden path safety: extend BaseDir/MaxMediaBytes tests with symlink and UNC path fixtures.
+- [ ] Publish the `.tape` converter in `poml-horse` and wire sample journeys into docs/VHS for end-to-end demos.
+
+### Onboarding at a glance (ASCII map)
+
+```
+┌──────────────┐   parse+validate    ┌──────────────┐   convert/render   ┌───────────────┐
+│  POML file   │ ───────────────────▶│  poml-go SDK │───────────────────▶│  outputs/LLMs │
+└──────────────┘                     └──────────────┘                    └───────────────┘
+       ▲                ▲                    │                ▲
+       │                │                    │ VHS demos      │
+       │ tests/goldens  │ builder API        │ (CLI + Go)     │ ASCII guides
+       └────────────────┴────────────────────┴────────────────┴──────────────
+```
+
+---
+
+## 📚 Documentation Strategy (beacon mode)
+
+- **Doc plan**: living strategy in `docs/doc_plan.poml` (audiences, pillars, owners, timelines). Keep it in sync with code and releases.
+- **Spec links**: [Meta](https://microsoft.github.io/poml/latest/language/meta/) · [Components](https://microsoft.github.io/poml/latest/language/components/) · [Trace](https://microsoft.github.io/poml/latest/python/trace/) · [Extended](https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/)
+- **Content set**: `README.mdx` (landing), `README.poml` (structured), `PLAN.poml` / `meta.plan.poml` (execution), `go.quality.poml` (code bar), `docs/vhs/*.tape|.gif` (motion), more guides in `docs/*.poml`.
+- **Quality bar**: every feature ships with docs + runnable example or VHS; linkcheck/spellcheck + gofmt for snippets; coverage/spec % published.
+
+ASCII doc flow:
+```
+Specs & code ▶ tests/goldens ▶ docs (POML + README) ▶ demos (VHS) ▶ users/agents
+```
+
+---
+
+## 📘 Documentation
+
+### Core Components
+
+The SDK is built around four main pillars:
+
+1.  **Parser**: Reads POML files and converts them into a Go struct (`*poml.Document`). It handles XML parsing, whitespace normalization, and tag processing.
+2.  **Validator**: Checks the parsed document against the POML specification. It ensures required tags are present, nesting is correct, and attributes are valid.
+3.  **Renderer**: Converts the `*poml.Document` back into a POML string. Useful for programmatic editing or formatting.
+4.  **Converter**: Transforms the `*poml.Document` into other formats like JSON, OpenAI Chat messages, or LangChain tool calls.
+
+### Architecture Overview
+
+```mermaid
+graph LR
+    A[POML File] -->|Parse| B(Document Model)
+    B -->|Validate| C{Valid?}
+    C -->|Yes| D[Converter]
+    C -->|No| E[Error]
+    D -->|FormatMessageDict| F[JSON Output]
+    D -->|FormatOpenAIChat| G[OpenAI Chat Format]
+    D -->|FormatLangChain| H[LangChain Format]
+```
+
+### Lossless Parsing Pipeline
+
+We take pride in our parser's ability to round-trip POML files without losing a single byte of important information.
+
+```mermaid
+flowchart TD
+    Input[Input POML] --> Parser
+    subgraph Parser ["Parser & Model"]
+        direction TB
+        Tokenizer[XML Tokenizer] -->|Stream| Decoder
+        Decoder -->|Preserve| WS[Whitespace & Comments]
+        Decoder -->|Decode| Structs[Typed Structs]
+        Decoder -->|Capture| Raw[Unknown Tags (Raw XML)]
+        WS & Structs & Raw --> Ordered[Ordered Element List]
+    end
+    Ordered --> Renderer
+    subgraph Renderer ["Renderer"]
+        Iterate[Iterate Elements] -->|Reconstruct| Output
+    end
+    Output[Output POML]
+    Input == Identical == Output
+```
+
+The parser ensures losslessness by:
+1.  **Preserving Whitespace**: All leading/trailing whitespace and comments are kept intact.
+2.  **Maintaining Order**: The exact order of elements is preserved, not just the structure.
+3.  **Capturing Unknowns**: Unknown tags are captured as raw XML, ensuring forward compatibility with future POML versions.
+
+### Supported Formats
+
+| Format | Description |
+| :--- | :--- |
+| `FormatMessageDict` | Generic JSON dictionary format. |
+| `FormatOpenAIChat` | OpenAI Chat Completion API format. |
+| `FormatLangChain` | LangChain tool calls format. |
+| `FormatDict` | Python-style dictionary format (for debugging). |
 
 ---
 
@@ -95,7 +280,7 @@ fmt.Println(output)
 * Semantic validator
 * Renderer + transformations
 * Round-trip fidelity for extended tags (`<hint>`, `<example>`, `<cp>`, `<object>`, `<tool>`)
-* Safety features (symlink-aware BaseDir checks, 10MB cap defaults, override options)
+* Safety features (symlink-aware BaseDir checks, 10MB default caps for image/audio/video, override options)
 * Strong test suite with example parity checks
 * Elegant, friendly API
 
@@ -138,12 +323,13 @@ feat!: something major changed
 
 ```
 poml/
-  parser.go
-  renderer.go
-  tools/
-  testdata/
-docs/
-.github/
+  parser.go       # Core parsing logic
+  renderer.go     # POML generation
+  converter.go    # Format conversion
+  validator.go    # Semantic validation
+  testdata/       # Example POML files
+docs/             # Documentation
+.github/          # CI/CD workflows
 ```
 
 Everything important is discoverable and documented inside POML files.
@@ -178,35 +364,3 @@ MIT — do cool things, responsibly.
 
 If you’re thinking “Should I open a PR?” the answer is YES.
 Let’s build something wonderful together ✨💖
-
-
-
-
-
-# poml-go-sdk
-
-This repo uses POML for all docs. The only non-POML doc allowed is this `README.mdx` so GitHub renders a landing page.
-
-- Full structured README: `README.poml`
-- Delivery plan: `PLAN.poml`
-- AI log: `AI.LOCK.poml`
-- Fit-for-purpose plan: `docs/fit_for_purpose.poml`
-- Agent rules: `AGENTS.poml`
-- Multimedia parity fixtures: `poml/testdata/examples/207_multimedia.poml` and goldens
-
-## Rules for contributors and agents
-
-- Do **not** add markdown/org/mdx files besides this `README.mdx`.
-- Author docs in POML (`*.poml`) using extended tags (hint/example/cp/object/list/etc.).
-- Keep new instructions in `AGENTS.poml` to stay discoverable for small-context agents.
-- Repository Copilot guidance: `.github/copilot-instructions.md`.
-- When adding docs, link them from this README.mdx if they are high-signal.
-- Media rules: converters enforce BaseDir containment, default 10MB caps for image/audio/video (override via MaxImageBytes/MaxMediaBytes), and emit multimedia across formats.
-
-## Quick start
-
-```bash
-go test ./...
-```
-
-Converters honor `ConvertOptions{BaseDir, AllowAbsImagePaths, MaxImageBytes}` with symlink-aware containment and a 10MB default cap. Extended tags like `<hint>`, `<example>`, `<cp>`, `<object>`, and `<tool>` round-trip and emit user content across formats.

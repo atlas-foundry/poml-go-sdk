@@ -1,12 +1,117 @@
 <poml>
   <meta>
     <title>Golang Code Quality Specification</title>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
     <language>go</language>
     <description>
-      A comprehensive specification of Go code-quality rules with good &amp; bad examples.
+      A comprehensive specification of Go code-quality rules, architecture diagrams, and getting started guide.
     </description>
   </meta>
+
+  <section id="getting_started" title="Getting Started Guide">
+    <description>
+      Welcome to the team! This guide will help you get set up and writing high-quality Go code in no time.
+    </description>
+
+    <step id="1_install" title="1. Install Go">
+      <description>
+        Ensure you have Go 1.25+ installed.
+      </description>
+      <command>go version</command>
+    </step>
+
+    <step id="2_clone" title="2. Clone the Repository">
+      <description>
+        Clone the repo and navigate into it.
+      </description>
+      <command>git clone https://github.com/atlas-foundry/poml-go-sdk.git</command>
+      <command>cd poml-go-sdk</command>
+    </step>
+
+    <step id="3_test" title="3. Run Tests">
+      <description>
+        Verify that everything is working correctly.
+      </description>
+      <command>go test ./...</command>
+    </step>
+
+    <step id="4_explore" title="4. Explore the Code">
+      <description>
+        Start by looking at `poml/parser.go` to understand how we parse POML files.
+        Then check `poml/examples_test.go` for usage examples.
+      </description>
+    </step>
+  </section>
+
+  <section id="diagrams" title="Architecture Diagrams">
+    <description>
+      Visualizing the flow of data and control in the SDK.
+    </description>
+
+    <diagram id="parsing_flow" title="Parsing Flow">
+      <type>mermaid</type>
+      <content>
+graph LR
+    A[POML File] -->|Parse| B(Document Model)
+    B -->|Validate| C{Valid?}
+    C -->|Yes| D[Converter]
+    C -->|No| E[Error]
+    D -->|FormatMessageDict| F[JSON Output]
+    D -->|FormatOpenAIChat| G[OpenAI Chat Format]
+    D -->|FormatLangChain| H[LangChain Format]
+      </content>
+    </diagram>
+
+    <diagram id="component_interaction" title="Component Interaction">
+      <type>mermaid</type>
+      <content>
+classDiagram
+    class Parser {
+        +Parse(input) Document
+    }
+    class Validator {
+        +Validate(doc) error
+    }
+    class Converter {
+        +Convert(doc, format) []byte
+    }
+    class Document {
+        +Nodes []Node
+    }
+    Parser --> Document : Creates
+    Validator --> Document : Checks
+    Converter --> Document : Reads
+      </content>
+    </diagram>
+
+    <diagram id="lossless_parsing" title="Lossless Parsing Pipeline">
+      <type>mermaid</type>
+      <content>
+flowchart TD
+    Input[Input POML] --> Parser
+    subgraph Parser ["Parser &amp; Model"]
+        direction TB
+        Tokenizer[XML Tokenizer] -->|Stream| Decoder
+        Decoder -->|Preserve| WS[Whitespace &amp; Comments]
+        Decoder -->|Decode| Structs[Typed Structs]
+        Decoder -->|Capture| Raw[Unknown Tags (Raw XML)]
+        WS &amp; Structs &amp; Raw --> Ordered[Ordered Element List]
+    end
+    Ordered --> Renderer
+    subgraph Renderer ["Renderer"]
+        Iterate[Iterate Elements] -->|Reconstruct| Output
+    end
+    Output[Output POML]
+    Input == Identical == Output
+      </content>
+      <description>
+        The parser ensures losslessness by:
+        1. Preserving all leading/trailing whitespace and comments.
+        2. Maintaining the exact order of elements.
+        3. Capturing unknown tags as raw XML to support forward compatibility.
+      </description>
+    </diagram>
+  </section>
 
   <section id="correctness" title="Correctness &amp; Safety">
     <description>Rules ensuring code is valid, predictable, safe, and race-free.</description>
@@ -37,7 +142,7 @@ f, _ := os.Open("config.yaml")  // unchecked error
 
     <rule id="defensive_bounds" title="Defensive Bounds Checks">
       <good_example>
-if i < 0 || i >= len(items) {
+if i &lt; 0 || i &gt;= len(items) {
     return errors.New("index out of range")
 }
 return items[i]
@@ -256,7 +361,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
       <good_example>
 srv := &http.Server{}
 go srv.ListenAndServe()
-<-ctx.Done()
+&lt;-ctx.Done()
 srv.Shutdown(context.Background())
       </good_example>
     </rule>

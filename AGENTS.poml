@@ -13,6 +13,7 @@
       <item>All other docs belong in POML (`*.poml`) using extended tags (hint/example/cp/object/list/etc.).</item>
       <item>Link high-signal docs from README.mdx for discoverability.</item>
       <item>Repo-level Copilot guidance lives in `.github/copilot-instructions.md`; keep it aligned with these rules.</item>
+      <item>Use the upstream POML Extended proposal as a guiding light when evolving content or tags: https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/</item>
     </list>
   </hint>
 
