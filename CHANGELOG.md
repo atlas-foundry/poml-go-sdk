@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.3.0...v1.4.0) (2025-11-23)
+
+
+### Features
+
+* add ValidateWithOptions with extended mode handling ([95704ba](https://github.com/atlas-foundry/poml-go-sdk/commit/95704bae4b84787b8ffeeffd7d33df7e1f4034ad))
+
 # [1.3.0](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.2.1...v1.3.0) (2025-11-23)
 
 
