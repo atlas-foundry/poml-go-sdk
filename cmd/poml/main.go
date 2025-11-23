@@ -70,7 +70,7 @@ func runMCP(args []string) {
 		log.Fatalf("validate POML: %v", err)
 	}
 
-	srv := mcp.New(doc)
+	srv := mcp.New(doc, *file, traceOpts.TracerProvider)
 	log.Printf("poml mcp serving on %s", *addr)
 	if err := http.ListenAndServe(*addr, srv.Handler()); err != nil {
 		log.Fatalf("server error: %v", err)

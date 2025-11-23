@@ -19,7 +19,7 @@ func TestInspect(t *testing.T) {
 		t.Fatalf("validate: %v", err)
 	}
 
-	srv := New(doc)
+	srv := New(doc, "", nil)
 	req := httptest.NewRequest(http.MethodGet, "/inspect", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
@@ -48,7 +48,7 @@ func TestAST(t *testing.T) {
 		t.Fatalf("parse: %v", err)
 	}
 
-	srv := New(doc)
+	srv := New(doc, "", nil)
 	req := httptest.NewRequest(http.MethodGet, "/ast", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
@@ -69,7 +69,7 @@ func TestValidateEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	srv := New(doc)
+	srv := New(doc, "", nil)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/validate", nil)
 	srv.Handler().ServeHTTP(rec, req)
@@ -90,7 +90,7 @@ func TestConvertEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	srv := New(doc)
+	srv := New(doc, "", nil)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/convert?format=dict", nil)
 	srv.Handler().ServeHTTP(rec, req)
@@ -111,7 +111,7 @@ func TestSearchEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	srv := New(doc)
+	srv := New(doc, "", nil)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/search?tag=task", nil)
 	srv.Handler().ServeHTTP(rec, req)
@@ -135,7 +135,7 @@ func TestSearchEndpoint(t *testing.T) {
 
 func TestHealth(t *testing.T) {
 	doc := poml.Document{}
-	srv := New(doc)
+	srv := New(doc, "", nil)
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
@@ -152,7 +152,7 @@ func TestToolsEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	srv := New(doc)
+	srv := New(doc, "", nil)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/tools", nil)
 	srv.Handler().ServeHTTP(rec, req)
@@ -173,7 +173,7 @@ func TestDiagramEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	srv := New(doc)
+	srv := New(doc, "", nil)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/diagram", nil)
 	srv.Handler().ServeHTTP(rec, req)
@@ -194,7 +194,7 @@ func TestRoundtripEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	srv := New(doc)
+	srv := New(doc, "", nil)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/roundtrip", nil)
 	srv.Handler().ServeHTTP(rec, req)
@@ -211,7 +211,7 @@ func TestRoundtripEndpoint(t *testing.T) {
 }
 
 func TestDiffEndpoint(t *testing.T) {
-	srv := New(poml.Document{})
+	srv := New(poml.Document{}, "", nil)
 	body := `{"a":"<poml><meta><id>a</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task></poml>","b":"<poml><meta><id>b</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task></poml>"}`
 	req := httptest.NewRequest(http.MethodPost, "/diff", strings.NewReader(body))
 	rec := httptest.NewRecorder()
@@ -233,7 +233,7 @@ func TestPatchEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	srv := New(doc)
+	srv := New(doc, "", nil)
 	body := `{"tag":"human_msg","index":0,"body":"updated"}`
 	req := httptest.NewRequest(http.MethodPost, "/patch", strings.NewReader(body))
 	rec := httptest.NewRecorder()

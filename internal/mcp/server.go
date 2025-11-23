@@ -6,12 +6,14 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/atlas-foundry/poml-go-sdk/poml"
+	"github.com/fsnotify/fsnotify"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
 )
@@ -19,11 +21,14 @@ import (
 // Server exposes a minimal MCP-style HTTP surface to inspect parsed POML docs.
 // It is intentionally small: a health endpoint, an AST dump, and a summary.
 type Server struct {
-	doc     poml.Document
-	mux     *http.ServeMux
-	once    sync.Once
-	summary inspectSummary
-	tracer  trace.Tracer
+	doc        poml.Document
+	mux        *http.ServeMux
+	once       sync.Once
+	summary    inspectSummary
+	tracer     trace.Tracer
+	sourcePath string
+	mu         sync.RWMutex
+	watcher    *fsnotify.Watcher
 }
 
 type inspectSummary struct {
@@ -34,12 +39,16 @@ type inspectSummary struct {
 	Types   []poml.ElementType `json:"element_types,omitempty"`
 }
 
-// New creates a server for the given document.
-func New(doc poml.Document) *Server {
+// New creates a server for the given document. sourcePath enables watch/reload when set.
+func New(doc poml.Document, sourcePath string, tp trace.TracerProvider) *Server {
+	if tp == nil {
+		tp = noop.NewTracerProvider()
+	}
 	s := &Server{
-		doc:    doc,
-		mux:    http.NewServeMux(),
-		tracer: noop.NewTracerProvider().Tracer("github.com/atlas-foundry/poml-go-sdk/mcp"),
+		doc:        doc,
+		mux:        http.NewServeMux(),
+		tracer:     tp.Tracer("github.com/atlas-foundry/poml-go-sdk/mcp"),
+		sourcePath: sourcePath,
 	}
 	s.mux.HandleFunc("/health", s.health)
 	s.mux.HandleFunc("/inspect", s.inspect)
@@ -52,6 +61,13 @@ func New(doc poml.Document) *Server {
 	s.mux.HandleFunc("/roundtrip", s.roundtrip)
 	s.mux.HandleFunc("/diff", s.diff)
 	s.mux.HandleFunc("/patch", s.patch)
+	s.mux.HandleFunc("/watch", s.watch)
+	if sourcePath != "" {
+		if w, err := fsnotify.NewWatcher(); err == nil {
+			_ = w.Add(sourcePath)
+			s.watcher = w
+		}
+	}
 	return s
 }
 
@@ -60,24 +76,36 @@ func (s *Server) Handler() http.Handler {
 	return s.mux
 }
 
+func (s *Server) snapshot() poml.Document {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.doc
+}
+
+func (s *Server) updateDoc(doc poml.Document) {
+	s.mu.Lock()
+	s.doc = doc
+	s.once = sync.Once{}
+	s.mu.Unlock()
+}
+
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("ok"))
 }
 
 func (s *Server) inspect(w http.ResponseWriter, _ *http.Request) {
-	s.once.Do(func() {
-		s.summary = buildSummary(s.doc)
-	})
-	writeJSON(w, s.summary)
+	doc := s.snapshot()
+	writeJSON(w, buildSummary(doc))
 }
 
 func (s *Server) ast(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, s.doc)
+	writeJSON(w, s.snapshot())
 }
 
 func (s *Server) validate(w http.ResponseWriter, _ *http.Request) {
-	err := s.doc.Validate()
+	doc := s.snapshot()
+	err := doc.Validate()
 	if err == nil {
 		writeJSON(w, map[string]any{"ok": true})
 		return
@@ -97,7 +125,8 @@ func (s *Server) convert(w http.ResponseWriter, r *http.Request) {
 	format := poml.Format(formatStr)
 	_, span := s.tracer.Start(r.Context(), "mcp.convert")
 	defer span.End()
-	out, err := poml.Convert(s.doc, format, poml.ConvertOptions{})
+	doc := s.snapshot()
+	out, err := poml.Convert(doc, format, poml.ConvertOptions{})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("convert error: %v", err), http.StatusBadRequest)
 		return
@@ -110,9 +139,10 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 	attr := strings.TrimSpace(r.URL.Query().Get("attr"))
 	text := strings.TrimSpace(r.URL.Query().Get("text"))
 
+	doc := s.snapshot()
 	var matches []map[string]any
-	for _, el := range s.doc.Elements {
-		attrs, body := extractAttrsBody(s.doc, el)
+	for _, el := range doc.Elements {
+		attrs, body := extractAttrsBody(doc, el)
 		if tag != "" && !strings.EqualFold(tag, string(el.Type)) {
 			continue
 		}
@@ -339,24 +369,27 @@ func buildSummary(doc poml.Document) inspectSummary {
 }
 
 func (s *Server) tools(w http.ResponseWriter, _ *http.Request) {
+	doc := s.snapshot()
 	writeJSON(w, map[string]any{
-		"tool_definitions": s.doc.ToolDefs,
-		"tool_requests":    s.doc.ToolReqs,
-		"tool_responses":   s.doc.ToolResps,
-		"tool_results":     s.doc.ToolResults,
-		"tool_errors":      s.doc.ToolErrors,
+		"tool_definitions": doc.ToolDefs,
+		"tool_requests":    doc.ToolReqs,
+		"tool_responses":   doc.ToolResps,
+		"tool_results":     doc.ToolResults,
+		"tool_errors":      doc.ToolErrors,
 	})
 }
 
 func (s *Server) diagram(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, s.doc.Diagrams)
+	doc := s.snapshot()
+	writeJSON(w, doc.Diagrams)
 }
 
 func (s *Server) roundtrip(w http.ResponseWriter, _ *http.Request) {
 	ctx, span := s.tracer.Start(context.Background(), "mcp.roundtrip")
 	defer span.End()
+	doc := s.snapshot()
 	var buf strings.Builder
-	if err := s.doc.EncodeWithOptions(&buf, poml.EncodeOptions{IncludeHeader: false, PreserveOrder: true, PreserveWS: true}); err != nil {
+	if err := doc.EncodeWithOptions(&buf, poml.EncodeOptions{IncludeHeader: false, PreserveOrder: true, PreserveWS: true}); err != nil {
 		http.Error(w, fmt.Sprintf("encode error: %v", err), http.StatusInternalServerError)
 		return
 	}
@@ -420,7 +453,7 @@ func (s *Server) patch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
-	doc := s.doc
+	doc := s.snapshot()
 	updated := false
 	switch poml.ElementType(req.Tag) {
 	case poml.ElementRole:
@@ -441,6 +474,7 @@ func (s *Server) patch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unsupported tag or index", http.StatusBadRequest)
 		return
 	}
+	s.updateDoc(doc)
 	var buf strings.Builder
 	if err := doc.EncodeWithOptions(&buf, poml.EncodeOptions{IncludeHeader: false, PreserveOrder: true, PreserveWS: true}); err != nil {
 		http.Error(w, fmt.Sprintf("encode error: %v", err), http.StatusInternalServerError)
@@ -452,6 +486,77 @@ func (s *Server) patch(w http.ResponseWriter, r *http.Request) {
 		"tag":   req.Tag,
 		"index": req.Index,
 	})
+}
+
+func (s *Server) watch(w http.ResponseWriter, r *http.Request) {
+	if s.watcher == nil || s.sourcePath == "" {
+		http.Error(w, "watch not enabled (no source file)", http.StatusBadRequest)
+		return
+	}
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	sendSnapshot := func(event string) {
+		doc := s.snapshot()
+		payload := map[string]any{
+			"event":   event,
+			"summary": buildSummary(doc),
+		}
+		blob, _ := json.Marshal(payload)
+		fmt.Fprintf(w, "data: %s\n\n", blob)
+		flusher.Flush()
+	}
+
+	sendSnapshot("initial")
+
+	ctx := r.Context()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case ev := <-s.watcher.Events:
+			if ev.Op&(fsnotify.Write|fsnotify.Create|fsnotify.Remove|fsnotify.Rename) != 0 {
+				if doc, err := s.reload(); err == nil {
+					s.updateDoc(doc)
+					sendSnapshot("update")
+				} else {
+					payload := map[string]any{"event": "error", "error": err.Error()}
+					blob, _ := json.Marshal(payload)
+					fmt.Fprintf(w, "data: %s\n\n", blob)
+					flusher.Flush()
+				}
+			}
+		case err := <-s.watcher.Errors:
+			payload := map[string]any{"event": "error", "error": err.Error()}
+			blob, _ := json.Marshal(payload)
+			fmt.Fprintf(w, "data: %s\n\n", blob)
+			flusher.Flush()
+		}
+	}
+}
+
+func (s *Server) reload() (poml.Document, error) {
+	if s.sourcePath == "" {
+		return poml.Document{}, fmt.Errorf("no source path")
+	}
+	data, err := os.ReadFile(s.sourcePath)
+	if err != nil {
+		return poml.Document{}, err
+	}
+	doc, err := poml.ParseString(string(data))
+	if err != nil {
+		return poml.Document{}, err
+	}
+	if err := doc.Validate(); err != nil {
+		return poml.Document{}, err
+	}
+	return doc, nil
 }
 
 func writeJSON(w http.ResponseWriter, v any) {
