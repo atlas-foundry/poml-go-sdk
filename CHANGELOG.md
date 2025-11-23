@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.0.0...v1.0.1) (2025-11-23)
+
+
+### Bug Fixes
+
+* add missing tools/render-mdx.mjs script ([da7e80d](https://github.com/atlas-foundry/poml-go-sdk/commit/da7e80d92e2b2339b9ea09a3fd496cc66da23580))
+
 # 1.0.0 (2025-11-23)
 
 
