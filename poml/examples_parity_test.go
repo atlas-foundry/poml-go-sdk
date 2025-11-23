@@ -47,12 +47,19 @@ func TestParseUpstreamExamplesWithExtendedTags(t *testing.T) {
 	paths := []string{
 		filepath.Join("testdata", "examples", "101_explain_character.poml"),
 		filepath.Join("testdata", "examples", "206_expense_send_email.poml"),
+		filepath.Join("testdata", "examples", "ts_reference_basic.poml"),
 	}
 	for _, p := range paths {
 		p := p
 		t.Run(filepath.Base(p), func(t *testing.T) {
-			if _, err := ParseFile(p); err != nil {
+			doc, err := ParseFile(p)
+			if err != nil {
 				t.Fatalf("parse %s: %v", p, err)
+			}
+			if filepath.Base(p) == "ts_reference_basic.poml" {
+				if err := doc.Validate(); err != nil {
+					t.Fatalf("validate %s: %v", p, err)
+				}
 			}
 		})
 	}
@@ -80,6 +87,26 @@ func TestConverterParityMultimedia(t *testing.T) {
 				t.Fatalf("convert %s: %v", tc.name, err)
 			}
 			assertJSONEqual(t, out, tc.expected)
+		})
+	}
+}
+
+func TestConvertTsReferenceExample(t *testing.T) {
+	fixture := filepath.Join("testdata", "examples", "ts_reference_basic.poml")
+	doc, err := ParseFile(fixture)
+	if err != nil {
+		t.Fatalf("parse fixture: %v", err)
+	}
+	if err := doc.Validate(); err != nil {
+		t.Fatalf("validate fixture: %v", err)
+	}
+
+	for _, format := range []Format{FormatMessageDict, FormatDict, FormatOpenAIChat, FormatLangChain} {
+		format := format
+		t.Run(string(format), func(t *testing.T) {
+			if _, err := Convert(doc, format, ConvertOptions{}); err != nil {
+				t.Fatalf("convert %s: %v", format, err)
+			}
 		})
 	}
 }
