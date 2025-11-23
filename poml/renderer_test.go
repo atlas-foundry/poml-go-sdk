@@ -52,3 +52,71 @@ func TestGraphvizRendererDOT(t *testing.T) {
 		t.Fatalf("dot mismatch.\n got:\n%s\nwant:\n%s", string(dot), string(want))
 	}
 }
+
+func TestGraphvizRendererDirectedOverride(t *testing.T) {
+	scene := Scene{
+		Nodes: []SceneNode{
+			{ID: "A", Position: [3]float64{0, 0, 0}},
+			{ID: "B", Position: [3]float64{1, 1, 0}},
+		},
+		Edges: []SceneEdge{
+			{From: "A", To: "B", Directed: true, Style: map[string]string{"stroke": "red"}},
+		},
+	}
+	forcedUndirected := false
+	dot, err := (GraphvizRenderer{Directed: &forcedUndirected}).Render(scene)
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	out := string(dot)
+	if !strings.Contains(out, "\"A\" -- \"B\"") {
+		t.Fatalf("expected undirected edge, got: %s", out)
+	}
+	if !strings.Contains(out, "color=\"red\"") {
+		t.Fatalf("expected stroke color in attrs: %s", out)
+	}
+}
+
+func TestBuildDOTAttrsAndStyles(t *testing.T) {
+	got := buildDOTAttrs(map[string]string{
+		"b":     "2",
+		"empty": " ",
+		"a":     "1",
+	})
+	if got != " [a=\"1\",b=\"2\"]" {
+		t.Fatalf("unexpected attrs: %s", got)
+	}
+
+	tests := []struct {
+		existing string
+		extra    string
+		want     string
+	}{
+		{"", "filled", "filled"},
+		{"rounded", "filled", "rounded,filled"},
+		{"existing", "   ", "existing"},
+	}
+	for _, tt := range tests {
+		if res := appendStyle(tt.existing, tt.extra); res != tt.want {
+			t.Fatalf("appendStyle(%q,%q)=%q want %q", tt.existing, tt.extra, res, tt.want)
+		}
+	}
+}
+
+func TestBuildDOTNodeAttrs(t *testing.T) {
+	node := SceneNode{
+		ID:       "node-1",
+		Position: [3]float64{1.2, 3.4, 0},
+		Style: map[string]string{
+			"shape":  "hex",
+			"color":  "blue",
+			"stroke": "black",
+		},
+	}
+	attrs := buildDOTNodeAttrs(node)
+	for _, want := range []string{`label="node-1"`, `shape="hexagon"`, `fillcolor="blue"`, `style="filled"`, `color="black"`, `pos="1.200,3.400!"`} {
+		if !strings.Contains(attrs, want) {
+			t.Fatalf("expected %s in attrs %s", want, attrs)
+		}
+	}
+}
