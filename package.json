@@ -1,21 +1,29 @@
 {
-"name": "poml-go-sdk-release-tools",
-"private": true,
-"version": "0.0.0-development",
-"scripts": {
-"prepare": "husky install",
-  "release": "semantic-release",
-  "lint:commits": "commitlint --from=HEAD~1 --to=HEAD"
- },
- "devDependencies": {
-  "semantic-release": "^23.0.0",
-  "@semantic-release/changelog": "^6.0.0",
-  "@semantic-release/git": "^10.0.1",
-  "@semantic-release/github": "^9.0.0",
-  "@semantic-release/commit-analyzer": "^11.0.0",
-  "@semantic-release/release-notes-generator": "^12.0.0",
-  "husky": "^9.0.0",
-  "@commitlint/cli": "^19.0.0",
-"@commitlint/config-conventional": "^19.0.0"
-}
+  "name": "poml-go-sdk-release-tools",
+  "private": true,
+  "version": "0.0.0-development",
+  "scripts": {
+    "prepare": "husky",
+    "release": "semantic-release",
+    "lint:commits": "commitlint --from=HEAD~1 --to=HEAD"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "@mdx-js/mdx": "^3.0.0",
+    "@semantic-release/changelog": "^6.0.0",
+    "@semantic-release/commit-analyzer": "^11.0.0",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^9.0.0",
+    "@semantic-release/release-notes-generator": "^12.0.0",
+    "husky": "^9.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "semantic-release": "^24.2.9"
+  },
+  "overrides": {
+    "@semantic-release/npm": {
+      "npm": "npm:noop-package@1.0.0"
+    }
+  }
 }
