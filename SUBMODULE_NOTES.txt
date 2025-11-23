@@ -1,3 +1,0 @@
-Submodule prep reminders:
-- Run: git submodule add <remote-url> plugins/poml-go-sdk
-- Remove go.mod replace after publishing the module version.
