@@ -1,0 +1,5 @@
+digraphG{
+"x"[color="green",label="X",pos="0.000,0.000!",shape="diamond"];
+"y"[color="green",label="Y",pos="0.000,0.000!",shape="box"];
+"x"--"y"[color="purple",label="linked",penwidth="3",style="dashed"];
+}

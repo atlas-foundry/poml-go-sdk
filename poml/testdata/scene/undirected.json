@@ -1,0 +1,10 @@
+{
+  "id": "s3",
+  "nodes": [
+    {"id": "x", "label": "X", "style": {"stroke": "green", "shape": "diamond"}},
+    {"id": "y", "label": "Y", "style": {"stroke": "green", "shape": "square"}}
+  ],
+  "edges": [
+    {"from": "x", "to": "y", "kind": "linked", "directed": false, "style": {"stroke": "purple", "width": "3", "dash": "dashed"}}
+  ]
+}

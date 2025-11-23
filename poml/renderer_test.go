@@ -23,6 +23,10 @@ func TestRenderDOTSceneJSONStyled(t *testing.T) {
 	assertSceneDOTSnapshot(t, "styled.json")
 }
 
+func TestRenderDOTSceneJSONUndirected(t *testing.T) {
+	assertSceneDOTSnapshot(t, "undirected.json")
+}
+
 func assertDOTSnapshot(t *testing.T, name string) {
 	t.Helper()
 	p := filepath.Join("testdata", "dot", name)
