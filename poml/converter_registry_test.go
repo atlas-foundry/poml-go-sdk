@@ -166,6 +166,44 @@ func TestDiagramRoundTripWithBaseDocument(t *testing.T) {
 	}
 }
 
+func TestSceneExtrasPreservedThroughRoundTrip(t *testing.T) {
+	reg := NewConverterRegistry()
+	registerDefaultConverters(reg)
+
+	scene := []Scene{{
+		ID: "s1",
+		Nodes: []SceneNode{
+			{ID: "n1", Label: "N1", Position: [3]float64{0, 0, 0}, Style: map[string]string{"color": "blue"}},
+		},
+		Edges: []SceneEdge{
+			{From: "n1", To: "n1", Kind: "loop", Directed: true, Style: map[string]string{"stroke": "red"}},
+		},
+		Meta: map[string]any{
+			"diagram_attrs": map[string]string{"custom": "c1"},
+			"camera_attrs":  map[string]string{"tilt": "5"},
+			"graph_attrs":   map[string]string{"weight": "42"},
+		},
+	}}
+
+	ctx := context.Background()
+	diagramsAny, err := reg.Convert(ctx, "scene", "diagram", scene, nil)
+	if err != nil {
+		t.Fatalf("scene->diagram: %v", err)
+	}
+	diagrams := diagramsAny.([]Diagram)
+	if len(diagrams) != 1 || len(diagrams[0].Attrs) == 0 {
+		t.Fatalf("expected diagram attrs from meta: %+v", diagrams)
+	}
+	pomlAny, err := reg.Convert(ctx, "diagram", "poml", diagrams, nil)
+	if err != nil {
+		t.Fatalf("diagram->poml: %v", err)
+	}
+	pomlText := pomlAny.(string)
+	if !strings.Contains(pomlText, "custom=\"c1\"") || !strings.Contains(pomlText, "tilt=\"5\"") {
+		t.Fatalf("expected attrs rendered into poml: %s", pomlText)
+	}
+}
+
 func TestConverterRegistryListSorted(t *testing.T) {
 	reg := NewConverterRegistry()
 	_ = reg.Register(basicConverter{from: "B", to: "A", fn: func(context.Context, any, map[string]any) (any, error) { return nil, nil }})
