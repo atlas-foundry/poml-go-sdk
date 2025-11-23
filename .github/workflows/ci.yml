@@ -111,13 +111,19 @@ jobs:
       fail-fast: false
       matrix:
         base: ["debian:stable", "alpine:3.20", "ubuntu:24.04"]
+        arch: ["amd64", "arm64"]
 
     steps:
       - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
         run: |
           TAG=$(echo "${{ matrix.base }}" | tr ':' '-')
+          ARCH="${{ matrix.arch }}"
           BASE="${{ matrix.base }}"
           cat <<'EOF' > Dockerfile
           ARG BASE_IMAGE=alpine:3.20
@@ -171,12 +177,16 @@ jobs:
 
             for _, f := range files {
               data, _ := os.ReadFile(f)
-              doc, err := sdk.Parse(data)
+              doc, err := sdk.ParseString(string(data))
               if err != nil {
                 panic(fmt.Sprintf("parse error in %s: %v", f, err))
               }
               if err := sdk.Validate(doc); err != nil {
                 panic(fmt.Sprintf("semantic error in %s: %v", f, err))
+              }
+              opts := sdk.ConvertOptions{BaseDir: filepath.Dir(f), MaxImageBytes: 10 << 20, MaxMediaBytes: 10 << 20}
+              if _, err := sdk.Convert(doc, sdk.FormatMessageDict, opts); err != nil {
+                panic(fmt.Sprintf("convert error in %s: %v", f, err))
               }
             }
 
@@ -188,12 +198,12 @@ jobs:
           RUN go version && go build semantic_test.go
           EOF
 
-          docker build --build-arg BASE_IMAGE="${BASE}" --build-arg GO_VERSION="1.25.0" -t poml-e2e:${TAG} .
+          docker buildx build --platform=linux/${ARCH} --build-arg BASE_IMAGE="${BASE}" --build-arg GO_VERSION="1.25.0" -t poml-e2e:${TAG}-${ARCH} .
 
       - name: Run E2E Test
         run: |
           TAG=$(echo "${{ matrix.base }}" | tr ':' '-')
-          docker run --rm poml-e2e:${TAG}
+          docker run --rm --platform=linux/${{ matrix.arch }} poml-e2e:${TAG}-${{ matrix.arch }}
 
   # =====================================================
   # 3. DOCS BUILD
