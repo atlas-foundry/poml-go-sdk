@@ -175,6 +175,18 @@ func TestSemanticMatrixFixtures(t *testing.T) {
 			file: filepath.Join("testdata", "semantic", "runtime_schema.poml"),
 			opts: ConvertOptions{BaseDir: "testdata/semantic"},
 		},
+		{
+			name:      "image-too-large",
+			file:      filepath.Join("testdata", "semantic", "base_dir_ok.poml"),
+			opts:      ConvertOptions{BaseDir: "testdata/semantic", MaxImageBytes: 8, MaxMediaBytes: 8},
+			expectErr: true,
+		},
+		{
+			name:      "abs-image-disallowed",
+			file:      filepath.Join("testdata", "semantic", "base_dir_absolute.poml"),
+			opts:      ConvertOptions{AllowAbsImagePaths: false},
+			expectErr: true,
+		},
 	}
 
 	for _, tc := range cases {
