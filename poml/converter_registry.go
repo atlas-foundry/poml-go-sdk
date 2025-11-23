@@ -79,7 +79,14 @@ func (r *ConverterRegistry) Convert(ctx context.Context, from, to string, input 
 	conv, ok := r.converters[key]
 	r.mu.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("no converter for %s", key)
+		r.mu.RLock()
+		var keys []string
+		for k := range r.converters {
+			keys = append(keys, k)
+		}
+		r.mu.RUnlock()
+		sort.Strings(keys)
+		return nil, fmt.Errorf("no converter for %s (available: %s)", key, strings.Join(keys, ", "))
 	}
 	return conv.Convert(ctx, input, opts)
 }

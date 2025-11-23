@@ -180,6 +180,18 @@ func TestConverterRegistryListSorted(t *testing.T) {
 	}
 }
 
+func TestConverterRegistryMissingErrorListsAvailable(t *testing.T) {
+	reg := NewConverterRegistry()
+	_ = reg.Register(basicConverter{from: "x", to: "y", fn: func(context.Context, any, map[string]any) (any, error) { return nil, nil }})
+	_, err := reg.Convert(context.Background(), "foo", "bar", nil, nil)
+	if err == nil {
+		t.Fatalf("expected error for missing converter")
+	}
+	if !strings.Contains(err.Error(), "x->y") {
+		t.Fatalf("expected available converters listed, got %v", err)
+	}
+}
+
 func TestConverterRegistryConcurrentRegister(t *testing.T) {
 	reg := NewConverterRegistry()
 	conv := basicConverter{from: "x", to: "y", fn: func(context.Context, any, map[string]any) (any, error) { return nil, nil }}
