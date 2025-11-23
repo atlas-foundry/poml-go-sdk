@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.5.0...v1.6.0) (2025-11-23)
+
+
+### Features
+
+* surface unknown elements in extended mode conversions ([f8b3c34](https://github.com/atlas-foundry/poml-go-sdk/commit/f8b3c34a4abc1c9ba27389a46b800bd0726ada56))
+
 # [1.5.0](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.4.0...v1.5.0) (2025-11-23)
 
 
