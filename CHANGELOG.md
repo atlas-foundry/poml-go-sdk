@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.4.0...v1.5.0) (2025-11-23)
+
+
+### Features
+
+* extend options for Extended mode parsing/validation and cli flags ([5dcaf22](https://github.com/atlas-foundry/poml-go-sdk/commit/5dcaf2279bd74dc72388072bdca61e514da1925e))
+
 # [1.4.0](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.3.0...v1.4.0) (2025-11-23)
 
 
