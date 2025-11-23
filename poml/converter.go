@@ -83,7 +83,7 @@ func ConvertWithTrace(ctx context.Context, doc Document, format Format, opts Con
 	if opts.Trace.skip() {
 		return Convert(doc, format, opts)
 	}
-	ctx, span := opts.Trace.start(ctx, "poml.convert",
+	_, span := opts.Trace.start(ctx, "poml.convert",
 		attribute.String("poml.format", string(format)),
 		attribute.String("poml.meta.id", strings.TrimSpace(doc.Meta.ID)),
 	)

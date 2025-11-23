@@ -378,7 +378,7 @@ func ParseStringWithTrace(ctx context.Context, body string, traceOpts TraceOptio
 	if traceOpts.skip() {
 		return ParseString(body)
 	}
-	ctx, span := traceOpts.start(ctx, "poml.parse", attribute.String("poml.source", "string"), attribute.String("poml.mode", "default"))
+	_, span := traceOpts.start(ctx, "poml.parse", attribute.String("poml.source", "string"), attribute.String("poml.mode", "default"))
 	defer span.End()
 	doc, err := ParseString(body)
 	if err != nil {
@@ -392,7 +392,7 @@ func ParseFileWithTrace(ctx context.Context, path string, traceOpts TraceOptions
 	if traceOpts.skip() {
 		return ParseFile(path)
 	}
-	ctx, span := traceOpts.start(ctx, "poml.parse", attribute.String("poml.source", "file"), attribute.String("poml.mode", "default"), attribute.String("poml.path", path))
+	_, span := traceOpts.start(ctx, "poml.parse", attribute.String("poml.source", "file"), attribute.String("poml.mode", "default"), attribute.String("poml.path", path))
 	defer span.End()
 	doc, err := ParseFile(path)
 	if err != nil {
@@ -406,7 +406,7 @@ func ParseReaderWithTrace(ctx context.Context, r io.Reader, traceOpts TraceOptio
 	if traceOpts.skip() {
 		return ParseReader(r)
 	}
-	ctx, span := traceOpts.start(ctx, "poml.parse", attribute.String("poml.source", "reader"), attribute.String("poml.mode", "default"))
+	_, span := traceOpts.start(ctx, "poml.parse", attribute.String("poml.source", "reader"), attribute.String("poml.mode", "default"))
 	defer span.End()
 	doc, err := ParseReader(r)
 	if err != nil {
