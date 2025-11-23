@@ -146,6 +146,24 @@ func canonicalizeJSON(t *testing.T, v any) any {
 	return out
 }
 
+func readFile(t *testing.T, path string) string {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	return string(b)
+}
+
+func assertJSONEqualRaw(t *testing.T, actualBytes []byte, expectedPath string) {
+	t.Helper()
+	var actual any
+	if err := json.Unmarshal(actualBytes, &actual); err != nil {
+		t.Fatalf("unmarshal actual: %v", err)
+	}
+	assertJSONEqual(t, actual, expectedPath)
+}
+
 func prettyJSON(t *testing.T, v any) string {
 	t.Helper()
 	raw, err := json.MarshalIndent(v, "", "  ")

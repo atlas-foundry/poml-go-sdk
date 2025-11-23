@@ -1,0 +1,41 @@
+{
+  "id": "scene-1",
+  "nodes": [
+    {
+      "id": "n1",
+      "label": "Node 1",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "style": {
+        "color": "blue"
+      }
+    },
+    {
+      "id": "n2",
+      "label": "Node 2",
+      "position": [
+        1,
+        1,
+        0
+      ],
+      "style": {
+        "shape": "hex"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "directed": true,
+      "from": "n1",
+      "kind": "link",
+      "style": {
+        "stroke": "black"
+      },
+      "to": "n2"
+    }
+  ],
+  "camera": {}
+}
