@@ -51,10 +51,10 @@ jobs:
           fi
 
       - name: Lint (golangci-lint)
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.65.0
-          args: --timeout=5m
+        run: |
+          # Using the official install script
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.6.2
+          golangci-lint run --timeout=5m
 
       - name: Vulnerability scan (govulncheck)
         uses: golang/govulncheck-action@v1
