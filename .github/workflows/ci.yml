@@ -211,12 +211,12 @@ jobs:
           node-version: "20"
 
       - name: Install MDX
-        run: npm install --global @mdx-js/mdx
+        run: npm install @mdx-js/mdx --no-save
 
       - name: Generate docs
         run: |
           mkdir -p build/docs
-          mdx README.mdx > build/docs/index.html
+          npx mdx README.mdx > build/docs/index.html
 
       - name: Upload Docs Artifact
         uses: actions/upload-artifact@v4
