@@ -81,6 +81,10 @@ jobs:
       - name: Run tests with coverage (poml package)
         run: go test -coverpkg=./poml -coverprofile=coverage.out ./...
 
+      - name: Verify DOT goldens
+        run: |
+          UPDATE_GOLDEN=0 go test ./poml -run TestRenderDOT
+
       - name: Enforce coverage ≥80%
         run: |
           THRESHOLD=80.0
