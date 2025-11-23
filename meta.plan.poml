@@ -87,9 +87,9 @@
 
   <task caption="Version parity enforcement">
     <list>
-      <item>History rewrites strip premium content (migrated to <cp>poml-horse</cp>) and re-create upstream tags 1:1 using <cp>git filter-repo</cp>; instructions live in <cp>docs/upstream_parity.poml</cp>.</item>
-      <item>Every parity rewrite ends with README/CHANGELOG/meta updates plus annotated tags stating <cp>Upstream-Parity: vX.Y.Z</cp>.</item>
-      <item>Freeze merges during the rewrite window and broadcast force-push guidance so downstream consumers can re-align.</item>
+      <item>Tags mirror upstream <cp>poml-lang/poml</cp> 1:1; no forks or custom semver.</item>
+      <item>Parity rewrites include README/CHANGELOG/meta updates plus annotated tags stating <cp>Upstream-Parity: vX.Y.Z</cp>.</item>
+      <item>Freeze merges during a parity rewrite and broadcast force-push guidance so downstream consumers can re-align.</item>
     </list>
   </task>
 
@@ -104,18 +104,11 @@
   </task>
 
   <task caption="Premium split orchestration">
-    <list>
-      <item>Enumerate premium/non-parity assets (VS Code extension, MCP server, OTLP/diagram helpers, tracing, renderer adapters) and stage them under `~/the/poml-horse/incoming/`.</item>
-      <item>Extract function-level converters/registrations, CLI handlers, and adapter helpers so the OSS tree only exposes parity primitives; stub or remove references in `poml-go-sdk` afterwards.</item>
-      <item>Update README.*, meta.plan.poml, and CHANGELOG.md to explain the split, point premium consumers at `poml-horse`, and note the upcoming history rewrite.</item>
-      <item>Run `go mod tidy` + `go test ./...` in `poml-go-sdk`, then commit the stripped tree to the clean clone before rerunning the `git filter-repo` rewrite.</item>
-      <item>Document the twin histories in `docs/upstream_parity.poml`, tag the filtered branch, and plan the force-push + announcements per the communications task.</item>
-    </list>
+    <list/>
   </task>
 
   <log>
     <entry date="2025-11-23" actor="ai.architect">Merged lossless plan with original badge/test roadmap to retain CI quality goals while pursuing lossless parity.</entry>
-    <entry date="2025-11-23" actor="ai.architect">Drafted premium split orchestration so `poml-go-sdk` stays parity-first and all extras land in `poml-horse` before the rewrite.</entry>
     <entry date="2025-11-22" actor="ai.architect">Replaced badge roadmap with lossless round-trip plan aligned with registry and adapter separation.</entry>
   </log>
 

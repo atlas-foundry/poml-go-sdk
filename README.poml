@@ -47,8 +47,6 @@
       <item>We follow the official <cp>poml-lang/poml</cp> release tags exactly; every tag in this repo maps 1:1 to the upstream spec version.</item>
       <item><code>make sync-upstream TAG=vX.Y.Z</code> (backed by <cp>scripts/sync_upstream.sh</cp>) downloads the tagged archive, refreshes <cp>third_party/upstream</cp>, and runs parity tests.</item>
       <item><cp>.github/workflows/upstream-sync.yml</cp> runs weekly to auto-open PRs for new stable upstream releases so we keep vendored fixtures current.</item>
-      <item>Premium tooling (MCP server, VS Code extension, tracing, renderers) now lives in <cp>poml-horse</cp>; this repo keeps the pure OSS parity surface.</item>
-      <item>Premium-only tooling now lives in <cp>poml-horse</cp>; this repo remains OSS-aligned and filter-repo rewrites will strip any premium paths while retaining upstream parity (see <cp>docs/upstream_parity.poml</cp>).</item>
     </list>
   </hint>
 
