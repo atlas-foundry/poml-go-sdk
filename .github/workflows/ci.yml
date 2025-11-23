@@ -109,10 +109,14 @@ jobs:
           TAG=$(echo "${{ matrix.base }}" | tr ':' '-')
           BASE="${{ matrix.base }}"
           cat <<'EOF' > Dockerfile
-          ARG BASE_IMAGE
+          ARG BASE_IMAGE=alpine:3.20
           FROM ${BASE_IMAGE}
 
           ARG GO_VERSION=1.25.0
+          # Ensure curl/tar/git are available for Go install across alpine/apt-based images.
+          RUN (apk add --no-cache curl tar git ca-certificates || \
+               (apt-get update && apt-get install -y curl ca-certificates tar git)) && \
+              update-ca-certificates || true
           RUN case "$(uname -s)" in \
                 Linux) ;; \
                 *) echo "unsupported OS"; exit 1 ;; \
@@ -124,8 +128,8 @@ jobs:
               tar -C /usr/local -xzf /tmp/go.tgz && \
               ln -sf /usr/local/go/bin/go /usr/bin/go
 
-          RUN apk add --no-cache go git || \
-              (apt-get update && apt-get install -y golang git) || true
+          # (Keep system Go if present for tools, but we rely on downloaded Go above.)
+          RUN apk add --no-cache go || (apt-get update && apt-get install -y golang) || true
 
           WORKDIR /sdk
           COPY . .
