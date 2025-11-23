@@ -68,9 +68,31 @@ func Convert(doc Document, format Format, opts ConvertOptions) (any, error) {
 	case FormatLangChain:
 		return convertLangChain(doc, opts)
 	case FormatScene:
-		return doc.Scene(), nil
+		scenes, err := diagramsToScenes(doc.Diagrams, defaultSceneExportOptions)
+		if err != nil {
+			return nil, err
+		}
+		switch len(scenes) {
+		case 0:
+			return doc.Scene(), nil
+		case 1:
+			return scenes[0], nil
+		default:
+			return scenes, nil
+		}
 	case FormatSceneJSON:
-		return encodeSceneJSON(doc.Scene())
+		scenes, err := diagramsToScenes(doc.Diagrams, defaultSceneExportOptions)
+		if err != nil {
+			return nil, err
+		}
+		switch len(scenes) {
+		case 0:
+			return encodeSceneJSON(doc.Scene())
+		case 1:
+			return encodeSceneJSON(scenes[0])
+		default:
+			return encodeScenesJSON(scenes)
+		}
 	default:
 		return nil, ErrNotImplemented
 	}
@@ -101,6 +123,21 @@ func ConvertWithTrace(ctx context.Context, doc Document, format Format, opts Con
 		span.RecordError(err)
 	}
 	return out, err
+}
+
+func diagramsToScenes(diagrams []Diagram, opts SceneExportOptions) ([]Scene, error) {
+	if len(diagrams) == 0 {
+		return nil, nil
+	}
+	out := make([]Scene, 0, len(diagrams))
+	for _, d := range diagrams {
+		scene, err := DiagramToSceneWithOptions(d, opts)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, scene)
+	}
+	return out, nil
 }
 
 type messageDict struct {
@@ -162,6 +199,17 @@ func convertMessageDict(doc Document, opts ConvertOptions) ([]messageDict, error
 				return nil, err
 			}
 			msgs = append(msgs, messageDict{Speaker: "human", Content: part})
+		case ElementUnknown:
+			if opts.Extended != ExtendedOff {
+				msgs = append(msgs, messageDict{
+					Speaker: "human",
+					Content: map[string]any{
+						"type": "unknown",
+						"name": el.Name,
+						"raw":  strings.TrimSpace(el.RawXML),
+					},
+				})
+			}
 		}
 	}
 	return msgs, nil

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/atlas-foundry/poml-go-sdk/internal/mcp"
 	"github.com/atlas-foundry/poml-go-sdk/poml"
@@ -46,6 +47,8 @@ func runMCP(args []string) {
 	traceOTLPHTTP := fs.String("trace-otlp-http", "", "OTLP/HTTP endpoint for tracing (e.g., localhost:4318)")
 	traceOTLPGRPC := fs.String("trace-otlp-grpc", "", "OTLP/gRPC endpoint for tracing (e.g., localhost:4317)")
 	traceInsecure := fs.Bool("trace-insecure", true, "allow insecure OTLP exporters")
+	extendedStrict := fs.Bool("extended-strict", false, "enable strict POML Extended parsing/validation")
+	extendedLenient := fs.Bool("extended", false, "enable lenient POML Extended parsing (no extra validation)")
 	if err := fs.Parse(args); err != nil {
 		log.Fatalf("parse flags: %v", err)
 	}
@@ -76,12 +79,22 @@ func runMCP(args []string) {
 		traceOpts.TracerProvider = mcp.OTLPGRPCTracerProvider(*traceOTLPGRPC, *traceInsecure)
 	}
 
-	doc, err := poml.ParseString(string(body))
+	parseOpts := poml.ParseOptions{PreserveWhitespace: true, Validate: false, Extended: poml.ExtendedOff}
+	if *extendedStrict {
+		parseOpts.Extended = poml.ExtendedStrict
+		parseOpts.Validate = true
+	} else if *extendedLenient {
+		parseOpts.Extended = poml.ExtendedLenient
+	}
+
+	doc, err := poml.ParseReaderWithOptions(strings.NewReader(string(body)), parseOpts)
 	if err != nil {
 		log.Fatalf("parse POML: %v", err)
 	}
-	if err := doc.ValidateWithTrace(context.Background(), traceOpts); err != nil {
-		log.Fatalf("validate POML: %v", err)
+	if parseOpts.Validate {
+		if err := doc.ValidateWithTrace(context.Background(), traceOpts); err != nil {
+			log.Fatalf("validate POML: %v", err)
+		}
 	}
 
 	srv := mcp.New(doc, *file, traceOpts.TracerProvider)

@@ -1223,7 +1223,7 @@ func parseWithOptions(r io.Reader, opts ParseOptions) (Document, error) {
 			return Document{}, err
 		}
 		if opts.Validate {
-			if err := doc.Validate(); err != nil {
+			if err := doc.ValidateWithOptions(ValidateOptions{Extended: opts.Extended}); err != nil {
 				return Document{}, err
 			}
 		}

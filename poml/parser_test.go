@@ -228,6 +228,19 @@ func TestParseStrictHelpers(t *testing.T) {
 	}
 }
 
+func TestParseExtendedUnknownAllowed(t *testing.T) {
+	src := `<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task><extended-op foo="bar"/></poml>`
+	if _, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true, Extended: ExtendedOff}); err == nil {
+		t.Fatalf("expected unknown element error when ExtendedOff")
+	}
+	if _, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true, Extended: ExtendedLenient}); err != nil {
+		t.Fatalf("expected extended lenient to pass, got %v", err)
+	}
+	if _, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true, Extended: ExtendedStrict}); err != nil {
+		t.Fatalf("expected extended strict to pass (placeholder until schema), got %v", err)
+	}
+}
+
 func TestParseOptionsValidateWithInvalidDiagramAndUnknownTags(t *testing.T) {
 	src := `<poml>
   <diagram id="bad">
