@@ -53,11 +53,6 @@ func TestGraphvizRendererDOT(t *testing.T) {
 	}
 }
 
-func normalize(s string) string {
-	return strings.TrimSpace(strings.ReplaceAll(s, "\r\n", "\n"))
-}
-
-
 func TestGraphvizRendererDirectedOverride(t *testing.T) {
 	scene := Scene{
 		Nodes: []SceneNode{
@@ -112,7 +107,6 @@ func TestRenderersGolden(t *testing.T) {
 	}
 }
 
-
 func TestBuildDOTAttrsAndStyles(t *testing.T) {
 	got := buildDOTAttrs(map[string]string{
 		"b":     "2",
@@ -155,4 +149,8 @@ func TestBuildDOTNodeAttrs(t *testing.T) {
 			t.Fatalf("expected %s in attrs %s", want, attrs)
 		}
 	}
+}
+
+func normalize(s string) string {
+	return strings.TrimSpace(strings.ReplaceAll(s, "\r\n", "\n"))
 }
