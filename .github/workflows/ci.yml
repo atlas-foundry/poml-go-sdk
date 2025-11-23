@@ -107,8 +107,10 @@ jobs:
       - name: Build Docker image
         run: |
           TAG=$(echo "${{ matrix.base }}" | tr ':' '-')
+          BASE="${{ matrix.base }}"
           cat <<'EOF' > Dockerfile
-          FROM ${matrix.base}
+          ARG BASE_IMAGE
+          FROM ${BASE_IMAGE}
 
           RUN apk add --no-cache go git || \
               (apt-get update && apt-get install -y golang git) || true
@@ -157,7 +159,7 @@ jobs:
           RUN go build semantic_test.go
           EOF
 
-          docker build -t poml-e2e:${TAG} .
+          docker build --build-arg BASE_IMAGE="${BASE}" -t poml-e2e:${TAG} .
 
       - name: Run E2E Test
         run: |
