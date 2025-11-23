@@ -302,6 +302,11 @@ jobs:
           mkdir -p build/docs
           npx @mdx-js/mdx README.mdx > build/docs/index.html
 
+      - name: MDX smoke test
+        run: |
+          npx @mdx-js/mdx --help >/dev/null
+          test -s build/docs/index.html
+
       - name: Upload Docs Artifact
         uses: actions/upload-artifact@v4
         with:
