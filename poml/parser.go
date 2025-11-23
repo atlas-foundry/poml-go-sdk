@@ -172,7 +172,8 @@ type Message struct {
 // ToolDefinition describes a tool/function exposed to the model.
 type ToolDefinition struct {
 	Name        string     `xml:"name,attr"`
-	Description string     `xml:",innerxml"`
+	Description string     `xml:"description,attr"`
+	Body        string     `xml:",innerxml"`
 	Attrs       []xml.Attr `xml:",any,attr"`
 }
 
@@ -493,7 +494,7 @@ func (d *Document) AddMessage(role string, body string, attrs ...xml.Attr) int {
 
 // AddToolDefinition appends a tool-definition.
 func (d *Document) AddToolDefinition(name, description string, attrs ...xml.Attr) int {
-	td := ToolDefinition{Name: name, Description: description, Attrs: attrs}
+	td := ToolDefinition{Name: name, Body: description, Attrs: attrs}
 	d.ToolDefs = append(d.ToolDefs, td)
 	idx := len(d.ToolDefs) - 1
 	d.Elements = append(d.Elements, d.newElement(ElementToolDefinition, idx, ""))

@@ -329,7 +329,7 @@ func TestParseReaderAndEncodeAllElements(t *testing.T) {
 		Documents: []DocRef{{Src: "file://x"}},
 		Styles:    []Style{{Outputs: []Output{{Format: "markdown", Body: "# hi"}}}},
 		Messages:  []Message{{Role: "human", Body: "hi"}},
-		ToolDefs:  []ToolDefinition{{Name: "calc", Description: `{"type":"object"}`, Attrs: []xml.Attr{{Name: xml.Name{Local: "x"}, Value: "1"}}}},
+		ToolDefs:  []ToolDefinition{{Name: "calc", Body: `{"type":"object"}`, Attrs: []xml.Attr{{Name: xml.Name{Local: "x"}, Value: "1"}}}},
 		ToolReqs:  []ToolRequest{{ID: "call_1", Name: "calc", Parameters: "{{ {\"x\":1} }}"}},
 		ToolResps: []ToolResponse{{ID: "call_1", Name: "calc", Body: "2"}},
 		Schema:    OutputSchema{Body: `{"type":"object"}`},
@@ -496,7 +496,7 @@ func TestValidateToolEvents(t *testing.T) {
 		{
 			name: "valid tool flow",
 			prepare: func(d *Document) {
-				d.ToolDefs = []ToolDefinition{{Name: "calc", Description: "{}"}}
+				d.ToolDefs = []ToolDefinition{{Name: "calc", Body: "{}"}}
 				d.ToolReqs = []ToolRequest{{ID: "call_1", Name: "calc", Parameters: "{}"}}
 				d.ToolResps = []ToolResponse{{ID: "call_1", Name: "calc", Body: "ok"}}
 				d.ToolResults = []ToolResult{{ID: "call_1", Name: "calc", Body: "result"}}
@@ -506,7 +506,7 @@ func TestValidateToolEvents(t *testing.T) {
 		{
 			name: "missing tool request",
 			prepare: func(d *Document) {
-				d.ToolDefs = []ToolDefinition{{Name: "calc", Description: "{}"}}
+				d.ToolDefs = []ToolDefinition{{Name: "calc", Body: "{}"}}
 				d.ToolResps = []ToolResponse{{ID: "call_1", Name: "calc", Body: "ok"}}
 			},
 			wantErr:  true,
@@ -524,7 +524,7 @@ func TestValidateToolEvents(t *testing.T) {
 		{
 			name: "mismatched tool name for id",
 			prepare: func(d *Document) {
-				d.ToolDefs = []ToolDefinition{{Name: "calc", Description: "{}"}}
+				d.ToolDefs = []ToolDefinition{{Name: "calc", Body: "{}"}}
 				d.ToolReqs = []ToolRequest{{ID: "call_1", Name: "calc", Parameters: "{}"}}
 				d.ToolResps = []ToolResponse{{ID: "call_1", Name: "other", Body: "ok"}}
 			},
@@ -908,7 +908,7 @@ func TestValidationCatchesMissingNamesAndSchema(t *testing.T) {
 	doc.Meta = Meta{ID: "v", Version: "1", Owner: "me"}
 	doc.AddRole("role")
 	doc.AddTask("task")
-	doc.ToolDefs = append(doc.ToolDefs, ToolDefinition{Description: "{}"})
+	doc.ToolDefs = append(doc.ToolDefs, ToolDefinition{Body: "{}"})
 	doc.ToolReqs = append(doc.ToolReqs, ToolRequest{})
 	doc.AddOutputSchema("")
 	if err := doc.Validate(); err == nil {

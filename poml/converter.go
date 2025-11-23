@@ -920,6 +920,10 @@ func roleToLangChain(role string) string {
 
 func buildFlatToolDefinition(td ToolDefinition) map[string]any {
 	desc := stripCDATA(strings.TrimSpace(td.Description))
+	body := stripCDATA(strings.TrimSpace(td.Body))
+	if desc == "" {
+		desc = body
+	}
 	tool := map[string]any{
 		"type": "function",
 		"name": td.Name,
@@ -927,7 +931,7 @@ func buildFlatToolDefinition(td ToolDefinition) map[string]any {
 	if desc != "" {
 		tool["description"] = desc
 	}
-	if params, ok := parseJSONIfStruct(desc); ok {
+	if params, ok := parseJSONIfStruct(body); ok {
 		tool["parameters"] = params
 	}
 	if len(td.Attrs) > 0 {
@@ -938,13 +942,17 @@ func buildFlatToolDefinition(td ToolDefinition) map[string]any {
 
 func buildOpenAIToolDefinition(td ToolDefinition) map[string]any {
 	desc := stripCDATA(strings.TrimSpace(td.Description))
+	body := stripCDATA(strings.TrimSpace(td.Body))
+	if desc == "" {
+		desc = body
+	}
 	fn := map[string]any{
 		"name": td.Name,
 	}
 	if desc != "" {
 		fn["description"] = desc
 	}
-	if params, ok := parseJSONIfStruct(desc); ok {
+	if params, ok := parseJSONIfStruct(body); ok {
 		fn["parameters"] = params
 	}
 	if len(td.Attrs) > 0 {
