@@ -1,0 +1,9 @@
+<poml>
+  <meta><id>semantic.ext</id><version>1</version><owner>oss</owner></meta>
+  <role>role ext</role>
+  <task>task ext</task>
+  <hint>remember to preserve unknowns</hint>
+  <example>sample example body</example>
+  <object syntax="json">{"k":"v"}</object>
+  <custom data-id="x">body of custom tag</custom>
+</poml>

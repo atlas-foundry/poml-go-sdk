@@ -3,6 +3,7 @@ package poml
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -110,5 +111,41 @@ func TestSemanticFixtureAssets(t *testing.T) {
 	optsTight := ConvertOptions{BaseDir: base, MaxImageBytes: 8, MaxMediaBytes: 8}
 	if _, err := Convert(doc, FormatMessageDict, optsTight); err == nil {
 		t.Fatalf("expected tight caps to fail for fixture")
+	}
+}
+
+// Extended/unknown fixture conversion to ensure unknown tags flow through message dict when Extended is enabled.
+func TestSemanticFixtureExtendedUnknowns(t *testing.T) {
+	p := filepath.Join("testdata", "semantic", "mixed_extended.poml")
+	body, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+	doc, err := ParseReaderWithOptions(strings.NewReader(string(body)), ParseOptions{
+		PreserveWhitespace: true,
+		Validate:           false,
+		Extended:           ExtendedLenient,
+	})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	out, err := Convert(doc, FormatMessageDict, ConvertOptions{Extended: ExtendedLenient})
+	if err != nil {
+		t.Fatalf("convert: %v", err)
+	}
+	msgs, ok := out.([]messageDict)
+	if !ok {
+		t.Fatalf("unexpected type %T", out)
+	}
+	foundUnknown := false
+	for _, m := range msgs {
+		if payload, ok := m.Content.(map[string]any); ok && payload["type"] == "unknown" {
+			if payload["name"] == "custom" {
+				foundUnknown = true
+			}
+		}
+	}
+	if !foundUnknown {
+		t.Fatalf("expected unknown element to be surfaced in message dict")
 	}
 }
