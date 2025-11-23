@@ -6,8 +6,10 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/atlas-foundry/poml-go-sdk/poml"
+	"github.com/gorilla/websocket"
 )
 
 func TestInspect(t *testing.T) {
@@ -207,6 +209,49 @@ func TestRoundtripEndpoint(t *testing.T) {
 	}
 	if ok, _ := resp["ok"].(bool); !ok {
 		t.Fatalf("expected roundtrip ok true, got %v", resp["ok"])
+	}
+}
+
+func TestWebSocketInitialAndUpdate(t *testing.T) {
+	srv := New(poml.Document{
+		Meta:  poml.Meta{ID: "a", Version: "1", Owner: "o"},
+		Role:  poml.Block{Body: "r"},
+		Tasks: []poml.Block{{Body: "t"}},
+	}, "", nil)
+	ts := httptest.NewServer(srv.Handler())
+	defer ts.Close()
+
+	u := "ws" + strings.TrimPrefix(ts.URL, "http") + "/ws"
+	conn, _, err := websocket.DefaultDialer.Dial(u, nil)
+	if err != nil {
+		t.Fatalf("ws dial: %v", err)
+	}
+	defer conn.Close()
+
+	// initial message
+	_, msg, err := conn.ReadMessage()
+	if err != nil {
+		t.Fatalf("ws read initial: %v", err)
+	}
+	if !strings.Contains(string(msg), `"event":"initial"`) {
+		t.Fatalf("expected initial event, got %s", msg)
+	}
+
+	// simulate update and expect broadcast
+	srv.updateDoc(poml.Document{
+		Meta:  poml.Meta{ID: "b", Version: "1", Owner: "o"},
+		Role:  poml.Block{Body: "r"},
+		Tasks: []poml.Block{{Body: "t"}},
+	})
+	_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	for {
+		_, msg, err = conn.ReadMessage()
+		if err != nil {
+			t.Fatalf("ws read update: %v", err)
+		}
+		if strings.Contains(string(msg), `"event":"update"`) {
+			break
+		}
 	}
 }
 

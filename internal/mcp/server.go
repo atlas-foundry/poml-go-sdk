@@ -574,6 +574,13 @@ var wsUpgrader = websocket.Upgrader{
 }
 
 func (s *Server) ws(w http.ResponseWriter, r *http.Request) {
+	if token := os.Getenv("POML_MCP_TOKEN"); token != "" {
+		if r.URL.Query().Get("token") != token {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+	}
+
 	conn, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("upgrade failed: %v", err), http.StatusBadRequest)
@@ -582,13 +589,22 @@ func (s *Server) ws(w http.ResponseWriter, r *http.Request) {
 	s.registerWS(conn)
 	defer s.unregisterWS(conn)
 
-	// send initial summary
-	s.sendWSSummary(conn, "initial")
+	// send initial summary + ast
+	s.sendWSSummary(conn, "initial", true)
+
+	// heartbeat
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
 
 	// keep the connection alive; ignore incoming messages
 	for {
-		if _, _, err := conn.NextReader(); err != nil {
-			return
+		select {
+		case <-ticker.C:
+			_ = conn.WriteJSON(map[string]any{"event": "heartbeat", "ts": time.Now().UTC()})
+		default:
+			if _, _, err := conn.NextReader(); err != nil {
+				return
+			}
 		}
 	}
 }
@@ -606,11 +622,14 @@ func (s *Server) unregisterWS(c *websocket.Conn) {
 	_ = c.Close()
 }
 
-func (s *Server) sendWSSummary(c *websocket.Conn, event string) {
+func (s *Server) sendWSSummary(c *websocket.Conn, event string, includeAST bool) {
 	doc := s.snapshot()
 	payload := map[string]any{
 		"event":   event,
 		"summary": buildSummary(doc),
+	}
+	if includeAST {
+		payload["ast"] = doc
 	}
 	_ = c.WriteJSON(payload)
 }
@@ -624,7 +643,7 @@ func (s *Server) broadcastSummary(event string) {
 	s.wsMu.Unlock()
 
 	for _, c := range clients {
-		s.sendWSSummary(c, event)
+		s.sendWSSummary(c, event, false)
 	}
 }
 
