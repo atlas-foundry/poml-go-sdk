@@ -247,6 +247,15 @@ type EncodeOptions struct {
 	Compact       bool   // when true, disable indentation
 }
 
+// ExtendedMode toggles support for POML Extended features.
+type ExtendedMode int
+
+const (
+	ExtendedOff ExtendedMode = iota
+	ExtendedLenient
+	ExtendedStrict
+)
+
 // ParseOptions controls parsing fidelity.
 type ParseOptions struct {
 	// PreserveWhitespace retains leading/trailing whitespace/comments between elements.
@@ -255,11 +264,13 @@ type ParseOptions struct {
 	// Validate runs structural validation (meta/role/task, diagrams, etc.) after parsing.
 	// When false, parsing succeeds even if required fields are missing.
 	Validate bool
+	// Extended toggles parsing of POML Extended constructs. Off by default (parsed as unknown/raw).
+	Extended ExtendedMode
 }
 
-var defaultParseOptions = ParseOptions{PreserveWhitespace: true}
-var strictParseOptions = ParseOptions{PreserveWhitespace: true, Validate: true}
-var fastParseOptions = ParseOptions{PreserveWhitespace: false}
+var defaultParseOptions = ParseOptions{PreserveWhitespace: true, Extended: ExtendedOff}
+var strictParseOptions = ParseOptions{PreserveWhitespace: true, Validate: true, Extended: ExtendedOff}
+var fastParseOptions = ParseOptions{PreserveWhitespace: false, Extended: ExtendedOff}
 
 type ErrorType string
 

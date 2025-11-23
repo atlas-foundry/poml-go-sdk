@@ -44,6 +44,8 @@ type ConvertOptions struct {
 	MaxMediaBytes int64
 	// Trace configures OpenTelemetry spans for conversion; when empty, tracing is skipped.
 	Trace TraceOptions
+	// Extended toggles conversion of POML Extended constructs; off by default.
+	Extended ExtendedMode
 }
 
 const defaultMaxImageBytes int64 = 10 << 20 // 10MB safeguard
