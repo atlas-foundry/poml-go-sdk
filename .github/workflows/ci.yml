@@ -122,6 +122,7 @@ jobs:
                 *) echo "unsupported OS"; exit 1 ;; \
               esac && \
               arch=$(uname -m) && \
+              case "$arch" in x86_64) arch=amd64 ;; aarch64) arch=arm64 ;; armv7l) arch=armv6l ;; esac && \
               url="https://go.dev/dl/go${GO_VERSION}.linux-${arch}.tar.gz" && \
               curl -sSfL "$url" -o /tmp/go.tgz && \
               rm -rf /usr/local/go && \
