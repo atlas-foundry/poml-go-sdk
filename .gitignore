@@ -1,1 +1,11 @@
-# Nothing ignored yet
+# Virtualenv (local tooling)
+/bin/
+/lib/
+/include/
+/pyvenv.cfg
+
+# Python cache
+__pycache__/
+
+# Go build artifacts (none expected by default, keep empty for now)
+*.out
