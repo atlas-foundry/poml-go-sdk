@@ -247,15 +247,17 @@ flowchart TD
         Tokenizer[XML Tokenizer] -->|Stream| Decoder
         Decoder -->|Preserve| WS[Whitespace & Comments]
         Decoder -->|Decode| Structs[Typed Structs]
-        Decoder -->|Capture| Raw[Unknown Tags (Raw XML)]
-        WS & Structs & Raw --> Ordered[Ordered Element List]
+        Decoder -->|Capture| Raw["Unknown Tags\n(Raw XML)"]
+        WS --> Ordered[Ordered Element List]
+        Structs --> Ordered
+        Raw --> Ordered
     end
     Ordered --> Renderer
     subgraph Renderer ["Renderer"]
         Iterate[Iterate Elements] -->|Reconstruct| Output
     end
     Output[Output POML]
-    Input == Identical == Output
+    Input -. Round-trip .-> Output
 ```
 
 The parser ensures losslessness by:
