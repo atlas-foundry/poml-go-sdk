@@ -195,12 +195,12 @@ Two fresh tapes show both sides of the SDK—CLI and pure Go—using vivid termi
        └────────────────┴────────────────────┴────────────────┴──────────────
 ```
 
-### `pomp` CLI (MCP starter)
+### `poml` CLI (MCP starter)
 
-We ship an experimental Go CLI, `pomp`, with a `poml mcp` subcommand that serves a minimal MCP-style HTTP surface for AST inspection:
+We ship an experimental Go CLI, `poml`, with an `mcp` subcommand that serves a minimal MCP-style HTTP surface for AST inspection:
 
 ```bash
-go run ./cmd/pomp poml mcp --file hello.poml --addr :7777
+go run ./cmd/poml mcp --file hello.poml --addr :7777
 ```
 
 Endpoints:

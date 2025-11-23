@@ -18,36 +18,23 @@ func main() {
 		return
 	}
 	switch os.Args[1] {
-	case "poml":
-		runPoml(os.Args[2:])
+	case "mcp":
+		runMCP(os.Args[2:])
 	default:
 		usage()
 	}
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "pomp commands:\n")
+	fmt.Fprintf(os.Stderr, "poml commands:\n")
 	fmt.Fprintf(os.Stderr, "  poml mcp --file <path> [--addr :7777]\n")
 	os.Exit(2)
-}
-
-func runPoml(args []string) {
-	if len(args) < 1 {
-		usage()
-		return
-	}
-	switch args[0] {
-	case "mcp":
-		runMCP(args[1:])
-	default:
-		usage()
-	}
 }
 
 func runMCP(args []string) {
 	fs := flag.NewFlagSet("poml mcp", flag.ExitOnError)
 	addr := fs.String("addr", ":7777", "address to listen on")
-	file := fs.String("file", "", "path to POML file (required)")
+	file := fs.String("file", "", "path to POML file (required unless --stdin)")
 	useStdin := fs.Bool("stdin", false, "read POML from stdin instead of file")
 	fs.Parse(args)
 
@@ -76,7 +63,7 @@ func runMCP(args []string) {
 	}
 
 	srv := mcp.New(doc)
-	log.Printf("pomp poml mcp serving on %s", *addr)
+	log.Printf("poml mcp serving on %s", *addr)
 	if err := http.ListenAndServe(*addr, srv.Handler()); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
