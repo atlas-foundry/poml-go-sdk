@@ -20,13 +20,13 @@ jobs:
     name: Build & Test (Go ${{ matrix.go }})
     runs-on: ubuntu-latest
     env:
-      # Force Go 1.24 runners to auto-upgrade the toolchain to 1.25 while keeping 1.25 native runs unchanged
-      GOTOOLCHAIN: go1.25.0
+      # Force older runners to auto-upgrade the toolchain to 1.25.4 while keeping native 1.25.4 unchanged
+      GOTOOLCHAIN: go1.25.4
 
     strategy:
       fail-fast: false
       matrix:
-        go: ["1.24","1.25"]
+        go: ["1.24.10","1.25.4"]
 
     steps:
       - name: Checkout
@@ -92,12 +92,11 @@ jobs:
             exit 1
           fi
 
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
         with:
-          files: coverage.out
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
+          name: coverage-${{ matrix.go }}
+          path: coverage.out
 
   # =====================================================
   # 2. E2E TESTS (Docker Matrix)
@@ -217,6 +216,8 @@ jobs:
   macos:
     name: macOS Build & Test (Apple Silicon)
     runs-on: macos-15
+    env:
+      GOTOOLCHAIN: go1.25.4
 
     steps:
       - uses: actions/checkout@v4
@@ -224,8 +225,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.25.4"
           cache: true
+
+      - name: go mod tidy consistency
+        run: |
+          go mod tidy
+          git diff --exit-code || (echo "❌ go mod tidy produced changes"; exit 1)
 
       - name: Verify formatting
         run: |
@@ -236,7 +242,7 @@ jobs:
           fi
 
       - name: Run tests
-        run: go test ./...
+        run: go test -cover ./...
 
   # =====================================================
   # 2c. WINDOWS TESTS
@@ -244,6 +250,8 @@ jobs:
   windows:
     name: Windows Build & Test
     runs-on: windows-2022
+    env:
+      GOTOOLCHAIN: go1.25.4
 
     steps:
       - uses: actions/checkout@v4
@@ -251,8 +259,14 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.25.4"
           cache: true
+
+      - name: go mod tidy consistency
+        shell: bash
+        run: |
+          go mod tidy
+          git diff --exit-code || (echo "❌ go mod tidy produced changes"; exit 1)
 
       - name: Verify formatting
         shell: bash
@@ -264,7 +278,7 @@ jobs:
           fi
 
       - name: Run tests
-        run: go test ./...
+        run: go test -cover ./...
 
   # =====================================================
   # 2d. GO VET (Static Checks)
@@ -272,6 +286,8 @@ jobs:
   vet:
     name: Go Vet
     runs-on: ubuntu-latest
+    env:
+      GOTOOLCHAIN: go1.25.4
 
     steps:
       - uses: actions/checkout@v4
@@ -279,8 +295,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.25.4"
           cache: true
+
+      - name: go mod tidy consistency
+        run: |
+          go mod tidy
+          git diff --exit-code || (echo "❌ go mod tidy produced changes"; exit 1)
 
       - name: Go Vet
         run: go vet ./...
@@ -380,7 +401,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.25.4"
 
       - name: Build binaries
         run: |
