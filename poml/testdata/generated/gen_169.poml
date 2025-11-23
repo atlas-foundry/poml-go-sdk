@@ -1,0 +1,29 @@
+<poml>
+  <version>1.4</version>
+  <owner>OyzxMC</owner>
+  <persona>
+ipsum sit elit ut incididunt ut ut ipsum ut magna magna lorem consectetur ipsum elit magna lorem adipiscing adipiscing elit
+  </persona>
+  <task>
+elit sed magna do aliqua aliqua ipsum eiusmod elit adipiscing consectetur dolore sed consectetur adipiscing aliqua et ut amet tempor ipsum sit amet eiusmod ipsum ut ipsum dolor labore sed et magna
+  </task>
+    <output-format>
+      sed consectetur ipsum adipiscing ut incididunt aliqua ipsum dolore elit consectetur dolor eiusmod adipiscing incididunt dolor ipsum consectetur aliqua dolore lorem ipsum et do eiusmod ut sed do lorem amet ipsum ipsum et labore et labore tempor elit tempor adipiscing elit consectetur et
+    </output-format>
+    <hint>
+      aliqua consectetur labore dolor elit aliqua aliqua labore lorem adipiscing amet sed elit elit labore aliqua dolor sit sit et eiusmod magna labore sed incididunt sit sed ipsum do sit lorem do ut tempor sit sed amet elit elit amet incididunt adipiscing tempor
+    </hint>
+    <hint>
+      adipiscing magna ut aliqua incididunt consectetur amet sed do ut sed labore labore adipiscing magna labore dolor consectetur incididunt sit dolore
+    </hint>
+    <model>
+      ut incididunt sit tempor magna do aliqua sed et amet et dolore adipiscing et dolore consectetur sit ipsum sed sit aliqua sed dolor ipsum
+      <model>
+        aliqua dolore consectetur dolor eiusmod labore labore sed ipsum labore dolor labore do et lorem sit labore tempor ipsum dolore dolor magna tempor ut amet elit dolor labore eiusmod
+      </model>
+    
+    </model>
+    <input name="kAaGVL" required="false">
+      sed adipiscing et aliqua eiusmod adipiscing elit et sed dolor dolor tempor incididunt incididunt amet sit sit tempor amet sit amet et amet
+    </input>
+</poml>

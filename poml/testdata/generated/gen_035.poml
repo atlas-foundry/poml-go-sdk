@@ -1,0 +1,39 @@
+<poml>
+  <version>2.4</version>
+  <owner>rJMfx</owner>
+  <persona>
+et labore lorem amet elit amet labore sed tempor et aliqua eiusmod do ut tempor ut et ipsum dolor tempor sit eiusmod sed ut eiusmod ut incididunt labore eiusmod dolore magna adipiscing et magna incididunt tempor magna do dolore adipiscing tempor labore ipsum sed do sit labore consectetur do do lorem adipiscing amet elit labore incididunt dolore aliqua tempor sit amet elit incididunt ut do amet dolore do ut consectetur eiusmod sit incididunt do sed lorem sed labore
+  </persona>
+  <task>
+elit adipiscing et et incididunt dolor incididunt labore labore incididunt tempor magna amet consectetur ut lorem aliqua adipiscing do dolore sed et dolor elit et consectetur consectetur elit sit sit eiusmod aliqua elit ipsum incididunt dolore incididunt dolore aliqua ipsum
+  </task>
+  <task>
+amet et et sed consectetur consectetur eiusmod aliqua do labore ipsum elit amet eiusmod amet et ipsum et et dolore et incididunt aliqua adipiscing labore incididunt dolor incididunt lorem amet elit elit dolor dolor et lorem incididunt consectetur labore ipsum tempor magna
+  </task>
+    <output-format>
+      sit do aliqua adipiscing magna consectetur et lorem amet labore amet lorem eiusmod aliqua et labore labore sed incididunt dolore incididunt ut et consectetur et ipsum sit
+    </output-format>
+    <output-format>
+      ut amet lorem adipiscing et sed et tempor sit sit adipiscing magna et dolor ipsum sed do tempor lorem dolore eiusmod labore sed incididunt labore dolore magna elit et magna et labore adipiscing do amet sed incididunt dolor ut adipiscing ipsum dolore sit tempor
+    </output-format>
+    <hint>
+      consectetur consectetur sed elit et sed incididunt consectetur sed magna lorem consectetur sit consectetur magna amet amet ut ut ipsum adipiscing dolor aliqua eiusmod tempor consectetur eiusmod labore
+    </hint>
+    <example>
+      et sit ipsum sit do incididunt sed et et labore et dolore sed ut et labore et dolor dolor elit consectetur tempor eiusmod incididunt sit lorem ut adipiscing sit ut adipiscing ipsum ipsum tempor eiusmod sed do adipiscing elit sit dolor tempor lorem magna sit incididunt tempor consectetur
+    </example>
+    <image src="https://example.com/JoIjwoGBa.ext" alt="QPRBmswkAUzpVi"></image>
+    <user>
+      magna dolore do amet ipsum sed eiusmod amet do consectetur ipsum do et do sed tempor aliqua elit sit dolore
+    </user>
+    <input name="xqIr" required="false">
+      elit incididunt dolor magna dolor labore eiusmod ipsum et aliqua aliqua et eiusmod tempor ipsum amet sit elit consectetur lorem ut aliqua ipsum amet sit do adipiscing sed dolor magna tempor tempor dolore labore lorem sit
+    </input>
+    <output-format>
+      eiusmod lorem incididunt lorem tempor elit et labore eiusmod dolore incididunt magna sed do ut aliqua amet lorem adipiscing do et et magna sed dolore consectetur amet consectetur ut do labore eiusmod eiusmod eiusmod dolore sit dolor labore sed ut
+    </output-format>
+    <example>
+      ipsum labore tempor elit aliqua aliqua dolor elit consectetur labore labore tempor tempor amet sed dolore dolor incididunt do ut magna lorem eiusmod consectetur incididunt tempor ut magna et sit
+    </example>
+    <video src="https://example.com/nBGEXek.ext" alt="VMpdQWbfp" syntax=""></video>
+</poml>

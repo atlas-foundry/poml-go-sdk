@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"math/rand"
@@ -189,14 +190,29 @@ func main() {
 	for i := 0; i < *numFiles; i++ {
 		content := gen.GeneratePOML()
 
-		// Validate
-		if _, err := poml.ParseString(content); err != nil {
+		// Validate and Normalize
+		doc, err := poml.ParseString(content)
+		if err != nil {
 			fmt.Printf("Skipping invalid generated file %d: %v\n", i, err)
 			continue
 		}
 
+		// Encode back to string to get canonical format
+		var buf bytes.Buffer
+		err = doc.EncodeWithOptions(&buf, poml.EncodeOptions{
+			PreserveWS:    true,
+			PreserveOrder: true,
+			IncludeHeader: false,
+		})
+		if err != nil {
+			fmt.Printf("Failed to encode file %d: %v\n", i, err)
+			continue
+		}
+		
+		finalContent := buf.Bytes()
+
 		filename := filepath.Join(*outDir, fmt.Sprintf("gen_%03d.poml", i))
-		if err := os.WriteFile(filename, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(filename, finalContent, 0644); err != nil {
 			fmt.Fprintf(os.Stderr, "failed to write file %s: %v\n", filename, err)
 		}
 	}

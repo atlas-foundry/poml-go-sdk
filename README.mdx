@@ -376,9 +376,8 @@ Everything important is discoverable and documented inside POML files.
 
 Converters enforce:
 
-* BaseDir containment
-* Optional absolute path allowance
-* 10MB default caps for image/audio/video (override via ConvertOptions)
+* BaseDir containment (symlink-aware) with optional absolute path allowance
+* 10MB default caps for image/audio/video—including data URIs (override via ConvertOptions; -1 disables)
 * Proper emission across formats
 
 ---

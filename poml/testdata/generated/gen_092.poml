@@ -1,0 +1,36 @@
+<poml>
+  <version>1.4</version>
+  <owner>PbAFS</owner>
+  <persona>
+labore sit adipiscing labore tempor elit do labore do ut labore incididunt magna aliqua elit et labore consectetur labore dolor lorem elit magna labore eiusmod incididunt elit labore dolore et et adipiscing aliqua adipiscing ipsum dolor dolor magna ut sed sed amet elit sed elit adipiscing dolor do dolore dolor ipsum ipsum ut tempor magna lorem sed ut dolore tempor aliqua dolor labore sed magna lorem do et elit amet adipiscing eiusmod lorem
+  </persona>
+  <task>
+elit dolor sed sit magna lorem dolor magna ut sit ut sit labore et labore eiusmod dolore incididunt tempor do lorem aliqua do lorem et sed magna eiusmod tempor tempor et aliqua labore sed consectetur sit magna do sed
+  </task>
+    <user>
+      eiusmod sit eiusmod incididunt ipsum do sit adipiscing ut magna labore et et
+    </user>
+    <output-format>
+      magna labore do do lorem et ipsum ipsum aliqua et consectetur sit elit aliqua do dolor incididunt magna aliqua incididunt
+    </output-format>
+    <context>
+      elit et dolore dolor sit eiusmod et dolor eiusmod et dolor dolor sed aliqua amet consectetur amet et adipiscing dolor ipsum elit eiusmod dolor elit adipiscing dolor dolor elit adipiscing eiusmod ut tempor sit
+      <user>
+        sit tempor consectetur adipiscing labore labore ipsum eiusmod consectetur dolore dolore dolore ipsum consectetur incididunt et et
+      </user>
+    
+    </context>
+    <example>
+      labore incididunt amet consectetur eiusmod dolore dolor labore ipsum dolor ut elit do do et dolor lorem dolor adipiscing dolore dolore magna dolore dolore tempor sed labore incididunt et eiusmod et aliqua elit dolore lorem ipsum dolore
+    </example>
+    <Fywm>
+      dolore sit adipiscing eiusmod tempor tempor incididunt ipsum adipiscing ut sed consectetur do sed incididunt incididunt adipiscing dolore amet sit lorem dolor consectetur
+      <output-format>
+        do sed incididunt sed ipsum amet lorem incididunt labore ipsum labore incididunt tempor consectetur sit tempor tempor labore labore elit dolor consectetur labore
+      </output-format>
+    
+    </Fywm>
+    <ChkMA>
+      sed tempor aliqua ipsum incididunt elit labore labore lorem
+    </ChkMA>
+</poml>

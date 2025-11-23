@@ -617,6 +617,24 @@ func TestValidateToolEvents(t *testing.T) {
 			wantErr:  true,
 			wantText: "uses tool",
 		},
+		{
+			name: "tool result missing request",
+			prepare: func(d *Document) {
+				d.ToolDefs = []ToolDefinition{{Name: "calc", Body: "{}"}}
+				d.ToolResults = []ToolResult{{ID: "call_1", Name: "calc", Body: "data"}}
+			},
+			wantErr:  true,
+			wantText: "tool-result id",
+		},
+		{
+			name: "tool error missing definition",
+			prepare: func(d *Document) {
+				d.ToolReqs = []ToolRequest{{ID: "call_1", Name: "calc", Parameters: "{}"}}
+				d.ToolErrors = []ToolError{{ID: "call_1", Name: "calc", Body: "boom"}}
+			},
+			wantErr:  true,
+			wantText: "unknown tool-definition",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

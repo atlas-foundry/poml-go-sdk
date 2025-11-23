@@ -66,3 +66,28 @@ func TestResolveImagePathRejectsSymlinkEscape(t *testing.T) {
 		t.Fatalf("expected symlink escape to be rejected")
 	}
 }
+
+func TestResolveImagePathRejectsBaseSymlinkEscape(t *testing.T) {
+	root := t.TempDir()
+	actual := filepath.Join(root, "real")
+	if err := os.MkdirAll(actual, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	outside := filepath.Join(root, "outside")
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatalf("mkdir outside: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(outside, "steal.bin"), []byte("x"), 0o644); err != nil {
+		t.Fatalf("write outside file: %v", err)
+	}
+	baseLink := filepath.Join(root, "base-link")
+	if err := os.Symlink(actual, baseLink); err != nil {
+		t.Skipf("symlinks unsupported: %v", err)
+	}
+	if err := os.Symlink(filepath.Join("..", "outside", "steal.bin"), filepath.Join(actual, "escape.bin")); err != nil {
+		t.Fatalf("symlink escape: %v", err)
+	}
+	if _, err := resolveImagePath("escape.bin", ConvertOptions{BaseDir: baseLink}); err == nil {
+		t.Fatalf("expected escape through base symlink to be rejected")
+	}
+}

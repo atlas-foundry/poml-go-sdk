@@ -1,0 +1,38 @@
+<poml>
+  <version>2.6</version>
+  <owner>ZRMqDSwhX</owner>
+  <persona>
+consectetur et lorem lorem amet eiusmod tempor dolore elit dolor et tempor dolore adipiscing lorem amet do elit consectetur amet lorem labore do lorem amet et lorem magna adipiscing elit aliqua sit et magna do lorem lorem lorem sed tempor sit lorem elit do et sed sit aliqua consectetur
+  </persona>
+  <task>
+consectetur ipsum tempor consectetur sit sed do aliqua tempor dolore dolore elit ipsum sed do sit amet sit dolore amet tempor lorem do magna incididunt ipsum dolor sed ut aliqua ut ut do ut aliqua et
+  </task>
+  <task>
+incididunt elit ipsum sit elit tempor sed dolor lorem eiusmod sit dolore labore consectetur sit do ut consectetur et dolor amet magna lorem ipsum tempor dolore adipiscing ut adipiscing incididunt incididunt sit amet tempor adipiscing ipsum magna dolor tempor ipsum consectetur tempor tempor
+  </task>
+    <context>
+      labore elit eiusmod aliqua tempor adipiscing consectetur tempor do lorem magna ut et et dolore ut
+    </context>
+    <output-format>
+      dolore magna sed consectetur sit tempor lorem sit amet sed tempor do incididunt et labore lorem adipiscing ut lorem elit dolore labore ut dolore ipsum amet amet magna sed magna amet
+    </output-format>
+    <example>
+      incididunt aliqua adipiscing ut ipsum consectetur dolore sit dolor elit ipsum et et adipiscing labore lorem amet do tempor tempor sit sit dolore et
+    </example>
+    <model>
+      et sed consectetur sed ut labore aliqua eiusmod sed consectetur labore ut magna elit dolor aliqua sed sit sed ipsum dolor dolore adipiscing sed aliqua et consectetur adipiscing adipiscing elit sed sit dolore labore sit do
+    </model>
+    <input name="cHqTnh" required="false">
+      aliqua ipsum ipsum dolor ipsum eiusmod magna do amet ut aliqua tempor incididunt eiusmod lorem et et adipiscing
+    </input>
+    <output-format>
+      incididunt elit et eiusmod lorem incididunt et labore eiusmod sit do ipsum adipiscing consectetur lorem magna adipiscing eiusmod ut dolor ipsum aliqua do consectetur et dolore sed incididunt incididunt elit dolor
+    </output-format>
+    <output-format>
+      labore labore adipiscing dolor elit do dolor ipsum elit labore ut magna et incididunt consectetur dolore magna dolor magna dolor ut aliqua ut incididunt consectetur aliqua lorem tempor amet do
+    </output-format>
+    <audio src="https://example.com/ttFXcUeqil.ext" alt="nHwSK" syntax=""></audio>
+    <hint>
+      aliqua consectetur amet eiusmod et sit magna adipiscing incididunt lorem eiusmod ut magna amet sed do consectetur do lorem
+    </hint>
+</poml>

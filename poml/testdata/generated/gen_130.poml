@@ -1,0 +1,38 @@
+<poml>
+  <version>1.3</version>
+  <owner>PBZjWBX</owner>
+  <persona>
+magna lorem do magna lorem et sed magna do aliqua dolor ut ipsum amet aliqua lorem sit aliqua magna consectetur aliqua ipsum aliqua incididunt elit adipiscing ut adipiscing sed consectetur lorem sit dolore sed incididunt incididunt sit magna eiusmod lorem tempor dolore magna ut
+  </persona>
+  <task>
+labore elit amet incididunt do consectetur et ipsum labore elit et ipsum
+  </task>
+  <task>
+dolore aliqua tempor ipsum dolor aliqua dolor labore dolor et
+  </task>
+    <context>
+      sed tempor incididunt sit eiusmod labore ut adipiscing et elit sed sit tempor incididunt et aliqua sit
+    </context>
+    <video src="https://example.com/rWyyK.ext" alt="RgDMZwpyTgM" syntax=""></video>
+    <context>
+      lorem ut amet ipsum eiusmod elit aliqua lorem elit eiusmod et sit sit eiusmod dolore ipsum aliqua ipsum lorem dolor ut ut aliqua incididunt lorem ut do incididunt elit et elit
+      <hint>
+        eiusmod elit aliqua aliqua elit eiusmod dolor eiusmod ut dolor amet magna magna sed tempor do lorem tempor ipsum magna consectetur tempor dolor incididunt labore
+      </hint>
+    
+    </context>
+    <video src="https://example.com/tCryGwRXWI.ext" alt="eiNxZXhdQfEp" syntax=""></video>
+    <example>
+      sit aliqua ut sed dolor aliqua adipiscing ut do eiusmod amet amet et
+    </example>
+    <context>
+      dolore elit elit elit lorem amet sed ut adipiscing aliqua sed labore et labore lorem ipsum adipiscing ut tempor adipiscing incididunt ut ipsum tempor ut dolore dolore ipsum consectetur consectetur consectetur dolor adipiscing dolore do dolor consectetur incididunt lorem ipsum ut incididunt lorem et do tempor eiusmod dolore
+    </context>
+    <input name="COU" required="false">
+      dolore ipsum et lorem sit ut consectetur dolore dolore aliqua ipsum consectetur labore ipsum dolor dolor dolore dolor incididunt aliqua adipiscing dolor dolore adipiscing incididunt tempor ut magna elit dolor sit adipiscing eiusmod dolore tempor eiusmod sit et incididunt ipsum
+    </input>
+    <context>
+      ut amet et consectetur sit ipsum elit consectetur dolore amet dolore sed eiusmod eiusmod
+    </context>
+    <image src="https://example.com/UDlOCLe.ext" alt="PYntjTsherhBb"></image>
+</poml>

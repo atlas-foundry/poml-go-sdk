@@ -703,11 +703,21 @@ func buildImagePart(im Image, opts ConvertOptions) (map[string]any, error) {
 		limit = defaultMaxImageBytes
 	}
 	var data string
+	checkLimit := func(raw string, label string) error {
+		if limit <= 0 {
+			return nil
+		}
+		size := int64(base64.StdEncoding.DecodedLen(len(raw)))
+		return enforceByteLimit(size, limit, label)
+	}
 	switch {
 	case strings.HasPrefix(im.Src, "data:"):
 		parts := strings.SplitN(im.Src, ",", 2)
 		if len(parts) == 2 {
 			payload := parts[1]
+			if err := checkLimit(payload, "data URI image"); err != nil {
+				return nil, err
+			}
 			data = payload
 		}
 	case im.Src != "":
@@ -752,11 +762,21 @@ func buildMediaPart(m Media, opts ConvertOptions) (map[string]any, error) {
 		limit = defaultMaxMediaBytes
 	}
 	var data string
+	checkLimit := func(raw string, label string) error {
+		if limit <= 0 {
+			return nil
+		}
+		size := int64(base64.StdEncoding.DecodedLen(len(raw)))
+		return enforceByteLimit(size, limit, label)
+	}
 	switch {
 	case strings.HasPrefix(m.Src, "data:"):
 		parts := strings.SplitN(m.Src, ",", 2)
 		if len(parts) == 2 {
 			payload := parts[1]
+			if err := checkLimit(payload, "data URI media"); err != nil {
+				return nil, err
+			}
 			data = payload
 		}
 	case m.Src != "":
@@ -797,30 +817,37 @@ func resolveImagePath(raw string, opts ConvertOptions) (string, error) {
 	base := strings.TrimSpace(opts.BaseDir)
 	if base != "" {
 		base = strings.TrimSuffix(filepath.Clean(base), string(filepath.Separator))
-		if resolvedBase, err := filepath.EvalSymlinks(base); err == nil {
-			base = resolvedBase
+		resolvedBase, err := filepath.EvalSymlinks(base)
+		if err != nil {
+			return "", fmt.Errorf("resolve base dir %s: %w", opts.BaseDir, err)
 		}
+		base = resolvedBase
+	}
+	ensureContained := func(candidate string) error {
+		if base == "" {
+			return nil
+		}
+		rel, err := filepath.Rel(base, candidate)
+		if err != nil {
+			return fmt.Errorf("image path %s escapes BaseDir %s", raw, opts.BaseDir)
+		}
+		if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			return fmt.Errorf("image path %s escapes BaseDir %s", raw, opts.BaseDir)
+		}
+		return nil
 	}
 	if filepath.IsAbs(cleaned) {
-		if base != "" {
-			candidate, err := filepath.EvalSymlinks(cleaned)
-			if err != nil {
-				return "", fmt.Errorf("resolve image path %s: %w", raw, err)
-			}
-			rel, err := filepath.Rel(base, candidate)
-			if err != nil || strings.HasPrefix(rel, "..") {
-				return "", fmt.Errorf("image path %s escapes BaseDir %s", raw, opts.BaseDir)
-			}
-			return candidate, nil
-		}
-		if !opts.AllowAbsImagePaths {
-			return "", fmt.Errorf("absolute image path %s disallowed without AllowAbsImagePaths", raw)
-		}
-		resolved, err := filepath.EvalSymlinks(cleaned)
+		candidate, err := filepath.EvalSymlinks(cleaned)
 		if err != nil {
 			return "", fmt.Errorf("resolve image path %s: %w", raw, err)
 		}
-		return resolved, nil
+		if base == "" && !opts.AllowAbsImagePaths {
+			return "", fmt.Errorf("absolute image path %s disallowed without AllowAbsImagePaths", raw)
+		}
+		if err := ensureContained(candidate); err != nil {
+			return "", err
+		}
+		return candidate, nil
 	}
 	if base == "" {
 		return cleaned, nil
@@ -829,9 +856,8 @@ func resolveImagePath(raw string, opts ConvertOptions) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("resolve image path %s: %w", raw, err)
 	}
-	rel, err := filepath.Rel(base, candidate)
-	if err != nil || strings.HasPrefix(rel, "..") {
-		return "", fmt.Errorf("image path %s escapes BaseDir %s", raw, opts.BaseDir)
+	if err := ensureContained(candidate); err != nil {
+		return "", err
 	}
 	return candidate, nil
 }

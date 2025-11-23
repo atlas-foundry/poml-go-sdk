@@ -491,7 +491,7 @@ func TestBuildImagePartBaseDirAndLimits(t *testing.T) {
 		t.Fatalf("expected size cap error")
 	}
 
-	// Data URI still allowed without BaseDir.
+	// Data URI is allowed but still size-checked.
 	if _, err := buildImagePart(Image{Src: "data:image/png;base64,AA==", Syntax: "image/png"}, ConvertOptions{}); err != nil {
 		t.Fatalf("data uri should pass: %v", err)
 	}
@@ -513,8 +513,20 @@ func TestImageDefaultSizeLimit(t *testing.T) {
 
 	payload := base64.StdEncoding.EncodeToString([]byte{0x01, 0x02, 0x03, 0x04})
 	dataURI := "data:image/png;base64," + payload
-	if _, err := buildImagePart(Image{Src: dataURI}, ConvertOptions{MaxImageBytes: 3}); err != nil {
-		t.Fatalf("data uri should pass without size enforcement: %v", err)
+	if _, err := buildImagePart(Image{Src: dataURI}, ConvertOptions{MaxImageBytes: 3}); err == nil {
+		t.Fatalf("expected data uri to be size-checked")
+	}
+
+	smallPayload := base64.StdEncoding.EncodeToString([]byte{0x01, 0x02})
+	smallDataURI := "data:image/png;base64," + smallPayload
+	if _, err := buildImagePart(Image{Src: smallDataURI}, ConvertOptions{MaxImageBytes: 3}); err != nil {
+		t.Fatalf("small data uri should pass size enforcement: %v", err)
+	}
+
+	hugePayload := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{0x01}, int(defaultMaxImageBytes+1)))
+	hugeDataURI := "data:image/png;base64," + hugePayload
+	if _, err := buildImagePart(Image{Src: hugeDataURI}, ConvertOptions{}); err == nil {
+		t.Fatalf("expected default max %d to reject large data URI", defaultMaxImageBytes)
 	}
 
 	if _, err := buildImagePart(Image{Src: "big.bin"}, ConvertOptions{BaseDir: base, MaxImageBytes: over}); err != nil {

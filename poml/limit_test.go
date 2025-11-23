@@ -1,6 +1,7 @@
 package poml
 
 import (
+	"encoding/base64"
 	"os"
 	"testing"
 )
@@ -58,5 +59,19 @@ func TestBuildMediaPartRespectsSizeLimit(t *testing.T) {
 	}
 	if part["base64"] == "" {
 		t.Fatalf("expected base64 payload")
+	}
+}
+
+func TestMediaDataURIRespectsLimit(t *testing.T) {
+	payload := base64.StdEncoding.EncodeToString([]byte{0x01, 0x02, 0x03, 0x04})
+	dataURI := "data:audio/wav;base64," + payload
+	if _, err := buildMediaPart(Media{Src: dataURI}, ConvertOptions{MaxMediaBytes: 3}); err == nil {
+		t.Fatalf("expected data URI to be size-checked")
+	}
+
+	smallPayload := base64.StdEncoding.EncodeToString([]byte{0x01, 0x02})
+	smallDataURI := "data:audio/wav;base64," + smallPayload
+	if _, err := buildMediaPart(Media{Src: smallDataURI}, ConvertOptions{MaxMediaBytes: 3}); err != nil {
+		t.Fatalf("small data URI should pass: %v", err)
 	}
 }
