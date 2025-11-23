@@ -139,7 +139,10 @@ import (
 )
 
 func main() {
-    doc, _ := poml.ParseFile("prompt.poml")
+    doc, err := poml.ParseFile("prompt.poml")
+    if err != nil {
+        panic(err)
+    }
 
     // Convert to OpenAI chat format with safety options
     result, err := poml.Convert(doc, poml.FormatOpenAIChat, poml.ConvertOptions{
@@ -153,7 +156,10 @@ func main() {
     }
 
     // Use the result with OpenAI
-    jsonData, _ := json.MarshalIndent(result, "", "  ")
+    jsonData, err := json.MarshalIndent(result, "", "  ")
+    if err != nil {
+        panic(err)
+    }
     fmt.Println(string(jsonData))
 }
 ```
