@@ -31,6 +31,8 @@ type Server struct {
 	watcher    *fsnotify.Watcher
 	wsMu       sync.Mutex
 	wsClients  map[*websocket.Conn]struct{}
+	authToken  string
+	reqCounts  sync.Map // string -> int
 }
 
 type inspectSummary struct {
@@ -52,6 +54,7 @@ func New(doc poml.Document, sourcePath string, tp trace.TracerProvider) *Server 
 		tracer:     tp.Tracer("github.com/atlas-foundry/poml-go-sdk/mcp"),
 		sourcePath: sourcePath,
 		wsClients:  make(map[*websocket.Conn]struct{}),
+		authToken:  os.Getenv("POML_MCP_TOKEN"),
 	}
 	s.mux.HandleFunc("/health", s.health)
 	s.mux.HandleFunc("/inspect", s.inspect)
@@ -66,6 +69,7 @@ func New(doc poml.Document, sourcePath string, tp trace.TracerProvider) *Server 
 	s.mux.HandleFunc("/patch", s.patch)
 	s.mux.HandleFunc("/watch", s.watch)
 	s.mux.HandleFunc("/ws", s.ws)
+	s.mux.HandleFunc("/metrics", s.metrics)
 	if sourcePath != "" {
 		if w, err := fsnotify.NewWatcher(); err == nil {
 			_ = w.Add(sourcePath)
@@ -81,6 +85,7 @@ func (s *Server) Handler() http.Handler {
 }
 
 func (s *Server) snapshot() poml.Document {
+	s.count("snapshot")
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.doc
@@ -95,20 +100,36 @@ func (s *Server) updateDoc(doc poml.Document) {
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
+	if !s.authorize(w, nil) {
+		return
+	}
+	s.count("/health")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("ok"))
 }
 
 func (s *Server) inspect(w http.ResponseWriter, _ *http.Request) {
+	if !s.authorize(w, nil) {
+		return
+	}
+	s.count("/inspect")
 	doc := s.snapshot()
 	writeJSON(w, buildSummary(doc))
 }
 
 func (s *Server) ast(w http.ResponseWriter, _ *http.Request) {
+	if !s.authorize(w, nil) {
+		return
+	}
+	s.count("/ast")
 	writeJSON(w, s.snapshot())
 }
 
 func (s *Server) validate(w http.ResponseWriter, _ *http.Request) {
+	if !s.authorize(w, nil) {
+		return
+	}
+	s.count("/validate")
 	doc := s.snapshot()
 	err := doc.Validate()
 	if err == nil {
@@ -123,6 +144,10 @@ func (s *Server) validate(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) convert(w http.ResponseWriter, r *http.Request) {
+	if !s.authorize(w, r) {
+		return
+	}
+	s.count("/convert")
 	formatStr := r.URL.Query().Get("format")
 	if formatStr == "" {
 		formatStr = "dict"
@@ -140,6 +165,10 @@ func (s *Server) convert(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) search(w http.ResponseWriter, r *http.Request) {
+	if !s.authorize(w, r) {
+		return
+	}
+	s.count("/search")
 	tag := strings.TrimSpace(r.URL.Query().Get("tag"))
 	attr := strings.TrimSpace(r.URL.Query().Get("attr"))
 	text := strings.TrimSpace(r.URL.Query().Get("text"))
@@ -374,6 +403,10 @@ func buildSummary(doc poml.Document) inspectSummary {
 }
 
 func (s *Server) tools(w http.ResponseWriter, _ *http.Request) {
+	if !s.authorize(w, nil) {
+		return
+	}
+	s.count("/tools")
 	doc := s.snapshot()
 	writeJSON(w, map[string]any{
 		"tool_definitions": doc.ToolDefs,
@@ -385,11 +418,19 @@ func (s *Server) tools(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) diagram(w http.ResponseWriter, _ *http.Request) {
+	if !s.authorize(w, nil) {
+		return
+	}
+	s.count("/diagram")
 	doc := s.snapshot()
 	writeJSON(w, doc.Diagrams)
 }
 
 func (s *Server) roundtrip(w http.ResponseWriter, _ *http.Request) {
+	if !s.authorize(w, nil) {
+		return
+	}
+	s.count("/roundtrip")
 	ctx, span := s.tracer.Start(context.Background(), "mcp.roundtrip")
 	defer span.End()
 	doc := s.snapshot()
@@ -418,6 +459,10 @@ func (s *Server) roundtrip(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) diff(w http.ResponseWriter, r *http.Request) {
+	if !s.authorize(w, r) {
+		return
+	}
+	s.count("/diff")
 	var body struct {
 		A string `json:"a"`
 		B string `json:"b"`
@@ -449,6 +494,10 @@ func (s *Server) diff(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) patch(w http.ResponseWriter, r *http.Request) {
+	if !s.authorize(w, r) {
+		return
+	}
+	s.count("/patch")
 	var req struct {
 		Tag   string `json:"tag"`
 		Index int    `json:"index"`
@@ -494,6 +543,10 @@ func (s *Server) patch(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) watch(w http.ResponseWriter, r *http.Request) {
+	if !s.authorize(w, r) {
+		return
+	}
+	s.count("/watch")
 	if s.watcher == nil || s.sourcePath == "" {
 		http.Error(w, "watch not enabled (no source file)", http.StatusBadRequest)
 		return
@@ -564,6 +617,46 @@ func (s *Server) reload() (poml.Document, error) {
 	return doc, nil
 }
 
+func (s *Server) metrics(w http.ResponseWriter, r *http.Request) {
+	if !s.authorize(w, r) {
+		return
+	}
+	type metric struct {
+		Endpoint string `json:"endpoint"`
+		Count    int    `json:"count"`
+	}
+	var out []metric
+	s.reqCounts.Range(func(key, value any) bool {
+		if k, ok := key.(string); ok {
+			if v, ok := value.(int); ok {
+				out = append(out, metric{Endpoint: k, Count: v})
+			}
+		}
+		return true
+	})
+	writeJSON(w, map[string]any{"requests": out})
+}
+
+func (s *Server) authorize(w http.ResponseWriter, r *http.Request) bool {
+	if s.authToken == "" {
+		return true
+	}
+	if r != nil && r.URL.Query().Get("token") == s.authToken {
+		return true
+	}
+	http.Error(w, "unauthorized", http.StatusUnauthorized)
+	return false
+}
+
+func (s *Server) count(endpoint string) {
+	current, _ := s.reqCounts.Load(endpoint)
+	if n, ok := current.(int); ok {
+		s.reqCounts.Store(endpoint, n+1)
+	} else {
+		s.reqCounts.Store(endpoint, 1)
+	}
+}
+
 var wsUpgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -573,12 +666,10 @@ var wsUpgrader = websocket.Upgrader{
 }
 
 func (s *Server) ws(w http.ResponseWriter, r *http.Request) {
-	if token := os.Getenv("POML_MCP_TOKEN"); token != "" {
-		if r.URL.Query().Get("token") != token {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
+	if !s.authorize(w, r) {
+		return
 	}
+	s.count("/ws")
 
 	conn, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
