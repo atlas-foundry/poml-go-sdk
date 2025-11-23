@@ -1,6 +1,16 @@
 package main
 
 import (
+	"fmt"
+	"os"
+)
+
+func main() {
+	fmt.Fprintln(os.Stderr, "The premium MCP CLI has moved to poml-horse. Refer to ~/the/poml-horse/incoming/cmd/poml/main.go for the previous implementation.")
+	os.Exit(1)
+}package main
+
+import (
 	"context"
 	"flag"
 	"fmt"

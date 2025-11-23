@@ -2,6 +2,185 @@ package poml
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"sort"
+	"strings"
+	"sync"
+)
+
+// Converter turns input of one format into another (e.g., poml → diagram).
+type Converter interface {
+	From() string
+	To() string
+	Convert(ctx context.Context, input any, opts map[string]any) (any, error)
+}
+
+// ConverterRegistry is a threadsafe registry for converters.
+type ConverterRegistry struct {
+	mu         sync.RWMutex
+	converters map[string]Converter
+}
+
+// NewConverterRegistry builds an empty registry.
+func NewConverterRegistry() *ConverterRegistry {
+	return &ConverterRegistry{converters: make(map[string]Converter)}
+}
+
+// ErrConverterExists indicates a duplicate registration attempt.
+var ErrConverterExists = errors.New("converter already registered")
+
+// Register adds a converter. Returns ErrConverterExists when a from->to pair already exists.
+func (r *ConverterRegistry) Register(conv Converter) error {
+	if conv == nil {
+		return errors.New("converter is nil")
+	}
+	key := converterKey(conv.From(), conv.To())
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, exists := r.converters[key]; exists {
+		return fmt.Errorf("%w: %s", ErrConverterExists, key)
+	}
+	r.converters[key] = conv
+	return nil
+}
+
+// List returns descriptors for registered converters.
+func (r *ConverterRegistry) List() []ConverterDescriptor {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	out := make([]ConverterDescriptor, 0, len(r.converters))
+	for _, c := range r.converters {
+		out = append(out, ConverterDescriptor{From: strings.ToLower(c.From()), To: strings.ToLower(c.To())})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].From == out[j].From {
+			return out[i].To < out[j].To
+		}
+		return out[i].From < out[j].From
+	})
+	return out
+}
+
+// ConverterDescriptor captures a registered mapping.
+type ConverterDescriptor struct {
+	From string
+	To   string
+}
+
+// Convert dispatches to a registered converter.
+func (r *ConverterRegistry) Convert(ctx context.Context, from, to string, input any, opts map[string]any) (any, error) {
+	key := converterKey(from, to)
+	r.mu.RLock()
+	conv, ok := r.converters[key]
+	r.mu.RUnlock()
+	if !ok {
+		r.mu.RLock()
+		var keys []string
+		for k := range r.converters {
+			keys = append(keys, k)
+		}
+		r.mu.RUnlock()
+		sort.Strings(keys)
+		return nil, fmt.Errorf("no converter for %s (available: %s)", key, strings.Join(keys, ", "))
+	}
+	return conv.Convert(ctx, input, opts)
+}
+
+// DefaultConverterRegistry is pre-populated with built-in converters for poml/diagram.
+var DefaultConverterRegistry = newDefaultConverterRegistry()
+
+func newDefaultConverterRegistry() *ConverterRegistry {
+	reg := NewConverterRegistry()
+	registerDefaultConverters(reg)
+	return reg
+}
+
+func converterKey(from, to string) string {
+	return strings.ToLower(from) + "->" + strings.ToLower(to)
+}
+
+// registerDefaultConverters wires the minimal converters for core parity.
+func registerDefaultConverters(reg *ConverterRegistry) {
+	// ignore duplicate errors to allow idempotent init in tests
+	_ = reg.Register(basicConverter{
+		from: "poml",
+		to:   "diagram",
+		fn: func(_ context.Context, input any, _ map[string]any) (any, error) {
+			switch v := input.(type) {
+			case string:
+				doc, err := ParseString(v)
+				if err != nil {
+					return nil, err
+				}
+				return doc.Diagrams, nil
+			case []byte:
+				doc, err := ParseReader(strings.NewReader(string(v)))
+				if err != nil {
+					return nil, err
+				}
+				return doc.Diagrams, nil
+			case Document:
+				return v.Diagrams, nil
+			default:
+				return nil, fmt.Errorf("poml->diagram converter expects string, []byte, or Document, got %T", input)
+			}
+		},
+	})
+	_ = reg.Register(basicConverter{
+		from: "diagram",
+		to:   "poml",
+		fn: func(_ context.Context, input any, opts map[string]any) (any, error) {
+			indent := "  "
+			if v, ok := opts["indent"].(string); ok && v != "" {
+				indent = v
+			}
+			var diagrams []Diagram
+			switch v := input.(type) {
+			case Diagram:
+				diagrams = []Diagram{v}
+			case []Diagram:
+				diagrams = v
+			default:
+				return nil, fmt.Errorf("diagram->poml converter expects Diagram or []Diagram, got %T", input)
+			}
+			baseDoc := Document{}
+			if v, ok := opts["base_document"]; ok {
+				switch b := v.(type) {
+				case Document:
+					baseDoc = b
+				case *Document:
+					if b != nil {
+						baseDoc = *b
+					}
+				default:
+					return nil, fmt.Errorf("base_document must be Document or *Document, got %T", v)
+				}
+			}
+			baseDoc.Diagrams = diagrams
+			var sb strings.Builder
+			if err := baseDoc.EncodeWithOptions(&sb, EncodeOptions{Indent: indent, IncludeHeader: true, PreserveOrder: true}); err != nil {
+				return nil, err
+			}
+			return sb.String(), nil
+		},
+	})
+}
+
+type basicConverter struct {
+	from string
+	to   string
+	fn   func(ctx context.Context, input any, opts map[string]any) (any, error)
+}
+
+func (c basicConverter) From() string { return c.from }
+func (c basicConverter) To() string   { return c.to }
+func (c basicConverter) Convert(ctx context.Context, input any, opts map[string]any) (any, error) {
+	return c.fn(ctx, input, opts)
+}package poml
+
+import (
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"errors"

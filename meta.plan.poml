@@ -14,6 +14,13 @@
     </list>
   </task>
 
+  <task caption="Benchmark parity">
+    <list>
+      <item>Track cross-SDK benchmarks vs Python/TypeScript; see benchmarks.plan.poml for matrix, fixtures, and harness.</item>
+      <item>Release gate: Go must beat other SDKs on p50/p95 latency and memory for parse/encode/validate and diagram/scene conversions.</item>
+    </list>
+  </task>
+
   <task caption="SDK implementation steps (do in order)">
     <list>
       <item>Scene Extras: add extras/unknown bags on Scene; map diagram/graph attrs and multi-style slices to Scene and back; keep attrs sorted.</item>
@@ -70,6 +77,22 @@
     </list>
   </task>
 
+  <task caption="Upstream parity automation">
+    <list>
+      <item>Version numbers mirror the official <cp>poml-lang/poml</cp> tags; no custom semver track.</item>
+      <item><cp>scripts/sync_upstream.sh</cp> + <code>make sync-upstream TAG=vX.Y.Z</code> refresh vendored assets in <cp>third_party/upstream</cp> and immediately run parity tests.</item>
+      <item><cp>.github/workflows/upstream-sync.yml</cp> runs weekly (and via manual dispatch) to open PRs whenever a new stable upstream release lands.</item>
+    </list>
+  </task>
+
+  <task caption="Version parity enforcement">
+    <list>
+      <item>History rewrites strip premium content (migrated to <cp>poml-horse</cp>) and re-create upstream tags 1:1 using <cp>git filter-repo</cp>; instructions live in <cp>docs/upstream_parity.poml</cp>.</item>
+      <item>Every parity rewrite ends with README/CHANGELOG/meta updates plus annotated tags stating <cp>Upstream-Parity: vX.Y.Z</cp>.</item>
+      <item>Freeze merges during the rewrite window and broadcast force-push guidance so downstream consumers can re-align.</item>
+    </list>
+  </task>
+
   <task caption="MCP / CLI roadmap">
     <list>
       <item>CLI: ship `poml` binary; subcommands: `mcp` (serve), future `convert`, `validate`, `render`.</item>
@@ -80,8 +103,19 @@
     </list>
   </task>
 
+  <task caption="Premium split orchestration">
+    <list>
+      <item>Enumerate premium/non-parity assets (VS Code extension, MCP server, OTLP/diagram helpers, tracing, renderer adapters) and stage them under `~/the/poml-horse/incoming/`.</item>
+      <item>Extract function-level converters/registrations, CLI handlers, and adapter helpers so the OSS tree only exposes parity primitives; stub or remove references in `poml-go-sdk` afterwards.</item>
+      <item>Update README.*, meta.plan.poml, and CHANGELOG.md to explain the split, point premium consumers at `poml-horse`, and note the upcoming history rewrite.</item>
+      <item>Run `go mod tidy` + `go test ./...` in `poml-go-sdk`, then commit the stripped tree to the clean clone before rerunning the `git filter-repo` rewrite.</item>
+      <item>Document the twin histories in `docs/upstream_parity.poml`, tag the filtered branch, and plan the force-push + announcements per the communications task.</item>
+    </list>
+  </task>
+
   <log>
     <entry date="2025-11-23" actor="ai.architect">Merged lossless plan with original badge/test roadmap to retain CI quality goals while pursuing lossless parity.</entry>
+    <entry date="2025-11-23" actor="ai.architect">Drafted premium split orchestration so `poml-go-sdk` stays parity-first and all extras land in `poml-horse` before the rewrite.</entry>
     <entry date="2025-11-22" actor="ai.architect">Replaced badge roadmap with lossless round-trip plan aligned with registry and adapter separation.</entry>
   </log>
 
