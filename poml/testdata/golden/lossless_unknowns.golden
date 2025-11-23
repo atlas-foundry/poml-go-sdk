@@ -1,0 +1,11 @@
+<poml>
+  <meta>
+    <id>lossless.test</id>
+    <version>1.0.0</version>
+    <owner>qa</owner>
+  </meta>
+  <role>r</role>
+  <task>t1</task>
+  <unknown foo="bar"><![CDATA[extra payload]]></unknown>
+  <task>t2</task>
+</poml>

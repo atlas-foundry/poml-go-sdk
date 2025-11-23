@@ -1,0 +1,26 @@
+<poml>
+  <meta>
+    <id>ts.docs.sample</id>
+    <version>1.0.0</version>
+    <owner>docs</owner>
+  </meta>
+
+  <role>TypeScript parity example</role>
+  <task>Summarize the customer request and propose next actions.</task>
+
+  <input name="customer_request" required="true">Raw customer request text.</input>
+
+  <tool-definition name="lookup" description="Search internal knowledge base">
+    <parameters>
+      {"type":"object","properties":{"query":{"type":"string"},"top_k":{"type":"integer","minimum":1,"maximum":5}},"required":["query"]}
+    </parameters>
+  </tool-definition>
+
+  <tool-request id="call_lookup" name="lookup">
+    {"query":"how do I reset my password?","top_k":3}
+  </tool-request>
+
+  <output-format syntax="json">
+    {"type":"object","properties":{"summary":{"type":"string"},"actions":{"type":"array","items":{"type":"string"}}},"required":["summary"]}
+  </output-format>
+</poml>

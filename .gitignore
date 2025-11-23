@@ -9,3 +9,4 @@ __pycache__/
 
 # Go build artifacts (none expected by default, keep empty for now)
 *.out
+node_modules

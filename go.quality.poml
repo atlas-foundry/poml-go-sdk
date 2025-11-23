@@ -1,0 +1,265 @@
+<poml>
+  <meta>
+    <title>Golang Code Quality Specification</title>
+    <version>1.1.0</version>
+    <language>go</language>
+    <description>
+      A comprehensive specification of Go code-quality rules with good &amp; bad examples.
+    </description>
+  </meta>
+
+  <section id="correctness" title="Correctness &amp; Safety">
+    <description>Rules ensuring code is valid, predictable, safe, and race-free.</description>
+
+    <rule id="error_handling" title="No Unchecked Errors">
+      <good_example>
+func readUser(id string) (*User, error) {
+    u, err := store.Get(id)
+    if err != nil {
+        return nil, fmt.Errorf("readUser: %w", err)
+    }
+    return u, nil
+}
+      </good_example>
+      <good_example>
+if err := validate(input); err != nil {
+    return err
+}
+      </good_example>
+      <bad_example>
+u, _ := store.Get(id)  // ignored error
+return u
+      </bad_example>
+      <bad_example>
+f, _ := os.Open("config.yaml")  // unchecked error
+      </bad_example>
+    </rule>
+
+    <rule id="defensive_bounds" title="Defensive Bounds Checks">
+      <good_example>
+if i < 0 || i >= len(items) {
+    return errors.New("index out of range")
+}
+return items[i]
+      </good_example>
+      <bad_example>
+return items[i]   // no bounds check
+      </bad_example>
+    </rule>
+
+    <rule id="race_free" title="No Data Races">
+      <good_example>
+type Safe struct {
+    mu sync.RWMutex
+    v  int
+}
+func (s *Safe) Get() int {
+    s.mu.RLock()
+    defer s.mu.RUnlock()
+    return s.v
+}
+      </good_example>
+      <bad_example>
+type Unsafe struct{ v int }
+func (u *Unsafe) Add(n int) {
+    u.v += n     // race if called concurrently
+}
+      </bad_example>
+    </rule>
+
+    <rule id="context_correctness" title="Correct Context Propagation">
+      <good_example>
+func fetch(ctx context.Context, url string) error {
+    req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+    if err != nil { return err }
+    _, err = http.DefaultClient.Do(req)
+    return err
+}
+      </good_example>
+      <bad_example>
+func fetch(url string) error {
+    ctx := context.Background() // drops caller cancellation
+    // ...
+}
+      </bad_example>
+    </rule>
+  </section>
+
+  <section id="api" title="API &amp; Interface Quality">
+    <rule id="no_stutter" title="Avoid Naming Stutter">
+      <good_example>
+package client
+type Service struct{}
+      </good_example>
+      <bad_example>
+package client
+type ClientService struct{}  // client.ClientService is stutter
+      </bad_example>
+    </rule>
+
+    <rule id="interfaces_consumer_owned" title="Interfaces Defined by Consumers">
+      <good_example>
+type Reader interface {
+    Read(id string) (User, error)
+}
+      </good_example>
+      <bad_example>
+type StoreImpl struct{}
+func (s StoreImpl) Save(b []byte) error { return nil }
+
+type Store interface { Save([]byte) error }  // interface defined after impl
+      </bad_example>
+    </rule>
+  </section>
+
+  <section id="performance" title="Performance &amp; Memory Hygiene">
+    <rule id="avoid_allocs_hotpath" title="Avoid Hot-Path Allocations">
+      <good_example>
+func fastCopy(dst, src []byte) {
+    copy(dst, src)
+}
+      </good_example>
+      <bad_example>
+func slowCopy(src []byte) []byte {
+    return append([]byte{}, src...)  // alloc every call
+}
+      </bad_example>
+    </rule>
+
+    <rule id="avoid_reflection" title="Avoid Reflection in Hot Paths">
+      <good_example>
+func getName(u User) string { return u.Name }
+      </good_example>
+      <bad_example>
+func getName(i interface{}) string {
+    v := reflect.ValueOf(i)
+    return v.FieldByName("Name").String()
+}
+      </bad_example>
+    </rule>
+  </section>
+
+  <section id="maintainability" title="Maintainability &amp; Readability">
+    <rule id="small_functions" title="Small, Focused Functions">
+      <good_example>
+func sum(a, b int) int { return a + b }
+      </good_example>
+      <bad_example>
+func everything() {
+    // 300+ LOC mixing many responsibilities
+}
+      </bad_example>
+    </rule>
+
+    <rule id="predictable_errors" title="Predictable Error Patterns">
+      <good_example>
+if err != nil {
+    return fmt.Errorf("loadConfig: %w", err)
+}
+      </good_example>
+      <bad_example>
+return errors.New("OMG SOMETHING BAD HAPPEN")
+      </bad_example>
+    </rule>
+  </section>
+
+  <section id="testing" title="Testing &amp; Fuzzing">
+    <rule id="deterministic_tests" title="Deterministic Tests">
+      <good_example>
+func TestAdd(t *testing.T) {
+    if Add(2,3) != 5 {
+        t.Fatal("bad")
+    }
+}
+      </good_example>
+      <bad_example>
+func TestRandom(t *testing.T) {
+    if rand.Int()%10 == 0 {
+        t.Fail()
+    }
+}
+      </bad_example>
+    </rule>
+
+    <rule id="parser_fuzzing" title="Fuzzing for Parsers">
+      <good_example>
+func FuzzParse(f *testing.F) {
+    f.Add("x:1")
+    f.Fuzz(func(t *testing.T, s string) {
+        _, _ = Parse(s)
+    })
+}
+      </good_example>
+    </rule>
+  </section>
+
+  <section id="security" title="Security &amp; Dependency Health">
+    <rule id="no_hardcoded_secrets" title="No Hardcoded Secrets">
+      <good_example>
+key := os.Getenv("API_KEY")
+      </good_example>
+      <bad_example>
+const apiKey = "sk_live_123"
+      </bad_example>
+    </rule>
+
+    <rule id="crypto_rand" title="Use crypto/rand for Sensitive Values">
+      <good_example>
+buf := make([]byte, 32)
+_, err := rand.Read(buf)
+      </good_example>
+      <bad_example>
+token := mathrand.Int63()
+      </bad_example>
+    </rule>
+  </section>
+
+  <section id="semantic" title="Semantic &amp; Architectural Quality">
+    <rule id="coherent_functions" title="One Semantic Intent per Function">
+      <good_example>
+func BuildRequest(u User) (*http.Request, error) {
+    // builds only the request
+}
+      </good_example>
+      <bad_example>
+func BuildRequest(u User) (*http.Request, error) {
+    log.Println("start")
+    db.Save(u)
+    metrics.Count("req")
+    // too many concerns
+}
+      </bad_example>
+    </rule>
+
+    <rule id="structured_logs" title="Structured Logs">
+      <good_example>
+log.Info("login", "user", id, "ip", ip)
+      </good_example>
+      <bad_example>
+log.Println("user logged in", id, ip)
+      </bad_example>
+    </rule>
+  </section>
+
+  <section id="ops" title="Operational &amp; Telemetry Quality">
+    <rule id="context_trace" title="Correct Context &amp; Trace Propagation">
+      <good_example>
+func Handler(w http.ResponseWriter, r *http.Request) {
+    ctx := r.Context()
+    span := trace.SpanFromContext(ctx)
+    span.AddEvent("start")
+}
+      </good_example>
+    </rule>
+
+    <rule id="graceful_shutdown" title="Graceful Shutdown">
+      <good_example>
+srv := &http.Server{}
+go srv.ListenAndServe()
+<-ctx.Done()
+srv.Shutdown(context.Background())
+      </good_example>
+    </rule>
+  </section>
+
+</poml>

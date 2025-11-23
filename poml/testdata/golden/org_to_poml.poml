@@ -1,0 +1,10 @@
+<poml>
+  <meta>
+    <id>converted.org</id>
+    <version>0.0.0</version>
+    <owner>converter</owner>
+  </meta>
+  <role>* role</role>
+  <task>** task one</task>
+  <task>** task two</task>
+</poml>

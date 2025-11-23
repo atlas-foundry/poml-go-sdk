@@ -111,19 +111,29 @@ jobs:
       fail-fast: false
       matrix:
         base: ["debian:stable", "alpine:3.20", "ubuntu:24.04"]
+        arch: ["amd64", "arm64"]
 
     steps:
       - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to GitHub Container Registry
+        env:
+          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "${CR_PAT}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Build Docker image
         run: |
           TAG=$(echo "${{ matrix.base }}" | tr ':' '-')
+          ARCH="${{ matrix.arch }}"
           BASE="${{ matrix.base }}"
           cat <<'EOF' > Dockerfile
           ARG BASE_IMAGE=alpine:3.20
           FROM ${BASE_IMAGE}
 
-          ARG GO_VERSION=1.25.0
+          ARG GO_VERSION=1.25.4
           # Ensure curl/tar/git are available for Go install across alpine/apt-based images.
           RUN (apk add --no-cache curl tar git ca-certificates || \
                (apt-get update && apt-get install -y curl ca-certificates tar git)) && \
@@ -171,12 +181,16 @@ jobs:
 
             for _, f := range files {
               data, _ := os.ReadFile(f)
-              doc, err := sdk.Parse(data)
+              doc, err := sdk.ParseString(string(data))
               if err != nil {
                 panic(fmt.Sprintf("parse error in %s: %v", f, err))
               }
               if err := sdk.Validate(doc); err != nil {
                 panic(fmt.Sprintf("semantic error in %s: %v", f, err))
+              }
+              opts := sdk.ConvertOptions{BaseDir: filepath.Dir(f), MaxImageBytes: 10 << 20, MaxMediaBytes: 10 << 20}
+              if _, err := sdk.Convert(doc, sdk.FormatMessageDict, opts); err != nil {
+                panic(fmt.Sprintf("convert error in %s: %v", f, err))
               }
             }
 
@@ -188,12 +202,88 @@ jobs:
           RUN go version && go build semantic_test.go
           EOF
 
-          docker build --build-arg BASE_IMAGE="${BASE}" --build-arg GO_VERSION="1.25.0" -t poml-e2e:${TAG} .
+          IMAGE="ghcr.io/${{ github.repository_owner }}/poml-e2e:${TAG}-${ARCH}"
+          docker buildx build --platform=linux/${ARCH} --build-arg BASE_IMAGE="${BASE}" --build-arg GO_VERSION="1.25.4" -t "${IMAGE}" --push .
 
       - name: Run E2E Test
         run: |
           TAG=$(echo "${{ matrix.base }}" | tr ':' '-')
-          docker run --rm poml-e2e:${TAG}
+          IMAGE="ghcr.io/${{ github.repository_owner }}/poml-e2e:${TAG}-${{ matrix.arch }}"
+          docker run --rm --platform=linux/${{ matrix.arch }} "${IMAGE}"
+
+  # =====================================================
+  # 2b. MACOS TESTS (Apple Silicon)
+  # =====================================================
+  macos:
+    name: macOS Build & Test (Apple Silicon)
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+
+      - name: Verify formatting
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "❌ gofmt check failed:"
+            gofmt -l .
+            exit 1
+          fi
+
+      - name: Run tests
+        run: go test ./...
+
+  # =====================================================
+  # 2c. WINDOWS TESTS
+  # =====================================================
+  windows:
+    name: Windows Build & Test
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+
+      - name: Verify formatting
+        shell: bash
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "❌ gofmt check failed:"
+            gofmt -l .
+            exit 1
+          fi
+
+      - name: Run tests
+        run: go test ./...
+
+  # =====================================================
+  # 2d. GO VET (Static Checks)
+  # =====================================================
+  vet:
+    name: Go Vet
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+
+      - name: Go Vet
+        run: go vet ./...
 
   # =====================================================
   # 3. DOCS BUILD
@@ -208,15 +298,19 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
-      - name: Install MDX
-        run: npm install @mdx-js/mdx --no-save
+      - name: Install Docs Tools
+        run: npm install
 
       - name: Generate docs
         run: |
           mkdir -p build/docs
-          npx mdx README.mdx > build/docs/index.html
+          node tools/render-mdx.mjs README.mdx build/docs/index.html
+
+      - name: Docs smoke test
+        run: |
+          test -s build/docs/index.html
 
       - name: Upload Docs Artifact
         uses: actions/upload-artifact@v4
@@ -234,9 +328,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
       - run: |
+          npm install
           mkdir -p nightly/docs
-          mdx README.mdx > nightly/docs/index.html
+          node tools/render-mdx.mjs README.mdx nightly/docs/index.html
       - uses: actions/upload-artifact@v4
         with:
           name: nightly-docs
@@ -258,21 +356,15 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
-      - name: Install semantic-release
-        run: |
-          npm install -g semantic-release \
-            @semantic-release/changelog \
-            @semantic-release/git \
-            @semantic-release/github \
-            @semantic-release/commit-analyzer \
-            @semantic-release/release-notes-generator
+      - name: Install dependencies
+        run: npm ci
 
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: semantic-release
+        run: npx semantic-release
 
   # =====================================================
   # 6. RELEASE BINARIES

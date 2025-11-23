@@ -1,0 +1,5 @@
+digraph G {
+  "n1" [fillcolor="blue",label="Node 1",pos="0.000,0.000!",style="filled"];
+  "n2" [label="Node 2",pos="1.000,1.000!",shape="hexagon"];
+  "n1" -> "n2" [color="black",label="link"];
+}

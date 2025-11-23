@@ -48,7 +48,7 @@ func TestGraphvizRendererDOT(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read expected dot: %v", err)
 	}
-	if strings.TrimSpace(string(dot)) != strings.TrimSpace(string(want)) {
+	if normalize(string(dot)) != normalize(string(want)) {
 		t.Fatalf("dot mismatch.\n got:\n%s\nwant:\n%s", string(dot), string(want))
 	}
 }
@@ -74,6 +74,36 @@ func TestGraphvizRendererDirectedOverride(t *testing.T) {
 	}
 	if !strings.Contains(out, "color=\"red\"") {
 		t.Fatalf("expected stroke color in attrs: %s", out)
+	}
+}
+
+func TestRenderersGolden(t *testing.T) {
+	scene := Scene{
+		ID: "scene-1",
+		Nodes: []SceneNode{
+			{ID: "n1", Label: "Node 1", Position: [3]float64{0, 0, 0}, Style: map[string]string{"color": "blue"}},
+			{ID: "n2", Label: "Node 2", Position: [3]float64{1, 1, 0}, Style: map[string]string{"shape": "hex"}},
+		},
+		Edges: []SceneEdge{
+			{From: "n1", To: "n2", Kind: "link", Directed: true, Style: map[string]string{"stroke": "black"}},
+		},
+	}
+
+	// Deck.gl JSON
+	jsonOut, err := (DeckGLRenderer{}).Render(scene)
+	if err != nil {
+		t.Fatalf("deckgl render: %v", err)
+	}
+	assertJSONEqualRaw(t, jsonOut, filepath.Join("testdata", "golden", "scene_deckgl.json"))
+
+	// Graphviz DOT
+	dotOut, err := (GraphvizRenderer{}).Render(scene)
+	if err != nil {
+		t.Fatalf("graphviz render: %v", err)
+	}
+	wantDOT := readFile(t, filepath.Join("testdata", "golden", "scene_graphviz.dot"))
+	if normalize(string(dotOut)) != normalize(wantDOT) {
+		t.Fatalf("graphviz mismatch\n got:\n%s\nwant:\n%s", string(dotOut), wantDOT)
 	}
 }
 
@@ -119,4 +149,8 @@ func TestBuildDOTNodeAttrs(t *testing.T) {
 			t.Fatalf("expected %s in attrs %s", want, attrs)
 		}
 	}
+}
+
+func normalize(s string) string {
+	return strings.TrimSpace(strings.ReplaceAll(s, "\r\n", "\n"))
 }

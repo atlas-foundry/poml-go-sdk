@@ -115,3 +115,63 @@ func TestBuilderRecordsOrderingForInputsAndRaw(t *testing.T) {
 		t.Fatalf("style/output-format not captured")
 	}
 }
+
+func TestBuilderMessageOrdering(t *testing.T) {
+	doc := NewBuilder().
+		Meta("builder.msg", "1.0.0", "me").
+		System("sys").
+		Human("hi").
+		Assistant("ok").
+		Build()
+
+	if len(doc.Messages) != 3 {
+		t.Fatalf("expected 3 messages, got %d", len(doc.Messages))
+	}
+	if doc.Messages[0].Role != "system" || doc.Messages[1].Role != "human" || doc.Messages[2].Role != "assistant" {
+		t.Fatalf("roles out of order: %+v", doc.Messages)
+	}
+	if got := []ElementType{doc.Elements[1].Type, doc.Elements[2].Type, doc.Elements[3].Type}; got[0] != ElementSystemMsg || got[1] != ElementHumanMsg || got[2] != ElementAssistantMsg {
+		t.Fatalf("element ordering mismatch: %+v", got)
+	}
+}
+
+func TestBuilderDefaultOrderingMatchesElements(t *testing.T) {
+	doc := NewBuilder().
+		Meta("builder.full", "1.0.0", "me").
+		Role("r").
+		Task("t1").
+		Task("t2").
+		Input("in", true, "v").
+		DocumentRef("doc.xml").
+		Style(Output{Format: "text"}).
+		Hint("h").
+		Example("ex").
+		ContentPart("cp").
+		OutputFormat("md").
+		System("sys").
+		Human("hi").
+		Assistant("ok").
+		ToolDefinition("tool", "desc", "{}").
+		ToolRequest("id1", "tool", "{}").
+		ToolResponse("id1", "tool", "resp").
+		ToolResult("id1", "tool", "res").
+		ToolError("id1", "tool", "err").
+		OutputSchema(map[string]any{"type": "object"}).
+		Runtime(map[string]any{"temperature": 0.5}).
+		Audio(Media{Src: "a"}).
+		Video(Media{Src: "v"}).
+		Object("{}", "json", "").
+		Image(Image{Src: "i"}).
+		Diagram(Diagram{ID: "d"}).
+		Build()
+
+	defaultOrder := doc.resolveOrderWithFallback(false)
+	if len(defaultOrder) != len(doc.Elements) {
+		t.Fatalf("default order len %d mismatch elements len %d", len(defaultOrder), len(doc.Elements))
+	}
+	for i := range defaultOrder {
+		if defaultOrder[i].Type != doc.Elements[i].Type {
+			t.Fatalf("type mismatch at %d: default %v vs elements %v", i, defaultOrder[i].Type, doc.Elements[i].Type)
+		}
+	}
+}
