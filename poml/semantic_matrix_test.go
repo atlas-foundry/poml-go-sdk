@@ -193,6 +193,16 @@ func TestSemanticMatrixFixtures(t *testing.T) {
 			opts:      ConvertOptions{AllowAbsImagePaths: false},
 			expectErr: true,
 		},
+		{
+			name: "malformed-data-uri",
+			file: filepath.Join("testdata", "semantic", "malformed_data_uri.poml"),
+			opts: ConvertOptions{BaseDir: "testdata/semantic"},
+		},
+		{
+			name: "runtime-schema-multi",
+			file: filepath.Join("testdata", "semantic", "runtime_schema_multi.poml"),
+			opts: ConvertOptions{BaseDir: "testdata/semantic"},
+		},
 	}
 
 	for _, tc := range cases {

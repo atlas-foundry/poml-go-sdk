@@ -1,0 +1,6 @@
+<poml>
+  <meta><id>semantic.datauri.bad</id><version>1</version><owner>oss</owner></meta>
+  <role>r</role>
+  <task>t</task>
+  <img src="data:image/png;base64,@@@notbase64@@@" alt="bad-data"/>
+</poml>

@@ -1,0 +1,10 @@
+<poml>
+  <meta><id>semantic.runtime.multi</id><version>1</version><owner>oss</owner></meta>
+  <role>r</role>
+  <task>t</task>
+  <runtime provider="gpt" model="gpt-4.1" temperature="0.3"/>
+  <runtime provider="claude" model="3.5" max_tokens="4096"/>
+  <output-format format="json">{"foo":"bar"}</output-format>
+  <output-format format="text">plain</output-format>
+  <output-schema>{"type":"object","properties":{"foo":{"type":"string"}}}</output-schema>
+</poml>
