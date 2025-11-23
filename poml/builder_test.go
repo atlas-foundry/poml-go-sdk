@@ -115,3 +115,22 @@ func TestBuilderRecordsOrderingForInputsAndRaw(t *testing.T) {
 		t.Fatalf("style/output-format not captured")
 	}
 }
+
+func TestBuilderMessageOrdering(t *testing.T) {
+	doc := NewBuilder().
+		Meta("builder.msg", "1.0.0", "me").
+		System("sys").
+		Human("hi").
+		Assistant("ok").
+		Build()
+
+	if len(doc.Messages) != 3 {
+		t.Fatalf("expected 3 messages, got %d", len(doc.Messages))
+	}
+	if doc.Messages[0].Role != "system" || doc.Messages[1].Role != "human" || doc.Messages[2].Role != "assistant" {
+		t.Fatalf("roles out of order: %+v", doc.Messages)
+	}
+	if got := []ElementType{doc.Elements[1].Type, doc.Elements[2].Type, doc.Elements[3].Type}; got[0] != ElementSystemMsg || got[1] != ElementHumanMsg || got[2] != ElementAssistantMsg {
+		t.Fatalf("element ordering mismatch: %+v", got)
+	}
+}
