@@ -1,0 +1,20 @@
+<poml>
+  <meta>
+    <id>dot.styled</id>
+    <version>0.1.0</version>
+    <owner>test</owner>
+  </meta>
+  <role>styled dot snapshot</role>
+  <task>render dot with attrs</task>
+  <diagram id="d2">
+    <graph>
+      <node id="n1" label="Alpha" group="grp" weight="0.5" />
+      <node id="n2" label="Beta" group="grp" weight="0.8" />
+      <edge from="n1" to="n2" kind="relates" weight="0.2" />
+    </graph>
+    <style>
+      <color>red</color>
+      <stroke>blue</stroke>
+    </style>
+  </diagram>
+</poml>

@@ -1740,6 +1740,41 @@ func (d *Document) resolveOrder() []Element {
 	return d.resolveOrderWithFallback(true)
 }
 
+// Scene converts the current document into a Scene. Unknown fields are ignored.
+func (d *Document) Scene() Scene {
+	scene := Scene{ID: strings.TrimSpace(d.Meta.ID)}
+	for _, el := range d.Elements {
+		switch el.Type {
+		case ElementDiagram:
+			if el.Index >= 0 && el.Index < len(d.Diagrams) {
+				scene.ID = d.Diagrams[el.Index].ID
+			}
+		case ElementDocument:
+			if el.Index >= 0 && el.Index < len(d.Documents) {
+				scene.Meta = mergeMeta(scene.Meta, d.Documents[el.Index].Attrs)
+			}
+		case ElementRuntime:
+			if el.Index >= 0 && el.Index < len(d.Runtimes) {
+				scene.Meta = mergeMeta(scene.Meta, d.Runtimes[el.Index].Attrs)
+			}
+		}
+	}
+	return scene
+}
+
+func mergeMeta(meta map[string]any, attrs []xml.Attr) map[string]any {
+	if len(attrs) == 0 {
+		return meta
+	}
+	if meta == nil {
+		meta = make(map[string]any)
+	}
+	for _, a := range attrs {
+		meta[a.Name.Local] = a.Value
+	}
+	return meta
+}
+
 // defaultElements builds a canonical ordering of known fields.
 func (d *Document) defaultElements() []Element {
 	var out []Element

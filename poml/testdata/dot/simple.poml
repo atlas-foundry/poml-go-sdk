@@ -1,0 +1,16 @@
+<poml>
+  <meta>
+    <id>dot.simple</id>
+    <version>0.1.0</version>
+    <owner>test</owner>
+  </meta>
+  <role>simple dot snapshot</role>
+  <task>render dot</task>
+  <diagram id="d1">
+    <graph>
+      <node id="n1" label="A" group="g1" />
+      <node id="n2" label="B" group="g2" />
+      <edge from="n1" to="n2" kind="depends" />
+    </graph>
+  </diagram>
+</poml>

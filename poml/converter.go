@@ -25,6 +25,8 @@ const (
 	FormatOpenAIChat  Format = "openai_chat"
 	FormatLangChain   Format = "langchain"
 	FormatPydantic    Format = "pydantic"
+	FormatScene       Format = "scene"
+	FormatSceneJSON   Format = "scenejson"
 )
 
 // ConvertOptions holds knobs for conversion (context, runtime flags, etc.).
@@ -63,6 +65,10 @@ func Convert(doc Document, format Format, opts ConvertOptions) (any, error) {
 		return convertOpenAIChat(doc, opts)
 	case FormatLangChain:
 		return convertLangChain(doc, opts)
+	case FormatScene:
+		return doc.Scene(), nil
+	case FormatSceneJSON:
+		return encodeSceneJSON(doc.Scene())
 	default:
 		return nil, ErrNotImplemented
 	}
