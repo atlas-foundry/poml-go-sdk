@@ -1,6 +1,7 @@
 package poml
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
@@ -11,6 +12,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // Format enumerates output conversion targets inspired by the Python SDK.
@@ -37,6 +40,8 @@ type ConvertOptions struct {
 	MaxImageBytes int64
 	// MaxMediaBytes caps bytes read for audio/video; zero applies a default cap, negative disables the cap.
 	MaxMediaBytes int64
+	// Trace configures OpenTelemetry spans for conversion; when empty, tracing is skipped.
+	Trace TraceOptions
 }
 
 const defaultMaxImageBytes int64 = 10 << 20 // 10MB safeguard
@@ -70,6 +75,24 @@ func ConvertString(body string, format Format, opts ConvertOptions) (any, error)
 		return nil, err
 	}
 	return Convert(doc, format, opts)
+}
+
+// ConvertWithTrace wraps Convert with an OpenTelemetry span. If opts.Trace is empty,
+// ConvertWithTrace behaves like Convert.
+func ConvertWithTrace(ctx context.Context, doc Document, format Format, opts ConvertOptions) (any, error) {
+	if opts.Trace.skip() {
+		return Convert(doc, format, opts)
+	}
+	ctx, span := opts.Trace.start(ctx, "poml.convert",
+		attribute.String("poml.format", string(format)),
+		attribute.String("poml.meta.id", strings.TrimSpace(doc.Meta.ID)),
+	)
+	defer span.End()
+	out, err := Convert(doc, format, opts)
+	if err != nil {
+		span.RecordError(err)
+	}
+	return out, err
 }
 
 type messageDict struct {

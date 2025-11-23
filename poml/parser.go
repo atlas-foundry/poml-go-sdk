@@ -2,12 +2,15 @@ package poml
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
+
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // ElementType enumerates the top-level nodes allowed under <poml>.
@@ -368,6 +371,48 @@ func ParseFileStrict(path string) (Document, error) {
 // ParseReaderStrict decodes a POML document from a reader with validation enabled.
 func ParseReaderStrict(r io.Reader) (Document, error) {
 	return parseWithOptions(r, strictParseOptions)
+}
+
+// ParseStringWithTrace decodes a POML document from a string and records an OpenTelemetry span.
+func ParseStringWithTrace(ctx context.Context, body string, traceOpts TraceOptions) (Document, error) {
+	if traceOpts.skip() {
+		return ParseString(body)
+	}
+	ctx, span := traceOpts.start(ctx, "poml.parse", attribute.String("poml.source", "string"), attribute.String("poml.mode", "default"))
+	defer span.End()
+	doc, err := ParseString(body)
+	if err != nil {
+		span.RecordError(err)
+	}
+	return doc, err
+}
+
+// ParseFileWithTrace decodes a POML document from a file path and records an OpenTelemetry span.
+func ParseFileWithTrace(ctx context.Context, path string, traceOpts TraceOptions) (Document, error) {
+	if traceOpts.skip() {
+		return ParseFile(path)
+	}
+	ctx, span := traceOpts.start(ctx, "poml.parse", attribute.String("poml.source", "file"), attribute.String("poml.mode", "default"), attribute.String("poml.path", path))
+	defer span.End()
+	doc, err := ParseFile(path)
+	if err != nil {
+		span.RecordError(err)
+	}
+	return doc, err
+}
+
+// ParseReaderWithTrace decodes a POML document from a reader and records an OpenTelemetry span.
+func ParseReaderWithTrace(ctx context.Context, r io.Reader, traceOpts TraceOptions) (Document, error) {
+	if traceOpts.skip() {
+		return ParseReader(r)
+	}
+	ctx, span := traceOpts.start(ctx, "poml.parse", attribute.String("poml.source", "reader"), attribute.String("poml.mode", "default"))
+	defer span.End()
+	doc, err := ParseReader(r)
+	if err != nil {
+		span.RecordError(err)
+	}
+	return doc, err
 }
 
 // Encode writes the POML document back to XML.
@@ -815,6 +860,24 @@ func (d Document) Validate() error {
 			Details: details,
 		},
 	}
+}
+
+// ValidateWithTrace wraps Validate with an OpenTelemetry span. When traceOpts is zero-valued,
+// it behaves like Validate.
+func (d Document) ValidateWithTrace(ctx context.Context, traceOpts TraceOptions) error {
+	if traceOpts.skip() {
+		return d.Validate()
+	}
+	_, span := traceOpts.start(ctx, "poml.validate",
+		attribute.String("poml.meta.id", strings.TrimSpace(d.Meta.ID)),
+		attribute.String("poml.meta.version", strings.TrimSpace(d.Meta.Version)),
+	)
+	defer span.End()
+	err := d.Validate()
+	if err != nil {
+		span.RecordError(err)
+	}
+	return err
 }
 
 func labelOrIndex(id string, idx int) string {
