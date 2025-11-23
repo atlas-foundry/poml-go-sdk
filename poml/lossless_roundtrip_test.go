@@ -64,6 +64,10 @@ func TestLosslessRoundTripExamples(t *testing.T) {
 					t.Fatalf("convert %s: %v", f, err)
 				}
 			}
+			// Strict validation should succeed when meta/role/task exist.
+			if _, err := ParseReaderWithOptions(strings.NewReader(second), ParseOptions{PreserveWhitespace: true, Validate: true, Extended: ExtendedLenient}); err != nil {
+				t.Fatalf("strict parse after round-trip failed: %v", err)
+			}
 		})
 	}
 }
