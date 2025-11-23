@@ -733,6 +733,7 @@ func (s *Server) broadcastSummary(event string) {
 	s.wsMu.Unlock()
 
 	for _, c := range clients {
+		_ = c.WriteControl(websocket.PingMessage, []byte("ping"), time.Now().Add(5*time.Second))
 		s.sendWSSummary(c, event, false)
 	}
 }
