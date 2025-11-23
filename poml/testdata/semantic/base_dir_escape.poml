@@ -1,0 +1,6 @@
+<poml>
+  <meta><id>semantic.escape.fixture</id><version>1</version><owner>oss</owner></meta>
+  <role>r</role>
+  <task>t</task>
+  <img src="../evil.bin" alt="escape"/>
+</poml>

@@ -149,3 +149,71 @@ func TestSemanticFixtureExtendedUnknowns(t *testing.T) {
 		t.Fatalf("expected unknown element to be surfaced in message dict")
 	}
 }
+
+// Table-driven semantic coverage across path/limit/schema/runtime axes.
+func TestSemanticMatrixFixtures(t *testing.T) {
+	cases := []struct {
+		name      string
+		file      string
+		opts      ConvertOptions
+		expectErr bool
+	}{
+		{
+			name:      "base-dir-escape",
+			file:      filepath.Join("testdata", "semantic", "base_dir_escape.poml"),
+			opts:      ConvertOptions{BaseDir: "testdata/semantic"},
+			expectErr: true,
+		},
+		{
+			name:      "base-dir-absolute-disallowed",
+			file:      filepath.Join("testdata", "semantic", "base_dir_absolute.poml"),
+			opts:      ConvertOptions{BaseDir: "testdata/semantic", AllowAbsImagePaths: false},
+			expectErr: true,
+		},
+		{
+			name: "runtime-schema",
+			file: filepath.Join("testdata", "semantic", "runtime_schema.poml"),
+			opts: ConvertOptions{BaseDir: "testdata/semantic"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			doc, err := ParseFile(tc.file)
+			if err != nil {
+				if tc.expectErr {
+					return
+				}
+				t.Fatalf("parse: %v", err)
+			}
+			_, err = Convert(doc, FormatDict, tc.opts)
+			if tc.expectErr {
+				if err == nil {
+					t.Fatalf("expected error but got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("convert: %v", err)
+			}
+		})
+	}
+}
+
+func TestSemanticAbsoluteAllowedWithFile(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "img.bin")
+	if err := os.WriteFile(path, []byte("hi"), 0o600); err != nil {
+		t.Fatalf("write abs: %v", err)
+	}
+	doc := Document{
+		Meta:     Meta{ID: "abs", Version: "1", Owner: "oss"},
+		Role:     Block{Body: "r"},
+		Tasks:    []Block{{Body: "t"}},
+		Images:   []Image{{Src: path, Alt: "abs"}},
+		Elements: []Element{{Type: ElementMeta}, {Type: ElementRole}, {Type: ElementTask, Index: 0}, {Type: ElementImage, Index: 0}},
+	}
+	if _, err := Convert(doc, FormatDict, ConvertOptions{AllowAbsImagePaths: true}); err != nil {
+		t.Fatalf("convert abs allowed: %v", err)
+	}
+}

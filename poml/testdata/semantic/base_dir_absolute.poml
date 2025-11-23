@@ -1,0 +1,6 @@
+<poml>
+  <meta><id>semantic.absolute</id><version>1</version><owner>oss</owner></meta>
+  <role>r</role>
+  <task>t</task>
+  <img src="/abs/path/img.bin" alt="abs"/>
+</poml>
