@@ -7,4 +7,6 @@ require (
 	github.com/yuin/goldmark v1.7.1
 )
 
+toolchain go1.25
+
 require golang.org/x/net v0.32.0 // indirect
