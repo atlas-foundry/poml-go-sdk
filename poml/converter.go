@@ -737,7 +737,9 @@ func readFileWithLimit(path string, limit int64) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	info, err := f.Stat()
 	if err == nil && info.Size() > limit {
 		return nil, fmt.Errorf("file %s exceeds max size %d bytes", path, limit)
@@ -756,38 +758,6 @@ func readFileWithLimit(path string, limit int64) ([]byte, error) {
 func enforceByteLimit(size int64, limit int64, label string) error {
 	if limit > 0 && size > limit {
 		return fmt.Errorf("%s exceeds max size %d bytes", label, limit)
-	}
-	return nil
-}
-
-func enforceBase64Limit(data string, limit int64) error {
-	if limit <= 0 {
-		return nil
-	}
-	clean := strings.TrimSpace(data)
-	if clean == "" {
-		return nil
-	}
-	if err := consumeBase64WithLimit(clean, base64.StdEncoding, limit); err != nil {
-		if strings.Contains(err.Error(), "illegal base64") || strings.Contains(err.Error(), "invalid base64") {
-			if errRaw := consumeBase64WithLimit(clean, base64.RawStdEncoding, limit); errRaw != nil {
-				return errRaw
-			}
-			return nil
-		}
-		return err
-	}
-	return nil
-}
-
-func consumeBase64WithLimit(data string, enc *base64.Encoding, limit int64) error {
-	r := base64.NewDecoder(enc, strings.NewReader(data))
-	n, err := io.Copy(io.Discard, io.LimitReader(r, limit+1))
-	if err != nil {
-		return err
-	}
-	if n > limit {
-		return fmt.Errorf("image payload exceeds max size %d bytes", limit)
 	}
 	return nil
 }

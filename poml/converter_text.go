@@ -57,7 +57,7 @@ func convertMarkdownToPOML(body string) (Document, error) {
 
 	var tasks []string
 	var role string
-	mdast.Walk(root, func(n mdast.Node, entering bool) (mdast.WalkStatus, error) {
+	if err := mdast.Walk(root, func(n mdast.Node, entering bool) (mdast.WalkStatus, error) {
 		switch node := n.(type) {
 		case *mdast.Heading:
 			if entering {
@@ -79,7 +79,9 @@ func convertMarkdownToPOML(body string) (Document, error) {
 			}
 		}
 		return mdast.WalkContinue, nil
-	})
+	}); err != nil {
+		return Document{}, err
+	}
 
 	if role != "" {
 		doc.Role = Block{Body: role}
@@ -172,7 +174,7 @@ func renderOrg(doc Document) string {
 
 func extractText(n mdast.Node, src []byte) string {
 	var b bytes.Buffer
-	mdast.Walk(n, func(nn mdast.Node, entering bool) (mdast.WalkStatus, error) {
+	if err := mdast.Walk(n, func(nn mdast.Node, entering bool) (mdast.WalkStatus, error) {
 		if !entering {
 			return mdast.WalkContinue, nil
 		}
@@ -180,6 +182,8 @@ func extractText(n mdast.Node, src []byte) string {
 			b.Write(tn.Segment.Value(src))
 		}
 		return mdast.WalkContinue, nil
-	})
+	}); err != nil {
+		return ""
+	}
 	return strings.TrimSpace(b.String())
 }

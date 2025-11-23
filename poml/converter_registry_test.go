@@ -101,7 +101,7 @@ func TestRegisterDuplicateConverter(t *testing.T) {
 	if err := reg.Register(conv); err != nil {
 		t.Fatalf("first register failed: %v", err)
 	}
-	if err := reg.Register(conv); !errors.Is(err, ConverterExistsError) {
+	if err := reg.Register(conv); !errors.Is(err, ErrConverterExists) {
 		t.Fatalf("expected duplicate error, got %v", err)
 	}
 }
