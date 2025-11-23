@@ -285,6 +285,9 @@ func sceneToDiagram(scene Scene) Diagram {
 	if m := attrsFromMeta(scene.Meta, "camera_attrs"); len(m) > 0 {
 		diagram.Camera.Attrs = m
 	}
+	if len(scene.Extras) > 0 {
+		diagram.Attrs = append(diagram.Attrs, attrsFromMap(scene.Extras)...)
+	}
 	for _, n := range scene.Nodes {
 		node := DiagramNode{
 			ID:          n.ID,
@@ -366,6 +369,41 @@ func stylesFromMap(m map[string]string) []DiagramStyle {
 		return nil
 	}
 	return []DiagramStyle{styleFromMap(m)}
+}
+
+func styleToMap(styles []DiagramStyle) map[string]string {
+	if len(styles) == 0 {
+		return nil
+	}
+	// If multiple styles present, merge keys with first-wins to preserve priority.
+	out := make(map[string]string)
+	for _, s := range styles {
+		for _, kv := range []struct {
+			k string
+			v string
+		}{
+			{"color", s.Color},
+			{"shape", s.Shape},
+			{"size", s.Size},
+			{"stroke", s.Stroke},
+			{"width", s.Width},
+			{"dash", s.Dash},
+			{"curvature", s.Curvature},
+			{"texture", s.Texture},
+		} {
+			if kv.v != "" {
+				if _, exists := out[kv.k]; !exists {
+					out[kv.k] = kv.v
+				}
+			}
+		}
+		for _, attr := range s.Attrs {
+			if _, exists := out[attr.Name.Local]; !exists {
+				out[attr.Name.Local] = attr.Value
+			}
+		}
+	}
+	return out
 }
 
 func attrsFromMap(m map[string]string) []xml.Attr {

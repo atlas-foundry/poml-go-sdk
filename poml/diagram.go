@@ -91,12 +91,13 @@ type DiagramData struct {
 
 // Scene is a normalized representation for renderer adapters.
 type Scene struct {
-	ID     string         `json:"id"`
-	Nodes  []SceneNode    `json:"nodes"`
-	Edges  []SceneEdge    `json:"edges"`
-	Layers []SceneLayer   `json:"layers,omitempty"`
-	Camera SceneCamera    `json:"camera"`
-	Meta   map[string]any `json:"meta,omitempty"`
+	ID     string            `json:"id"`
+	Nodes  []SceneNode       `json:"nodes"`
+	Edges  []SceneEdge       `json:"edges"`
+	Layers []SceneLayer      `json:"layers,omitempty"`
+	Camera SceneCamera       `json:"camera"`
+	Meta   map[string]any    `json:"meta,omitempty"`
+	Extras map[string]string `json:"extras,omitempty"`
 }
 
 type SceneNode struct {
@@ -166,6 +167,9 @@ func DiagramToSceneWithOptions(d Diagram, opts SceneExportOptions) (Scene, error
 		Meta:   make(map[string]any),
 	}
 	if m := attrsMap(d.Attrs); len(m) > 0 {
+		scene.Extras = m
+	}
+	if m := attrsMap(d.Attrs); len(m) > 0 {
 		scene.Meta["diagram_attrs"] = m
 	}
 	if m := attrsMap(d.Camera.Attrs); len(m) > 0 {
@@ -229,7 +233,7 @@ func DiagramToSceneWithOptions(d Diagram, opts SceneExportOptions) (Scene, error
 			Kind:     e.Kind,
 			Directed: directed,
 			Weight:   e.Weight,
-			Style:    styleMap(e.Styles),
+			Style:    styleToMap(e.Styles),
 			Attrs:    attrsMap(e.Attrs),
 		})
 	}
