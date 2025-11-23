@@ -76,10 +76,10 @@ jobs:
           TOTAL=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
           RESULT=$(printf "%.2f" "$TOTAL")
           echo "Coverage: $RESULT% (threshold: $THRESHOLD%)"
-          awk "BEGIN {exit !($RESULT < $THRESHOLD)}" && {
+          if ! awk "BEGIN {exit ($RESULT < $THRESHOLD ? 1 : 0)}"; then
             echo "❌ Coverage $RESULT% below threshold"
             exit 1
-          }
+          fi
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
