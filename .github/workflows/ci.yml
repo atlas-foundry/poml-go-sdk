@@ -85,6 +85,14 @@ jobs:
         run: |
           UPDATE_GOLDEN=0 go test ./poml -run TestRenderDOT
 
+      - name: Upload coverage to Codecov
+        if: matrix.go == '1.25.4'
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.out
+          flags: linux
+          fail_ci_if_error: true
+
       - name: Enforce coverage ≥80%
         run: |
           THRESHOLD=80.0
