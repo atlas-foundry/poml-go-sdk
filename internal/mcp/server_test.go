@@ -145,3 +145,66 @@ func TestHealth(t *testing.T) {
 		t.Fatalf("health body = %s", rec.Body.String())
 	}
 }
+
+func TestToolsEndpoint(t *testing.T) {
+	doc, err := poml.ParseString(`<poml><meta><id>a</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task><tool-definition name="foo" description="bar"/><tool-request id="1" name="foo"/></poml>`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	srv := New(doc)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/tools", nil)
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("tools status = %d", rec.Code)
+	}
+	var resp map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode tools: %v", err)
+	}
+	if defs, ok := resp["tool_definitions"].([]any); !ok || len(defs) != 1 {
+		t.Fatalf("expected 1 tool definition, got %v", resp["tool_definitions"])
+	}
+}
+
+func TestDiagramEndpoint(t *testing.T) {
+	doc, err := poml.ParseString(`<poml><meta><id>a</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task><diagram id="d"><graph><node id="n"/></graph></diagram></poml>`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	srv := New(doc)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/diagram", nil)
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("diagram status = %d", rec.Code)
+	}
+	var resp []map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode diagram: %v", err)
+	}
+	if len(resp) != 1 {
+		t.Fatalf("expected 1 diagram, got %d", len(resp))
+	}
+}
+
+func TestRoundtripEndpoint(t *testing.T) {
+	doc, err := poml.ParseString(`<poml><meta><id>a</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task></poml>`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	srv := New(doc)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/roundtrip", nil)
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("roundtrip status = %d", rec.Code)
+	}
+	var resp map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode roundtrip: %v", err)
+	}
+	if ok, _ := resp["ok"].(bool); !ok {
+		t.Fatalf("expected roundtrip ok true, got %v", resp["ok"])
+	}
+}

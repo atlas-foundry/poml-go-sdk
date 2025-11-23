@@ -42,6 +42,9 @@ func New(doc poml.Document) *Server {
 	s.mux.HandleFunc("/validate", s.validate)
 	s.mux.HandleFunc("/convert", s.convert)
 	s.mux.HandleFunc("/search", s.search)
+	s.mux.HandleFunc("/tools", s.tools)
+	s.mux.HandleFunc("/diagram", s.diagram)
+	s.mux.HandleFunc("/roundtrip", s.roundtrip)
 	return s
 }
 
@@ -324,6 +327,45 @@ func buildSummary(doc poml.Document) inspectSummary {
 		IDs:     ids,
 		Types:   types,
 	}
+}
+
+func (s *Server) tools(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, map[string]any{
+		"tool_definitions": s.doc.ToolDefs,
+		"tool_requests":    s.doc.ToolReqs,
+		"tool_responses":   s.doc.ToolResps,
+		"tool_results":     s.doc.ToolResults,
+		"tool_errors":      s.doc.ToolErrors,
+	})
+}
+
+func (s *Server) diagram(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, s.doc.Diagrams)
+}
+
+func (s *Server) roundtrip(w http.ResponseWriter, _ *http.Request) {
+	var buf strings.Builder
+	if err := s.doc.EncodeWithOptions(&buf, poml.EncodeOptions{IncludeHeader: false, PreserveOrder: true, PreserveWS: true}); err != nil {
+		http.Error(w, fmt.Sprintf("encode error: %v", err), http.StatusInternalServerError)
+		return
+	}
+	encoded := buf.String()
+	doc2, err := poml.ParseString(encoded)
+	if err != nil {
+		writeJSON(w, map[string]any{"ok": false, "error": fmt.Sprintf("parse after encode failed: %v", err)})
+		return
+	}
+	var buf2 strings.Builder
+	if err := doc2.EncodeWithOptions(&buf2, poml.EncodeOptions{IncludeHeader: false, PreserveOrder: true, PreserveWS: true}); err != nil {
+		writeJSON(w, map[string]any{"ok": false, "error": fmt.Sprintf("re-encode failed: %v", err)})
+		return
+	}
+	ok := encoded == buf2.String()
+	writeJSON(w, map[string]any{
+		"ok":        ok,
+		"original":  encoded,
+		"roundtrip": buf2.String(),
+	})
 }
 
 func writeJSON(w http.ResponseWriter, v any) {

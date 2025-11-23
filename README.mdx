@@ -210,6 +210,9 @@ Endpoints:
 * `/validate` — structured validation result (line/column details)
 * `/convert?format=dict|openai_chat|langchain|message_dict|pydantic` — on-demand conversion
 * `/search?tag=&attr=&text=` — filter elements by tag, attribute, or body text
+* `/tools` — list tool-defs/reqs/responses/results/errors
+* `/diagram` — list diagram elements (nodes/edges/etc. included)
+* `/roundtrip` — encode→parse→encode check for losslessness
 
 Roadmap highlights (see `meta.plan.poml`):
 * Search endpoints (tag/attr/text), validation error details, conversions on demand.
