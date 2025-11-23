@@ -48,10 +48,15 @@ func TestGraphvizRendererDOT(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read expected dot: %v", err)
 	}
-	if strings.TrimSpace(string(dot)) != strings.TrimSpace(string(want)) {
+	if normalize(string(dot)) != normalize(string(want)) {
 		t.Fatalf("dot mismatch.\n got:\n%s\nwant:\n%s", string(dot), string(want))
 	}
 }
+
+func normalize(s string) string {
+	return strings.TrimSpace(strings.ReplaceAll(s, "\r\n", "\n"))
+}
+
 
 func TestGraphvizRendererDirectedOverride(t *testing.T) {
 	scene := Scene{
@@ -102,10 +107,11 @@ func TestRenderersGolden(t *testing.T) {
 		t.Fatalf("graphviz render: %v", err)
 	}
 	wantDOT := readFile(t, filepath.Join("testdata", "golden", "scene_graphviz.dot"))
-	if strings.TrimSpace(string(dotOut)) != strings.TrimSpace(wantDOT) {
+	if normalize(string(dotOut)) != normalize(wantDOT) {
 		t.Fatalf("graphviz mismatch\n got:\n%s\nwant:\n%s", string(dotOut), wantDOT)
 	}
 }
+
 
 func TestBuildDOTAttrsAndStyles(t *testing.T) {
 	got := buildDOTAttrs(map[string]string{
