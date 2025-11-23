@@ -22,180 +22,262 @@
   </a>
 </p>
 
-# ✨ poml-go-sdk
+# poml-go-sdk
 
-A delightful Go SDK for **POML — Prompt Orchestration Markup Language**.
-We speak POML natively, faithfully, and with a little spark of fun ✨
+**The official Go SDK for [POML](https://microsoft.github.io/poml) — Prompt Orchestration Markup Language.**
 
-> **Note:** This repo uses POML for all docs.
-> The only non-POML doc allowed is this `README.mdx`.
-
-* Full structured README: `README.poml`
-* Delivery plan: `PLAN.poml`
-* AI log: `AI.LOCK.poml`
-* Fit-for-purpose plan: `docs/fit_for_purpose.poml`
-* Agent rules: `AGENTS.poml`
-* Multimedia examples: `poml/testdata/examples/*`
+POML is a structured, spec-driven language for orchestrating AI prompts. It's declarative, expressive, type-safe, and multi-modal — making it far easier to maintain than a giant prompt blob. This SDK brings POML's power to Go with a focus on spec compliance, safety, and developer experience.
 
 ---
 
-## 💖 What is POML?
+## Getting Started
 
-POML is a structured, spec-driven language for orchestrating AI prompts.
+Install the SDK using Go modules:
 
-It’s:
+```bash
+go get github.com/atlas-foundry/poml-go-sdk
+```
 
-* declarative
-* expressive
-* type-safe
-* multi-modal
-* and *way* nicer to maintain than a giant prompt blob
-
-This SDK brings POML’s power to Go.
-
----
-
-## 🚀 Quick Start
+Run the test suite to verify your installation:
 
 ```bash
 go test ./...
 ```
 
-or use the parser:
+---
+
+## Key Concepts
+
+### Document
+The `Document` type represents a parsed POML file. It contains structured sections like `Meta`, `Role`, `Task`, `Input`, messages, and media elements. Documents can be parsed from files, strings, or readers.
+
+### Builder
+The `poml.Builder` provides a fluent API for constructing POML documents programmatically (similar to Python's `Prompt` object). Use it to build prompts in code with type safety and validation.
+
+### Convert
+The `Convert` function transforms parsed POML documents into various formats for use with different LLM providers:
+- `FormatOpenAIChat` — OpenAI chat completion format
+- `FormatLangChain` — LangChain message format
+- `FormatMessageDict` — Generic message dictionary
+- `FormatDict` — Full document dictionary
+- `FormatPydantic` — Pydantic-compatible output
+
+Converters enforce safety rules: `BaseDir` containment (symlink-aware), 10MB default caps for media files (configurable via `MaxImageBytes`/`MaxMediaBytes`), and proper handling of extended tags.
+
+---
+
+## Usage Examples
+
+### Parsing a POML File
 
 ```go
-doc, err := poml.ParseFile("story.poml")
-if err != nil {
-    panic(err)
-}
+package main
 
-if err := poml.Validate(doc); err != nil {
-    panic(err)
-}
+import (
+    "fmt"
+    "github.com/atlas-foundry/poml-go-sdk/poml"
+)
 
-output, _ := poml.Render(doc)
-fmt.Println(output)
+func main() {
+    // Parse from file
+    doc, err := poml.ParseFile("story.poml")
+    if err != nil {
+        panic(err)
+    }
+
+    // Validate the document
+    if err := poml.Validate(doc); err != nil {
+        panic(err)
+    }
+
+    // Access structured fields
+    fmt.Println("Role:", doc.Role.Body)
+    fmt.Println("Task:", doc.Tasks[0].Body)
+}
+```
+
+### Using the Builder (Prompt Construction)
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/atlas-foundry/poml-go-sdk/poml"
+)
+
+func main() {
+    // Build a prompt programmatically
+    doc := poml.NewBuilder().
+        Meta("my-prompt", "1.0.0", "me").
+        Role("You are a helpful assistant.").
+        Task("Explain quantum computing to a 10-year-old.").
+        Human("What is quantum computing?").
+        Build()
+
+    // Encode to POML string
+    output, err := poml.EncodeWithOptions(doc, poml.EncodeOptions{
+        Indent: "  ",
+        Header: true,
+    })
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(output)
+}
+```
+
+### Converting to OpenAI Format
+
+```go
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "github.com/atlas-foundry/poml-go-sdk/poml"
+)
+
+func main() {
+    doc, _ := poml.ParseFile("prompt.poml")
+
+    // Convert to OpenAI chat format with safety options
+    result, err := poml.Convert(doc, poml.FormatOpenAIChat, poml.ConvertOptions{
+        BaseDir:            "./assets",
+        AllowAbsImagePaths: false,
+        MaxImageBytes:      10 << 20, // 10MB cap
+        MaxMediaBytes:      10 << 20, // 10MB cap for audio/video
+    })
+    if err != nil {
+        panic(err)
+    }
+
+    // Use the result with OpenAI
+    jsonData, _ := json.MarshalIndent(result, "", "  ")
+    fmt.Println(string(jsonData))
+}
 ```
 
 ---
 
-## 🎁 Features
+## Parity & Compliance
 
-* Fully spec-aligned parser
-* Semantic validator
-* Renderer + transformations
-* Round-trip fidelity for extended tags (`<hint>`, `<example>`, `<cp>`, `<object>`, `<tool>`)
-* Safety features (symlink-aware BaseDir checks, 10MB cap defaults, override options)
-* Strong test suite with example parity checks
-* Elegant, friendly API
+This SDK is designed to maintain parity with the **Python reference implementation** and adheres to the official [POML specification](https://microsoft.github.io/poml). Key compliance features:
 
----
+- ✅ Full spec-aligned parser with round-trip fidelity
+- ✅ Support for extended tags: `<hint>`, `<example>`, `<cp>`, `<object>`, `<tool>`
+- ✅ Multimedia handling: images, audio, video with proper MIME detection
+- ✅ Format converters matching Python SDK outputs (message_dict, dict, openai_chat, langchain, pydantic)
+- ✅ Semantic validation for required sections (meta, role, task)
+- ✅ Safety features: symlink-aware path containment, configurable size limits
 
-## 💜 Contributors Welcome!
-
-This project lives because amazing humans contribute to it.
-And we want *you* here too — whether you’re:
-
-* new to Go
-* new to POML
-* new to open source
-
-Open a PR, file an issue, add test cases, tweak docs 💫
+The SDK uses fixtures from the Python SDK and maintains parity through automated tests. See `poml/testdata/examples/` for example POML files with expected outputs.
 
 ---
 
-## 🎨 Conventional Commits Cheat Sheet
+## Repository Documentation
+
+> **Note:** This repository uses POML for all documentation.  
+> The only non-POML doc allowed is this `README.mdx` (for GitHub rendering).
+
+Structured documentation files:
+- **[README.poml](README.poml)** — Full structured README with usage guidance
+- **[PLAN.poml](PLAN.poml)** — Development roadmap and milestones
+- **[AI.LOCK.poml](AI.LOCK.poml)** — Automated run timeline and logs
+- **[docs/fit_for_purpose.poml](docs/fit_for_purpose.poml)** — Validation goals and benchmarks
+- **[AGENTS.poml](AGENTS.poml)** — Rules and guidelines for automation agents
+- **[poml/testdata/examples/](poml/testdata/examples/)** — Multimedia examples and parity fixtures
+
+### Contribution Rules
+
+When contributing to this repository:
+- **Do not** add markdown/org/mdx files besides `README.mdx`
+- Author all docs in POML (`*.poml`) using extended tags (`hint`, `example`, `cp`, `object`, `list`, etc.)
+- Keep new instructions in `AGENTS.poml` for discoverability
+- Link high-signal docs from this README.mdx
+
+---
+
+## Media & Safety Rules
+
+Converters enforce strict safety rules to prevent accidental file system access and resource exhaustion:
+
+- **BaseDir Containment**: All relative paths are resolved within a specified `BaseDir`. Symlink-aware checks prevent directory traversal attacks.
+- **Absolute Path Control**: Absolute image paths are disabled by default (enable via `AllowAbsImagePaths`).
+- **Size Limits**: Default 10MB caps for image, audio, and video files. Override via `MaxImageBytes`/`MaxMediaBytes` in `ConvertOptions` (set to `-1` to disable).
+- **Format Emission**: Extended tags (`<hint>`, `<example>`, `<cp>`, `<object>`) and multimedia content are properly emitted as user context across all conversion formats.
+
+Example with safety options:
+
+```go
+result, err := poml.Convert(doc, poml.FormatOpenAIChat, poml.ConvertOptions{
+    BaseDir:            "./assets",
+    AllowAbsImagePaths: false,      // Disallow absolute paths
+    MaxImageBytes:      5 << 20,    // 5MB image cap
+    MaxMediaBytes:      20 << 20,   // 20MB audio/video cap
+})
+```
+
+---
+
+## Project Structure
+
+```
+poml/                          # Core SDK package
+  parser.go                    # POML parser (file/string/reader)
+  builder.go                   # Fluent API for document construction
+  converter.go                 # Format converters (OpenAI, LangChain, etc.)
+  renderer.go                  # POML renderer
+  testdata/examples/           # Example POML files with golden outputs
+docs/                          # Additional documentation (in POML)
+tools/                         # Development tools
+.github/                       # CI workflows and templates
+```
+
+---
+
+## Conventional Commits
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for semantic versioning:
 
 ```
 feat: add something new ✨
 fix: squish a bug 🐛
 docs: improve docs 📘
-chore: misc tasks 🧹
 test: add/modify tests 🧪
+chore: misc tasks 🧹
 ci: workflow updates ⚙️
 refactor: structural changes 🧠
 ```
 
-Breaking changes:
-
+For breaking changes, use `!`:
 ```
-feat!: something major changed
+feat!: major API change
 ```
 
 ---
 
-## 🧱 Project Structure
+## Contributing
 
-```
-poml/
-  parser.go
-  renderer.go
-  tools/
-  testdata/
-docs/
-.github/
-```
+We welcome contributions from everyone! Whether you're:
+- New to Go
+- New to POML
+- New to open source
 
-Everything important is discoverable and documented inside POML files.
+Your contributions are valued. Open a PR, file an issue, add test cases, or improve documentation. Let's build something wonderful together! ✨
 
 ---
 
-## 🛡️ Media & Safety Rules
+## License
 
-Converters enforce:
-
-* BaseDir containment
-* Optional absolute path allowance
-* 10MB default caps for image/audio/video (override via ConvertOptions)
-* Proper emission across formats
+MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-## 📚 Want to Explore the Spec?
+## Learn More
 
-POML official site:
-👉 [https://microsoft.github.io/poml](https://microsoft.github.io/poml)
+- **POML Specification**: [https://microsoft.github.io/poml](https://microsoft.github.io/poml)
+- **Go Package Documentation**: [pkg.go.dev/github.com/atlas-foundry/poml-go-sdk](https://pkg.go.dev/github.com/atlas-foundry/poml-go-sdk)
+- **Python Reference SDK**: [microsoft/poml](https://github.com/microsoft/poml)
 
----
-
-## 📜 License
-
-MIT — do cool things, responsibly.
-
----
-
-## 🌟 Final Thought
-
-If you’re thinking “Should I open a PR?” the answer is YES.
-Let’s build something wonderful together ✨💖
-
-
-
-
-
-# poml-go-sdk
-
-This repo uses POML for all docs. The only non-POML doc allowed is this `README.mdx` so GitHub renders a landing page.
-
-- Full structured README: `README.poml`
-- Delivery plan: `PLAN.poml`
-- AI log: `AI.LOCK.poml`
-- Fit-for-purpose plan: `docs/fit_for_purpose.poml`
-- Agent rules: `AGENTS.poml`
-- Multimedia parity fixtures: `poml/testdata/examples/207_multimedia.poml` and goldens
-
-## Rules for contributors and agents
-
-- Do **not** add markdown/org/mdx files besides this `README.mdx`.
-- Author docs in POML (`*.poml`) using extended tags (hint/example/cp/object/list/etc.).
-- Keep new instructions in `AGENTS.poml` to stay discoverable for small-context agents.
-- When adding docs, link them from this README.mdx if they are high-signal.
-- Media rules: converters enforce BaseDir containment, default 10MB caps for image/audio/video (override via MaxImageBytes/MaxMediaBytes), and emit multimedia across formats.
-
-## Quick start
-
-```bash
-go test ./...
-```
-
-Converters honor `ConvertOptions{BaseDir, AllowAbsImagePaths, MaxImageBytes}` with symlink-aware containment and a 10MB default cap. Extended tags like `<hint>`, `<example>`, `<cp>`, `<object>`, and `<tool>` round-trip and emit user content across formats.
+If you're thinking "Should I open a PR?" — the answer is **YES**. 💖
