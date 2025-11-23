@@ -9,9 +9,10 @@
   <task>Respect the doc format policy.</task>
   <hint caption="Doc policy">
     <list>
-      <item>Only `README.mdx` may exist as a non-POML doc for GitHub rendering. Do not add other markdown/org/mdx files.</item>
+      <item>Only `README.mdx` (plus `.github/copilot-instructions.md` for Copilot config) may exist as non-POML docs. Do not add other markdown/org/mdx files.</item>
       <item>All other docs belong in POML (`*.poml`) using extended tags (hint/example/cp/object/list/etc.).</item>
       <item>Link high-signal docs from README.mdx for discoverability.</item>
+      <item>Repo-level Copilot guidance lives in `.github/copilot-instructions.md`; keep it aligned with these rules.</item>
     </list>
   </hint>
 

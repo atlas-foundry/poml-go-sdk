@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 )
@@ -962,5 +963,36 @@ func TestMutatorInsertDocumentAndStyle(t *testing.T) {
 	}
 	if seenDocs != 2 || seenStyles != 2 {
 		t.Fatalf("expected reindexed elements for docs/styles, got docs=%d styles=%d", seenDocs, seenStyles)
+	}
+}
+
+func TestParseFastVariants(t *testing.T) {
+	body := `<poml><meta><id>fast</id><version>1</version><owner>o</owner></meta><role>r</role></poml>`
+	doc, err := ParseStringFast(body)
+	if err != nil {
+		t.Fatalf("ParseStringFast: %v", err)
+	}
+	if strings.TrimSpace(doc.Role.Body) != "r" {
+		t.Fatalf("unexpected role: %q", doc.Role.Body)
+	}
+
+	tmp, err := os.CreateTemp("", "poml-fast-*.poml")
+	if err != nil {
+		t.Fatalf("tmp: %v", err)
+	}
+	defer func() {
+		_ = os.Remove(tmp.Name())
+	}()
+	if _, err := tmp.WriteString(body); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	_ = tmp.Close()
+
+	docFile, err := ParseFileFast(tmp.Name())
+	if err != nil {
+		t.Fatalf("ParseFileFast: %v", err)
+	}
+	if docFile.Meta.ID != "fast" {
+		t.Fatalf("meta not parsed from file: %+v", docFile.Meta)
 	}
 }

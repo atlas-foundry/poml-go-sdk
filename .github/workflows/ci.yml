@@ -19,15 +19,29 @@ jobs:
   build:
     name: Build & Test (Go ${{ matrix.go }})
     runs-on: ubuntu-latest
+    env:
+      # Force Go 1.24 runners to auto-upgrade the toolchain to 1.25 while keeping 1.25 native runs unchanged
+      GOTOOLCHAIN: go1.25.0
 
     strategy:
       fail-fast: false
       matrix:
-        go: ["1.22", "1.23", "1.24", "1.25"]
+        go: ["1.24","1.25"]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Cache Go modules and build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-cache-${{ runner.os }}-${{ matrix.go }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-cache-${{ runner.os }}-${{ matrix.go }}-
+            go-cache-${{ runner.os }}-
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -40,6 +54,8 @@ jobs:
           go mod tidy
           git diff --exit-code || (echo "❌ go mod tidy produced changes"; exit 1)
 
+          
+
       - name: Verify formatting
         run: |
           if [ -n "$(gofmt -l .)" ]; then
@@ -49,10 +65,10 @@ jobs:
           fi
 
       - name: Lint (golangci-lint)
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --timeout=5m
+        run: |
+          # Using the official install script
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.6.2
+          golangci-lint run --timeout=5m
 
       - name: Vulnerability scan (govulncheck)
         uses: golang/govulncheck-action@v1
@@ -71,10 +87,10 @@ jobs:
           TOTAL=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
           RESULT=$(printf "%.2f" "$TOTAL")
           echo "Coverage: $RESULT% (threshold: $THRESHOLD%)"
-          awk "BEGIN {exit !($RESULT < $THRESHOLD)}" && {
+          if ! awk "BEGIN {exit ($RESULT < $THRESHOLD ? 1 : 0)}"; then
             echo "❌ Coverage $RESULT% below threshold"
             exit 1
-          }
+          fi
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -101,11 +117,31 @@ jobs:
 
       - name: Build Docker image
         run: |
+          TAG=$(echo "${{ matrix.base }}" | tr ':' '-')
+          BASE="${{ matrix.base }}"
           cat <<'EOF' > Dockerfile
-          FROM ${matrix.base}
+          ARG BASE_IMAGE=alpine:3.20
+          FROM ${BASE_IMAGE}
 
-          RUN apk add --no-cache go git || \
-              (apt-get update && apt-get install -y golang git) || true
+          ARG GO_VERSION=1.25.0
+          # Ensure curl/tar/git are available for Go install across alpine/apt-based images.
+          RUN (apk add --no-cache curl tar git ca-certificates || \
+               (apt-get update && apt-get install -y curl ca-certificates tar git)) && \
+              update-ca-certificates || true
+          RUN case "$(uname -s)" in \
+                Linux) ;; \
+                *) echo "unsupported OS"; exit 1 ;; \
+              esac && \
+              arch=$(uname -m) && \
+              case "$arch" in x86_64) arch=amd64 ;; aarch64) arch=arm64 ;; armv7l) arch=armv6l ;; esac && \
+              url="https://go.dev/dl/go${GO_VERSION}.linux-${arch}.tar.gz" && \
+              curl -sSfL "$url" -o /tmp/go.tgz && \
+              rm -rf /usr/local/go && \
+              tar -C /usr/local -xzf /tmp/go.tgz && \
+              ln -sf /usr/local/go/bin/go /usr/bin/go
+
+          # (Keep system Go if present for tools, but we rely on downloaded Go above.)
+          RUN apk add --no-cache go || (apt-get update && apt-get install -y golang) || true
 
           WORKDIR /sdk
           COPY . .
@@ -148,13 +184,16 @@ jobs:
           }
           EOT
 
-          RUN go build semantic_test.go
+          ENV PATH=/usr/local/go/bin:$PATH
+          RUN go version && go build semantic_test.go
           EOF
 
-          docker build -t poml-e2e:${{ matrix.base }} .
+          docker build --build-arg BASE_IMAGE="${BASE}" --build-arg GO_VERSION="1.25.0" -t poml-e2e:${TAG} .
 
       - name: Run E2E Test
-        run: docker run --rm poml-e2e:${{ matrix.base }}
+        run: |
+          TAG=$(echo "${{ matrix.base }}" | tr ':' '-')
+          docker run --rm poml-e2e:${TAG}
 
   # =====================================================
   # 3. DOCS BUILD
@@ -172,12 +211,12 @@ jobs:
           node-version: "20"
 
       - name: Install MDX
-        run: npm install --global @mdx-js/mdx
+        run: npm install @mdx-js/mdx --no-save
 
       - name: Generate docs
         run: |
           mkdir -p build/docs
-          mdx README.mdx > build/docs/index.html
+          npx mdx README.mdx > build/docs/index.html
 
       - name: Upload Docs Artifact
         uses: actions/upload-artifact@v4

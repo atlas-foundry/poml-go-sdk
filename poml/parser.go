@@ -83,7 +83,6 @@ type Document struct {
 	Images       []Image
 	Diagrams     []Diagram
 	Elements     []Element
-	rawPrefix    string // leading text before root (e.g., XML decl); kept for future extension
 
 	nextID int // internal counter for element IDs
 }
@@ -316,7 +315,9 @@ func ParseFile(path string) (Document, error) {
 	if err != nil {
 		return Document{}, err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	return parseWithOptions(f, defaultParseOptions)
 }
 
@@ -326,7 +327,9 @@ func ParseFileFast(path string) (Document, error) {
 	if err != nil {
 		return Document{}, err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	return parseWithOptions(f, fastParseOptions)
 }
 
@@ -356,7 +359,9 @@ func ParseFileStrict(path string) (Document, error) {
 	if err != nil {
 		return Document{}, err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	return parseWithOptions(f, strictParseOptions)
 }
 
@@ -428,14 +433,20 @@ func (d Document) DumpFile(path string, opts EncodeOptions) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 	if err := d.EncodeWithOptions(f, opts); err != nil {
+		_ = f.Close()
+		_ = os.Remove(tmp)
 		return err
 	}
 	if err := f.Close(); err != nil {
+		_ = os.Remove(tmp)
 		return err
 	}
-	return os.Rename(tmp, path)
+	if err := os.Rename(tmp, path); err != nil {
+		_ = os.Remove(tmp)
+		return err
+	}
+	return nil
 }
 
 // AddRole sets the role body and appends to ordering metadata.

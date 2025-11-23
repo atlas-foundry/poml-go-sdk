@@ -1,0 +1,66 @@
+<poml>
+  <meta>
+    <id>meta.plan.poml-go-sdk</id>
+    <version>0.1.0</version>
+    <owner>poml-go-sdk</owner>
+  </meta>
+  <role>Lossless, pluggable POML SDK plan with test coverage to match or exceed Python parity; keep the badge/test roadmap intact for CI quality signals.</role>
+
+  <task caption="Lossless round-trip goals">
+    <list>
+      <item>Carry all attrs and unknowns: diagram/graph/node/edge/layer/camera attrs, unknown tags, and multiple styles preserved through Scene Extras and back.</item>
+      <item>Deterministic both ways: stable ordering for nodes/edges/layers/styles on scene→diagram and diagram→scene paths.</item>
+      <item>Zero-loss POML round-trip: POML→diagram→scene→scenejson→scene→diagram→POML retains meta/role/tasks/unknown elements when base_document is provided.</item>
+    </list>
+  </task>
+
+  <task caption="SDK implementation steps (do in order)">
+    <list>
+      <item>Scene Extras: add extras/unknown bags on Scene; map diagram/graph attrs and multi-style slices to Scene and back; keep attrs sorted.</item>
+      <item>Reverse determinism: sort nodes/edges/layers/styles on scene→diagram; add graph attrs passthrough.</item>
+      <item>Error UX: registry Convert errors list available converters; document lowercase keys and base_document option.</item>
+      <item>Fixtures/tests: golden lossless round-trips with base_document; multi-style preservation; unknown-tag passthrough; negative tests for bad JSON/missing converters.</item>
+      <item>Docs: README/PLAN snippets explaining registry API, extras format, and lossless expectations.</item>
+    </list>
+  </task>
+
+  <task caption="Badge targets mapped to new tests (prioritized by usefulness × rarity)">
+    <list>
+      <item>Coverage/Codecov (High, fuzz): Add property-based fuzz cases for ParseString/ParseStringFast → Encode/Validate round-trips; seed corpus from poml/testdata and malformed samples.</item>
+      <item>Deterministic outputs (High, golden): Golden snapshots for convertMarkdownToPOML/convertOrgToPOML and renderer adapters (deck.gl/Graphviz) to stabilize changes.</item>
+      <item>Path safety (High, boundary): Image/media path escape tests (symlink + ..), size-limit enforcement for readFileWithLimit/media bodies.</item>
+      <item>Integration/E2E matrix (High, integration): Expand semantic_test.go to include BaseDir + MaxMediaBytes options; add arm64 runner badge.</item>
+      <item>Fast/strict parser fidelity (Medium, differential): Tests comparing default vs fast vs strict options on whitespace preservation and validation failures.</item>
+      <item>Concurrency safety (Medium, race/unit): Tests for ConverterRegistry concurrent Register/List.</item>
+      <item>Builder completeness (Medium, combinatorial): Table-driven tests covering builder methods (OutputFormat, Style, Raw, System/Human/Assistant ordering).</item>
+      <item>Limits/DoS hardening (Medium, limit): Tests for base64 size limits and negative/zero limit semantics.</item>
+      <item>Docs pipeline (Medium, docs): MDX render smoke test (npx mdx README.mdx).</item>
+      <item>Lint/vuln badges (Low, monitoring): golangci-lint/govulncheck/go vet jobs and badges.</item>
+    </list>
+  </task>
+
+  <task caption="Execution order for badges/tests">
+    <list>
+      <item>1) Fuzz + boundary tests; wire Codecov badge.</item>
+      <item>2) Golden render/converter tests and parser fast/strict differentials.</item>
+      <item>3) Extend semantic E2E for limits/BaseDir; add arm64 runner and matrix badge.</item>
+      <item>4) Concurrency tests + builder tables; add go vet job/badge.</item>
+      <item>5) Docs smoke test; keep lint/vuln badges green.</item>
+    </list>
+  </task>
+
+  <task caption="CI and quality">
+    <list>
+      <item>gofmt + go test ./... required.</item>
+      <item>Golden fixtures kept deterministic; add/update via scripts.</item>
+      <item>Optional: fuzz parse→encode round-trips to harden extras handling.</item>
+    </list>
+  </task>
+
+  <log>
+    <entry date="2025-11-23" actor="ai.architect">Merged lossless plan with original badge/test roadmap to retain CI quality goals while pursuing lossless parity.</entry>
+    <entry date="2025-11-22" actor="ai.architect">Replaced badge roadmap with lossless round-trip plan aligned with registry and adapter separation.</entry>
+  </log>
+
+  <output-format>Keep concise; update after each step lands.</output-format>
+</poml>

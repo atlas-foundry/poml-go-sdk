@@ -31,10 +31,10 @@ func NewConverterRegistry() *ConverterRegistry {
 	return &ConverterRegistry{converters: make(map[string]Converter)}
 }
 
-// ConverterExistsError indicates a duplicate registration attempt.
-var ConverterExistsError = errors.New("converter already registered")
+// ErrConverterExists indicates a duplicate registration attempt.
+var ErrConverterExists = errors.New("converter already registered")
 
-// Register adds a converter. Returns ConverterExistsError when a from->to pair already exists.
+// Register adds a converter. Returns ErrConverterExists when a from->to pair already exists.
 func (r *ConverterRegistry) Register(conv Converter) error {
 	if conv == nil {
 		return errors.New("converter is nil")
@@ -43,7 +43,7 @@ func (r *ConverterRegistry) Register(conv Converter) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if _, exists := r.converters[key]; exists {
-		return fmt.Errorf("%w: %s", ConverterExistsError, key)
+		return fmt.Errorf("%w: %s", ErrConverterExists, key)
 	}
 	r.converters[key] = conv
 	return nil

@@ -101,7 +101,7 @@ func TestRegisterDuplicateConverter(t *testing.T) {
 	if err := reg.Register(conv); err != nil {
 		t.Fatalf("first register failed: %v", err)
 	}
-	if err := reg.Register(conv); !errors.Is(err, ConverterExistsError) {
+	if err := reg.Register(conv); !errors.Is(err, ErrConverterExists) {
 		t.Fatalf("expected duplicate error, got %v", err)
 	}
 }
@@ -162,5 +162,19 @@ func TestDiagramRoundTripWithBaseDocument(t *testing.T) {
 	}
 	if parsed.Meta.ID != "diagram.doc" || strings.TrimSpace(parsed.Role.Body) != "diagram role" || len(parsed.Tasks) != 1 {
 		t.Fatalf("context not preserved in round-trip: meta=%#v role=%q tasks=%d", parsed.Meta, parsed.Role.Body, len(parsed.Tasks))
+	}
+}
+
+func TestConverterRegistryListSorted(t *testing.T) {
+	reg := NewConverterRegistry()
+	_ = reg.Register(basicConverter{from: "B", to: "A", fn: func(context.Context, any, map[string]any) (any, error) { return nil, nil }})
+	_ = reg.Register(basicConverter{from: "a", to: "c", fn: func(context.Context, any, map[string]any) (any, error) { return nil, nil }})
+
+	list := reg.List()
+	if len(list) != 2 {
+		t.Fatalf("expected 2 converters, got %d", len(list))
+	}
+	if list[0].From != "a" || list[0].To != "c" || list[1].From != "b" || list[1].To != "a" {
+		t.Fatalf("list not sorted/lowered: %+v", list)
 	}
 }
