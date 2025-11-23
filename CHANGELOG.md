@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.2.1...v1.3.0) (2025-11-23)
+
+
+### Features
+
+* add ExtendedMode toggles to parse/convert options ([a1045af](https://github.com/atlas-foundry/poml-go-sdk/commit/a1045af530a515dff69dad10b506e043a9e11631))
+
 ## [1.2.1](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.2.0...v1.2.1) (2025-11-23)
 
 
