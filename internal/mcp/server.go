@@ -13,6 +13,7 @@ import (
 
 	"github.com/atlas-foundry/poml-go-sdk/poml"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 // Server exposes a minimal MCP-style HTTP surface to inspect parsed POML docs.
@@ -38,7 +39,7 @@ func New(doc poml.Document) *Server {
 	s := &Server{
 		doc:    doc,
 		mux:    http.NewServeMux(),
-		tracer: trace.NewNoopTracerProvider().Tracer("github.com/atlas-foundry/poml-go-sdk/mcp"),
+		tracer: noop.NewTracerProvider().Tracer("github.com/atlas-foundry/poml-go-sdk/mcp"),
 	}
 	s.mux.HandleFunc("/health", s.health)
 	s.mux.HandleFunc("/inspect", s.inspect)

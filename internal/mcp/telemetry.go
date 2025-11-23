@@ -7,11 +7,12 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 // NoopTracerProvider returns a tracer provider that drops spans.
 func NoopTracerProvider() trace.TracerProvider {
-	return trace.NewNoopTracerProvider()
+	return noop.NewTracerProvider()
 }
 
 // StdoutTracerProvider creates a tracer provider that exports spans to stdout.

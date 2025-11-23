@@ -37,7 +37,9 @@ func runMCP(args []string) {
 	file := fs.String("file", "", "path to POML file (required unless --stdin)")
 	useStdin := fs.Bool("stdin", false, "read POML from stdin instead of file")
 	traceStdout := fs.Bool("trace-stdout", false, "enable OTEL stdout tracing")
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		log.Fatalf("parse flags: %v", err)
+	}
 
 	if *file == "" && !*useStdin {
 		fmt.Fprintln(os.Stderr, "must provide --file or --stdin")
