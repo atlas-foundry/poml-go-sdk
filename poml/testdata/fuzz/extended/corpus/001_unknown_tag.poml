@@ -1,0 +1,10 @@
+<poml>
+  <meta>
+    <id>ext.unknown</id>
+    <version>1</version>
+    <owner>oss</owner>
+  </meta>
+  <role>extended test</role>
+  <task>preserve unknown tag</task>
+  <unknown-tag foo="bar">hello</unknown-tag>
+</poml>

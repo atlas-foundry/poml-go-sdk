@@ -3,6 +3,7 @@
 package poml
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -15,6 +16,16 @@ func FuzzParseEncodeExtended(f *testing.F) {
 		`<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task></poml>`,
 		`<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task><extended-op foo="bar">hello</extended-op></poml>`,
 		`<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role><![CDATA[with cdata]]></role><task>t</task><unknown attr="1"/><image src="data:image/png;base64,AA=="/> </poml>`,
+	}
+	corpusFiles := []string{
+		"poml/testdata/fuzz/extended/corpus/001_unknown_tag.poml",
+		"poml/testdata/fuzz/extended/corpus/002_nested_unknowns.poml",
+		"poml/testdata/fuzz/extended/corpus/003_media_extended.poml",
+	}
+	for _, path := range corpusFiles {
+		if body, err := os.ReadFile(path); err == nil {
+			f.Add(string(body))
+		}
 	}
 	for _, s := range seeds {
 		f.Add(s)

@@ -1,0 +1,11 @@
+<poml>
+  <meta>
+    <id>ext.media</id>
+    <version>1</version>
+    <owner>oss</owner>
+  </meta>
+  <role>media with unknown</role>
+  <task>cover media and unknown siblings</task>
+  <image src="data:image/png;base64,AA==" alt="inline" />
+  <extended-figure syntax="custom/svg"><![CDATA[<svg><rect width="10" height="10"/></svg>]]></extended-figure>
+</poml>

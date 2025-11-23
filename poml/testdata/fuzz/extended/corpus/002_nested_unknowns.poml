@@ -1,0 +1,14 @@
+<poml>
+  <meta>
+    <id>ext.nested</id>
+    <version>1</version>
+    <owner>oss</owner>
+  </meta>
+  <role>nested unknowns</role>
+  <task>cover mixed content</task>
+  <wrapper>
+    <extended-op foo="1">
+      <child attr="yes">payload</child>
+    </extended-op>
+  </wrapper>
+</poml>
