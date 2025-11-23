@@ -1,5 +1,5 @@
 digraphG{
 "n1"[label="A",pos="0.000,0.000!"];
 "n2"[label="B",pos="0.000,0.000!"];
-"n1"--"n2"[label="depends"];
+"n1"->"n2"[label="depends"];
 }

@@ -1,3 +1,5 @@
-digraph G {
+digraphG{
+"n1"[label="Alpha",pos="0.000,0.000!"];
+"n2"[label="Beta",pos="0.000,0.000!"];
+"n1"--"n2"[label="relates",weight="0.2"];
 }
-

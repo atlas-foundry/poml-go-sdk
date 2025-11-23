@@ -1742,6 +1742,13 @@ func (d *Document) resolveOrder() []Element {
 
 // Scene converts the current document into a Scene. Unknown fields are ignored.
 func (d *Document) Scene() Scene {
+	// Prefer first diagram if present.
+	if len(d.Diagrams) > 0 {
+		if scene, err := DiagramToSceneWithOptions(d.Diagrams[0], defaultSceneExportOptions); err == nil {
+			return scene
+		}
+	}
+
 	scene := Scene{ID: strings.TrimSpace(d.Meta.ID)}
 	for _, el := range d.Elements {
 		switch el.Type {

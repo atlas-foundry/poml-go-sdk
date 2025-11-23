@@ -1,5 +1,5 @@
 digraph G {
   "a" [color="blue", fillcolor="red", label="Alpha", pos="0.000,0.000!", shape="circle", style="filled"];
   "b" [color="blue", fillcolor="red", label="Beta", pos="0.000,0.000!", shape="hexagon", style="filled"];
-  "a" -> "b" [color="blue", label="relates", penwidth="2", style="solid"];
+  "a" -> "b" [color="blue", label="relates", penwidth="2", style="solid", weight="0.2"];
 }
