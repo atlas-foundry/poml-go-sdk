@@ -359,6 +359,20 @@ func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error
 				"name":         resp.Name,
 				"type":         "error",
 			})
+		case ElementUnknown:
+			if opts.Extended != ExtendedOff {
+				raw := strings.TrimSpace(el.RawXML)
+				if raw == "" {
+					raw = el.Name
+				}
+				messages = append(messages, map[string]any{
+					"role": "user",
+					"content": []any{map[string]any{
+						"type": "text",
+						"text": fmt.Sprintf("[unknown:%s] %s", el.Name, raw),
+					}},
+				})
+			}
 		case ElementAudio:
 			au := doc.Audios[el.Index]
 			part, err := buildMediaPart(au, opts)
@@ -615,6 +629,24 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 					"error":        true,
 				},
 			})
+		case ElementUnknown:
+			if opts.Extended != ExtendedOff {
+				raw := strings.TrimSpace(el.RawXML)
+				if raw == "" {
+					raw = el.Name
+				}
+				messages = append(messages, map[string]any{
+					"type": "human",
+					"data": map[string]any{
+						"content": []any{
+							map[string]any{
+								"type": "text",
+								"text": fmt.Sprintf("[unknown:%s] %s", el.Name, raw),
+							},
+						},
+					},
+				})
+			}
 		case ElementImage:
 			im := doc.Images[el.Index]
 			part, err := buildImagePart(im, opts)
