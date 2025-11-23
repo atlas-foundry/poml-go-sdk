@@ -1,0 +1,11 @@
+{
+  "id": "s2",
+  "nodes": [
+    {"id": "a", "label": "Alpha", "style": {"color": "red", "shape": "circle", "size": "1", "stroke": "blue"}},
+    {"id": "b", "label": "Beta", "style": {"color": "red", "shape": "hex", "size": "1.2", "stroke": "blue"}}
+  ],
+  "edges": [
+    {"from": "a", "to": "b", "kind": "relates", "directed": true, "style": {"stroke": "blue", "width": "2", "dash": "solid"}}
+  ],
+  "meta": {"diagram_attrs": {"theme": "test"}}
+}
