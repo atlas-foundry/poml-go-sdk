@@ -19,6 +19,9 @@ jobs:
   build:
     name: Build & Test (Go ${{ matrix.go }})
     runs-on: ubuntu-latest
+    env:
+      # Force Go 1.24 runners to auto-upgrade the toolchain to 1.25 while keeping 1.25 native runs unchanged
+      GOTOOLCHAIN: go1.25.0
 
     strategy:
       fail-fast: false
