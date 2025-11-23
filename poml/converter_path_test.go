@@ -39,3 +39,19 @@ func TestResolveMediaPathAllowsAbsoluteWhenEnabled(t *testing.T) {
 		t.Fatalf("unexpected resolved path: %s", resolved)
 	}
 }
+
+func TestResolveImagePathRejectsSymlinkEscape(t *testing.T) {
+	base := t.TempDir()
+	outside := t.TempDir()
+	target := filepath.Join(outside, "file.bin")
+	if err := os.WriteFile(target, []byte("x"), 0o600); err != nil {
+		t.Fatalf("write target: %v", err)
+	}
+	link := filepath.Join(base, "link.bin")
+	if err := os.Symlink(target, link); err != nil {
+		t.Fatalf("symlink: %v", err)
+	}
+	if _, err := resolveImagePath("link.bin", ConvertOptions{BaseDir: base}); err == nil {
+		t.Fatalf("expected symlink escape to be rejected")
+	}
+}

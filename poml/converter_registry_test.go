@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -176,5 +177,32 @@ func TestConverterRegistryListSorted(t *testing.T) {
 	}
 	if list[0].From != "a" || list[0].To != "c" || list[1].From != "b" || list[1].To != "a" {
 		t.Fatalf("list not sorted/lowered: %+v", list)
+	}
+}
+
+func TestConverterRegistryConcurrentRegister(t *testing.T) {
+	reg := NewConverterRegistry()
+	conv := basicConverter{from: "x", to: "y", fn: func(context.Context, any, map[string]any) (any, error) { return nil, nil }}
+	var wg sync.WaitGroup
+	var dupCount int
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := reg.Register(conv); err != nil {
+				if errors.Is(err, ErrConverterExists) {
+					dupCount++
+				} else {
+					t.Errorf("unexpected error: %v", err)
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	if dupCount != 9 {
+		t.Fatalf("expected 9 duplicate errors, got %d", dupCount)
+	}
+	if got := len(reg.List()); got != 1 {
+		t.Fatalf("expected single converter registered, got %d", got)
 	}
 }
