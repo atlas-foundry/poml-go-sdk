@@ -43,6 +43,9 @@ func runMCP(args []string) {
 	file := fs.String("file", "", "path to POML file (required unless --stdin)")
 	useStdin := fs.Bool("stdin", false, "read POML from stdin instead of file")
 	traceStdout := fs.Bool("trace-stdout", false, "enable OTEL stdout tracing")
+	traceOTLPHTTP := fs.String("trace-otlp-http", "", "OTLP/HTTP endpoint for tracing (e.g., localhost:4318)")
+	traceOTLPGRPC := fs.String("trace-otlp-grpc", "", "OTLP/gRPC endpoint for tracing (e.g., localhost:4317)")
+	traceInsecure := fs.Bool("trace-insecure", true, "allow insecure OTLP exporters")
 	if err := fs.Parse(args); err != nil {
 		log.Fatalf("parse flags: %v", err)
 	}
@@ -64,8 +67,13 @@ func runMCP(args []string) {
 	}
 
 	var traceOpts poml.TraceOptions
-	if *traceStdout {
+	switch {
+	case *traceStdout:
 		traceOpts.TracerProvider = mcp.StdoutTracerProvider()
+	case *traceOTLPHTTP != "":
+		traceOpts.TracerProvider = mcp.OTLPHTTPTracerProvider(*traceOTLPHTTP, *traceInsecure)
+	case *traceOTLPGRPC != "":
+		traceOpts.TracerProvider = mcp.OTLPGRPCTracerProvider(*traceOTLPGRPC, *traceInsecure)
 	}
 
 	doc, err := poml.ParseString(string(body))
