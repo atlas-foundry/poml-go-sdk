@@ -32,6 +32,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Cache Go modules and build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-cache-${{ runner.os }}-${{ matrix.go }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-cache-${{ runner.os }}-${{ matrix.go }}-
+            go-cache-${{ runner.os }}-
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
