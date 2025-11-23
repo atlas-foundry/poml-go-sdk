@@ -129,7 +129,7 @@ jobs:
           ARG BASE_IMAGE=alpine:3.20
           FROM ${BASE_IMAGE}
 
-          ARG GO_VERSION=1.25.0
+          ARG GO_VERSION=1.25.4
           # Ensure curl/tar/git are available for Go install across alpine/apt-based images.
           RUN (apk add --no-cache curl tar git ca-certificates || \
                (apt-get update && apt-get install -y curl ca-certificates tar git)) && \
@@ -198,7 +198,7 @@ jobs:
           RUN go version && go build semantic_test.go
           EOF
 
-          docker buildx build --platform=linux/${ARCH} --build-arg BASE_IMAGE="${BASE}" --build-arg GO_VERSION="1.25.0" -t poml-e2e:${TAG}-${ARCH} .
+          docker buildx build --platform=linux/${ARCH} --build-arg BASE_IMAGE="${BASE}" --build-arg GO_VERSION="1.25.4" -t poml-e2e:${TAG}-${ARCH} .
 
       - name: Run E2E Test
         run: |
