@@ -106,6 +106,7 @@ jobs:
 
       - name: Build Docker image
         run: |
+          TAG=$(echo "${{ matrix.base }}" | tr ':' '-')
           cat <<'EOF' > Dockerfile
           FROM ${matrix.base}
 
@@ -156,10 +157,12 @@ jobs:
           RUN go build semantic_test.go
           EOF
 
-          docker build -t poml-e2e:${{ matrix.base }} .
+          docker build -t poml-e2e:${TAG} .
 
       - name: Run E2E Test
-        run: docker run --rm poml-e2e:${{ matrix.base }}
+        run: |
+          TAG=$(echo "${{ matrix.base }}" | tr ':' '-')
+          docker run --rm poml-e2e:${TAG}
 
   # =====================================================
   # 3. DOCS BUILD
