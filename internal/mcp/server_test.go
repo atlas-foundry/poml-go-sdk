@@ -294,3 +294,20 @@ func TestPatchEndpoint(t *testing.T) {
 		t.Fatalf("expected ok true, got %v", resp["ok"])
 	}
 }
+
+func TestWatchDisabled(t *testing.T) {
+	srv := New(poml.Document{}, "", nil)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/watch", nil)
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("watch disabled status = %d", rec.Code)
+	}
+}
+
+func TestReloadNoSourcePath(t *testing.T) {
+	srv := New(poml.Document{}, "", nil)
+	if _, err := srv.reload(); err == nil {
+		t.Fatalf("expected reload error with no source path")
+	}
+}

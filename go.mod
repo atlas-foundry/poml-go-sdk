@@ -1,6 +1,6 @@
 module github.com/atlas-foundry/poml-go-sdk
 
-go 1.25.4
+go 1.25
 
 require (
 	github.com/fsnotify/fsnotify v1.7.0

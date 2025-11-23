@@ -78,8 +78,8 @@ jobs:
       - name: Verify fit-for-purpose plan present
         run: test -f docs/fit_for_purpose.poml
 
-      - name: Run tests with coverage
-        run: go test -coverprofile=coverage.out ./...
+      - name: Run tests with coverage (poml package)
+        run: go test -coverpkg=./poml -coverprofile=coverage.out ./...
 
       - name: Enforce coverage ≥80%
         run: |

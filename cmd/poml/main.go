@@ -12,6 +12,12 @@ import (
 	"github.com/atlas-foundry/poml-go-sdk/poml"
 )
 
+var (
+	listenAndServe = http.ListenAndServe
+	readFile       = os.ReadFile
+	exitFunc       = os.Exit
+)
+
 func main() {
 	if len(os.Args) < 2 {
 		usage()
@@ -28,7 +34,7 @@ func main() {
 func usage() {
 	fmt.Fprintf(os.Stderr, "poml commands:\n")
 	fmt.Fprintf(os.Stderr, "  poml mcp --file <path> [--addr :7777]\n")
-	os.Exit(2)
+	exitFunc(2)
 }
 
 func runMCP(args []string) {
@@ -49,9 +55,9 @@ func runMCP(args []string) {
 	var body []byte
 	var err error
 	if *useStdin {
-		body, err = os.ReadFile("/dev/stdin")
+		body, err = readFile("/dev/stdin")
 	} else {
-		body, err = os.ReadFile(*file)
+		body, err = readFile(*file)
 	}
 	if err != nil {
 		log.Fatalf("read POML: %v", err)
@@ -72,7 +78,7 @@ func runMCP(args []string) {
 
 	srv := mcp.New(doc, *file, traceOpts.TracerProvider)
 	log.Printf("poml mcp serving on %s", *addr)
-	if err := http.ListenAndServe(*addr, srv.Handler()); err != nil {
+	if err := listenAndServe(*addr, srv.Handler()); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
 }
