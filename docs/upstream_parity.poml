@@ -1,0 +1,46 @@
+<poml>
+  <meta>
+    <id>upstream_parity.poml-go-sdk</id>
+    <version>0.1.0</version>
+    <owner>poml-go-sdk</owner>
+  </meta>
+  <role>Document the history rewrite plan that keeps this repository exactly aligned with the upstream poml-lang/poml spec tags while moving premium features to poml-horse.</role>
+  <task caption="Preflight checklist">
+    <list>
+      <item>Create a fresh clone (or bare mirror) and disable branch protection/automations during the rewrite window.</item>
+      <item>Notify downstream consumers to pause merges and pin by tag; publish the freeze window on Slack/GitHub Discussions.</item>
+      <item>Export current tags via <cp>git tag --sort=taggerdate --list</cp> for backup.</item>
+      <item>Seed <cp>tag-map.txt</cp> with <code>refs/tags/vX.Y.Z refs/tags/original/vX.Y.Z</code> so filter-repo can rename the legacy namespace.</item>
+    </list>
+  </task>
+  <task caption="Filter-repo rewrite">
+    <list>
+      <item>Use <cp>git filter-repo --force --tag-rename 'v=legacy/v' --replace-text docs/upstream_parity_redactions.txt</cp> to strip premium-only files (see poml-horse for their new home).</item>
+      <item>Recreate the upstream tags by fetching <cp>poml-lang/poml</cp> and tagging their commit IDs locally: <code>git tag -a v0.6.0 &lt;upstream-hash&gt; -m "upstream parity"</code>.</item>
+      <item>Verify <cp>git fsck --strict</cp> and <cp>git diff v0.6.0 upstream/v0.6.0 --stat</cp> produce no differences.</item>
+      <item>Force-push <cp>main</cp> plus all rewritten tags once validation passes: <cp>git push origin main --force</cp> and <cp>git push origin --tags --force</cp>.</item>
+    </list>
+  </task>
+  <task caption="Version messaging">
+    <list>
+      <item>Update README.poml, meta.plan.poml, and CHANGELOG.md to state that tags mirror upstream exactly.</item>
+      <item>Document that premium code paths, demos, and OTLP extensions now live in <cp>poml-horse</cp>; keep only OSS-aligned content here.</item>
+      <item>Explain that downstream integrators must reference tags rather than SHA pins during the rewrite.</item>
+    </list>
+  </task>
+  <task caption="Automation">
+    <list>
+      <item>Extend <cp>scripts/sync_upstream.sh</cp> to optionally run with <code>SYNC_MIRROR_TAGS=1</code>, ensuring the repo re-tags itself after assets sync.</item>
+      <item>Teach <cp>.github/workflows/upstream-sync.yml</cp> to set that flag in CI and to update <cp>third_party/upstream/MANIFEST</cp> + README parity badges automatically.</item>
+      <item>Create <cp>UPSTREAM_VERSION</cp> (generated) that records the exact upstream tag + timestamp; use it in release notes.</item>
+    </list>
+  </task>
+  <task caption="Communication plan">
+    <list>
+      <item>Prepare a forum post + release notes describing the force-push, the new tagging policy, and migration instructions for consumers.</item>
+      <item>Share CLI snippets for internal teams:<cp>git fetch origin --tags --force && git reset --hard origin/main && git submodule sync --recursive</cp>.</item>
+      <item>Link users who still need premium extensions to <cp>poml-horse</cp> and clarify license boundaries.</item>
+    </list>
+  </task>
+  <output-format>Keep actionable; update after each rewrite.</output-format>
+</poml>

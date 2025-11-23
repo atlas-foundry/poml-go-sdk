@@ -1,0 +1,13 @@
+{
+  "package": "not-found",
+  "benchmarks": [
+    {
+      "name": "module_import",
+      "error": "poml package not found in node_modules"
+    },
+    {
+      "name": "cli_dict",
+      "error": "Error: spawnSync poml ENOENT"
+    }
+  ]
+}

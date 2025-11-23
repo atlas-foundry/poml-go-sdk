@@ -1,0 +1,4 @@
+# Patterns passed to git filter-repo --replace-text to remove premium-only assets.
+# Example:
+# literal:internal/premium
+# literal:poml-horse-only

@@ -1,0 +1,65 @@
+name: Upstream Sync
+
+on:
+  schedule:
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+
+      - name: Determine latest upstream tag
+        id: upstream
+        run: |
+          LATEST=$(curl -sSfL https://api.github.com/repos/poml-lang/poml/releases/latest | jq -r '.tag_name')
+          if [[ -z "${LATEST}" || "${LATEST}" == "null" ]]; then
+            echo "Failed to resolve latest upstream release" >&2
+            exit 1
+          fi
+          echo "latest=${LATEST}" >>"${GITHUB_OUTPUT}"
+          echo "Latest upstream tag: ${LATEST}"
+
+      - name: Determine current synced tag
+        id: local
+        run: |
+          CURRENT=""
+          if [[ -f third_party/upstream/MANIFEST ]]; then
+            CURRENT=$(grep '^tag=' third_party/upstream/MANIFEST | cut -d= -f2-)
+          fi
+          echo "current=${CURRENT}" >>"${GITHUB_OUTPUT}"
+          echo "Current manifest tag: ${CURRENT:-<none>}"
+
+      - name: Sync upstream assets
+        if: steps.upstream.outputs.latest != steps.local.outputs.current
+        run: |
+          make sync-upstream TAG="${{ steps.upstream.outputs.latest }}"
+
+      - name: Create pull request
+        if: steps.upstream.outputs.latest != steps.local.outputs.current
+        uses: peter-evans/create-pull-request@v5
+        with:
+          branch: sync/upstream-${{ steps.upstream.outputs.latest }}
+          commit-message: "chore: sync upstream assets ${{ steps.upstream.outputs.latest }}"
+          title: "chore: sync upstream assets ${{ steps.upstream.outputs.latest }}"
+          body: |
+            Automated upstream sync.
+
+            - Source repo: poml-lang/poml
+            - Tag: ${{ steps.upstream.outputs.latest }}
+          labels: chore, automated

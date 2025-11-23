@@ -1,0 +1,29 @@
+# Cross-SDK Benchmark Snapshot (2025-11-23)
+
+- Host: Linux aarch64; Go `go1.25.4`; Python `3.14.0+` with `poml==0.0.8`; Node `v20.19.5`/npm `10.8.2`
+- Commands: `go test -bench=Benchmark -run=^$ -benchmem -count=1 -json ./poml`, `python3 scripts/benchmarks/python_bench.py benchmarks/results/py_bench.json`, `node scripts/benchmarks/ts_bench.js benchmarks/results/ts_bench.json`
+- Python iterations: default=50, cli=20 (set via `PY_BENCH_ITERATIONS`/`PY_BENCH_CLI_ITERATIONS`)
+
+Go SDK
+| Benchmark | ns/op | B/op | allocs/op |
+| --- | --- | --- | --- |
+| BenchmarkParseString | 11384 | 11658 | 216 |
+| BenchmarkEncodeDocument | 3512 | 8280 | 35 |
+| BenchmarkConvertOpenAIChat | 3132 | 6525 | 93 |
+| BenchmarkDiagramToScene | 1509 | 3248 | 35 |
+
+Python SDK (PyPI `poml==0.0.8`)
+| Benchmark | ns/op | ≈ms/op |
+| --- | --- | --- |
+| parse_message_dict | 347098238 | 347.10 |
+| parse_dict | 355029953 | 355.03 |
+| parse_openai_chat | 358690505 | 358.69 |
+| parse_langchain | 355880982 | 355.88 |
+| cli_dict | 60425648 | 60.43 |
+
+TypeScript SDK
+- NPM package not found (`poml`, `@microsoft/poml`, `@microsoft/poml-sdk`); CLI `poml` also unavailable, so TS benchmarks were skipped (see `benchmarks/results/ts_bench.json`).
+
+Notes
+- Go remains ~10^4–10^5× faster than the Python reference on parse/convert, with lower allocations.
+- To capture TS results, publish or point the harness at a local TypeScript SDK and ensure a `poml` CLI is on PATH or set `POML_CLI`.

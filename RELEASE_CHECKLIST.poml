@@ -1,0 +1,260 @@
+# POML VS Code Extension — Release & Registry Checklist
+
+## Pre-Release Checklist
+
+### Code Quality
+- [ ] All unit tests passing (`npm test`)
+- [ ] All E2E tests passing
+- [ ] Linting passes (`npm run lint`)
+- [ ] Code coverage ≥50% (target ~80%)
+- [ ] No console errors or warnings in debug mode
+- [ ] TypeScript strict mode passes
+
+### Binary & Packaging
+- [ ] All 6 platform binaries built and tested
+  - [ ] macOS amd64
+  - [ ] macOS arm64
+  - [ ] Linux amd64
+  - [ ] Linux arm64
+  - [ ] Windows amd64
+  - [ ] Windows arm64
+- [ ] Binary size reasonable (~15 MB per platform)
+- [ ] Binaries executable and functional on target platforms
+- [ ] `.vsix` package builds successfully
+
+### Documentation
+- [ ] README.md updated with latest features
+- [ ] Extension icon (128×128, PNG) added to `resources/icon.png`
+- [ ] Marketplace screenshots captured (1200×750 minimum)
+- [ ] CHANGELOG updated with new features
+- [ ] Quickstart guide updated
+- [ ] E2E plan updated with actual metrics
+
+### Configuration
+- [ ] Version bumped in `package.json` (e.g., `0.1.0` → `0.1.1`)
+- [ ] package-lock.json updated (`npm install`)
+- [ ] License field correct (MIT)
+- [ ] Repository URL correct
+- [ ] Publisher name correct
+
+### Functionality
+- [ ] Extension auto-activates on startup
+- [ ] Status bar indicator shows and updates correctly
+- [ ] `poml_validate` tool works
+- [ ] `poml_convert` tool works
+- [ ] `poml_search` tool works
+- [ ] `poml_patch` tool works
+- [ ] `poml_diagram` tool works
+- [ ] `poml_get_ast` tool works
+- [ ] Error messages are helpful and actionable
+- [ ] Server gracefully handles missing binary
+
+---
+
+## Release Steps
+
+### 1. Local Build & Test
+```bash
+# Build binaries
+bash scripts/build-binaries.sh
+
+# Install dependencies
+cd vscode-extension
+npm install
+
+# Run tests
+npm test
+
+# Build extension
+npm run vscode:prepublish
+
+# Package VSIX
+npm run package
+
+# Test VSIX locally in VS Code
+# Extensions → Install from VSIX → select poml-mcp-*.vsix
+```
+
+### 2. Commit & Tag
+```bash
+# Commit all changes
+git add .
+git commit -m "chore: release v0.1.0"
+
+# Create tag
+git tag v0.1.0
+
+# Push to origin
+git push origin main --tags
+```
+
+### 3. GitHub Actions (Automated)
+- GitHub Actions triggers automatically on tag push
+- Builds all binaries in parallel
+- Packages extension
+- Creates GitHub Release with `.vsix` artifact
+- Publishes to marketplaces (if tokens configured)
+
+### 4. Verify Release
+- [ ] GitHub Release created with changelog
+- [ ] `.vsix` artifact available on release page
+- [ ] VS Code Marketplace shows new version (may take 24 hours)
+- [ ] Open VSX shows new version (typically within 1 hour)
+
+---
+
+## VS Code Marketplace Publication
+
+### Prerequisites
+- VS Code Marketplace account (requires Microsoft account)
+- Personal Access Token (PAT) with `Marketplace` scope
+- Publisher account verified
+
+### Setup
+```bash
+# Create publisher (one-time)
+npx vsce create-publisher atlas-foundry
+
+# Login (one-time)
+npx vsce login atlas-foundry
+```
+
+### Publish (Manual)
+```bash
+# From vscode-extension directory
+npm run package
+
+# Publish
+npx vsce publish
+```
+
+### Publish (Automated via GitHub Actions)
+1. Set secret: `VSCODE_MARKETPLACE_TOKEN` in GitHub repository
+2. Tag commit: `git tag v0.1.0 && git push origin --tags`
+3. GitHub Actions automatically publishes
+
+---
+
+## Open VSX Registry Publication
+
+### Prerequisites
+- Open VSX account (simple signup at https://open-vsx.org)
+- Personal Access Token (PAT)
+
+### Setup
+```bash
+# Publish (automated via GitHub Actions)
+# Set secret: OVSX_TOKEN in GitHub repository
+```
+
+### Manual Publish
+```bash
+npx ovsx publish -p $OVSX_TOKEN
+```
+
+---
+
+## MCP Registry Registration
+
+### Prerequisites
+- MCP Registry account (https://registry.modelcontextprotocol.io)
+- Server must be published to npm or available via GitHub
+
+### Steps
+1. Navigate to https://registry.modelcontextprotocol.io/submit
+2. Fill out form:
+   - **Name:** POML MCP Server
+   - **Type:** Server
+   - **Repository:** https://github.com/atlas-foundry/poml-go-sdk
+   - **Installation:** `npx @atlas-foundry/poml-mcp`
+   - **Description:** POML (Prompt Orchestration Markup Language) server with VS Code extension
+3. Submit for review (~1–2 weeks)
+4. Verify listing on registry
+
+---
+
+## GitHub Copilot Marketplace (Optional)
+
+### Eligibility
+- Extension must be available on VS Code Marketplace
+- Must have ≥50 installs and ≥4.0 rating (typically)
+- Auto-registered if meets criteria
+
+### Verification
+1. Check https://copilot.github.com/marketplace
+2. Verify extension appears in Copilot recommendations
+3. No additional submission required (automatic indexing)
+
+---
+
+## Post-Release Monitoring
+
+### Metrics to Track
+- [ ] Installation count (daily, weekly, monthly)
+- [ ] Rating and review count
+- [ ] Issue reports (bug fixes prioritized)
+- [ ] Feature requests (roadmap planning)
+- [ ] User feedback and testimonials
+
+### Support Plan
+- [ ] GitHub Issues: Triage and respond within 24 hours
+- [ ] Discussions: Address questions in community tab
+- [ ] Social media: Announce on Twitter/LinkedIn
+- [ ] Blog: Post case studies from early adopters
+
+### Update Schedule
+- [ ] Bug fixes: Release as needed
+- [ ] Features: Release every 2–4 weeks
+- [ ] Major versions: Coordinate with Go SDK releases
+
+---
+
+## Rollback Plan
+
+### If Critical Issue Found
+1. Unpublish from VS Code Marketplace
+   ```bash
+   npx vsce unpublish --publisher atlas-foundry --extension poml-mcp --version 0.1.0
+   ```
+2. Unpublish from Open VSX
+   ```bash
+   curl -X DELETE https://open-vsx.org/api/-/unpublish/atlas-foundry/poml-mcp/0.1.0 \
+     -H "Authorization: Bearer $OVSX_TOKEN"
+   ```
+3. Create new tag for patched version (e.g., `v0.1.1-hotfix`)
+4. Re-release after fix verification
+
+---
+
+## Success Criteria
+
+- [ ] ≥100 installs within 1 month
+- [ ] ≥4.5 star rating on VS Code Marketplace
+- [ ] &lt;5% of issues related to binary/installation
+- [ ] &lt;1 hour median issue response time
+- [ ] 100% automated release pipeline
+- [ ] No manual steps for CI/CD (tag → publish fully automated)
+
+---
+
+## Timeline
+
+| Phase | Duration | Deadline |
+|-------|----------|----------|
+| Development | 5–7 weeks | TBD |
+| Phase 2 Testing | 2–3 weeks | TBD |
+| Phase 3 Polish | 2–3 weeks | TBD |
+| Phase 4 Registry | 1 week | TBD |
+| Phase 5 Marketing | Ongoing | — |
+
+**First Release Target:** 6–8 weeks from Phase 1 completion
+
+---
+
+## Contacts & Resources
+
+- **VS Code Marketplace Help:** https://code.visualstudio.com/api/working-with-extensions/publishing-extension
+- **Open VSX Documentation:** https://github.com/EclipseFdn/open-vsx/wiki/Publishing-Extensions
+- **MCP Registry:** https://registry.modelcontextprotocol.io
+- **GitHub Actions:** https://docs.github.com/en/actions
+- **Extension Best Practices:** https://code.visualstudio.com/api/extension-guides/overview

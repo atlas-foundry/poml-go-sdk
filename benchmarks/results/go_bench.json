@@ -1,0 +1,23 @@
+{"Time":"2025-11-23T15:13:04.931943111Z","Action":"start","Package":"github.com/atlas-foundry/poml-go-sdk/poml"}
+{"Time":"2025-11-23T15:13:04.934852002Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Output":"goos: linux\n"}
+{"Time":"2025-11-23T15:13:04.93510375Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Output":"goarch: arm64\n"}
+{"Time":"2025-11-23T15:13:04.935218791Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Output":"pkg: github.com/atlas-foundry/poml-go-sdk/poml\n"}
+{"Time":"2025-11-23T15:13:04.935330331Z","Action":"run","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Test":"BenchmarkParseString"}
+{"Time":"2025-11-23T15:13:04.935440164Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Test":"BenchmarkParseString","Output":"=== RUN   BenchmarkParseString\n"}
+{"Time":"2025-11-23T15:13:04.935531746Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Test":"BenchmarkParseString","Output":"BenchmarkParseString\n"}
+{"Time":"2025-11-23T15:13:06.217145264Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Test":"BenchmarkParseString","Output":"BenchmarkParseString-4         \t  102080\t     11384 ns/op\t   11658 B/op\t     216 allocs/op\n"}
+{"Time":"2025-11-23T15:13:06.217365512Z","Action":"run","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Test":"BenchmarkEncodeDocument"}
+{"Time":"2025-11-23T15:13:06.217521719Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Test":"BenchmarkEncodeDocument","Output":"=== RUN   BenchmarkEncodeDocument\n"}
+{"Time":"2025-11-23T15:13:06.217678176Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Test":"BenchmarkEncodeDocument","Output":"BenchmarkEncodeDocument\n"}
+{"Time":"2025-11-23T15:13:07.456899647Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Test":"BenchmarkEncodeDocument","Output":"BenchmarkEncodeDocument-4      \t  342502\t      3512 ns/op\t    8280 B/op\t      35 allocs/op\n"}
+{"Time":"2025-11-23T15:13:07.45713427Z","Action":"run","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Test":"BenchmarkConvertOpenAIChat"}
+{"Time":"2025-11-23T15:13:07.457251643Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Test":"BenchmarkConvertOpenAIChat","Output":"=== RUN   BenchmarkConvertOpenAIChat\n"}
+{"Time":"2025-11-23T15:13:07.457441975Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Test":"BenchmarkConvertOpenAIChat","Output":"BenchmarkConvertOpenAIChat\n"}
+{"Time":"2025-11-23T15:13:08.653577614Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Test":"BenchmarkConvertOpenAIChat","Output":"BenchmarkConvertOpenAIChat-4   \t  371210\t      3132 ns/op\t    6525 B/op\t      93 allocs/op\n"}
+{"Time":"2025-11-23T15:13:08.653767237Z","Action":"run","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Test":"BenchmarkDiagramToScene"}
+{"Time":"2025-11-23T15:13:08.653871695Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Test":"BenchmarkDiagramToScene","Output":"=== RUN   BenchmarkDiagramToScene\n"}
+{"Time":"2025-11-23T15:13:08.653955777Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Test":"BenchmarkDiagramToScene","Output":"BenchmarkDiagramToScene\n"}
+{"Time":"2025-11-23T15:13:09.833804475Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Test":"BenchmarkDiagramToScene","Output":"BenchmarkDiagramToScene-4      \t  770568\t      1509 ns/op\t    3248 B/op\t      35 allocs/op\n"}
+{"Time":"2025-11-23T15:13:09.83398889Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Output":"PASS\n"}
+{"Time":"2025-11-23T15:13:09.83454826Z","Action":"output","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Output":"ok  \tgithub.com/atlas-foundry/poml-go-sdk/poml\t4.902s\n"}
+{"Time":"2025-11-23T15:13:09.834660592Z","Action":"pass","Package":"github.com/atlas-foundry/poml-go-sdk/poml","Elapsed":4.9030000000000005}

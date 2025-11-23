@@ -1,0 +1,330 @@
+# POML VS Code Extension — Complete Developer Reference
+
+## Quick Reference
+
+### Build & Run Locally
+```bash
+# 1. Build all platform binaries
+bash scripts/build-binaries.sh
+
+# 2. Install extension dependencies
+cd vscode-extension && npm install
+
+# 3. Start TypeScript watcher (in one terminal)
+npm run esbuild-watch
+
+# 4. Debug in VS Code (in another terminal)
+code . && # Press F5 to launch extension
+```
+
+### Commands
+```bash
+npm run esbuild           # Build TypeScript once
+npm run esbuild-watch    # Watch for changes and rebuild
+npm run lint             # Check for linting issues
+npm test                 # Run unit tests
+npm run vscode:prepublish # Production build (minified)
+npm run package          # Create .vsix package
+npm run publish          # Publish to VS Code Marketplace
+```
+
+### File Manifest
+
+| File | Purpose |
+|------|---------|
+| `src/extension.ts` | VS Code extension entrypoint; handles activation, commands, status bar |
+| `src/manager.ts` | Binary detection, spawning, lifecycle management |
+| `src/server.ts` | MCP server adapter; proxies MCP calls to HTTP endpoints |
+| `src/http-client.ts` | HTTP client wrapper for poml API |
+| `scripts/build-binaries.sh` | Cross-compiles poml for all platforms |
+| `.github/workflows/build-release.yml` | Automated CI/CD pipeline for building and publishing |
+| `package.json` | Extension manifest, dependencies, scripts |
+| `tsconfig.json` | TypeScript configuration |
+| `jest.config.js` | Testing framework configuration |
+| `.eslintrc.js` | Code linting rules |
+| `.vscode/launch.json` | Debug configuration (F5) |
+| `README.md` | Extension documentation for users |
+| `VSCODE_EXTENSION_SUMMARY.md` | Implementation overview |
+| `RELEASE_CHECKLIST.md` | Pre-release and publishing checklist |
+
+---
+
+## Architecture
+
+```
+MCP Client (Claude Desktop, Cline, etc.)
+         ↓
+    stdin/stdout (MCP Protocol)
+         ↓
+   Extension (src/server.ts)
+         ↓
+    HTTP Client (src/http-client.ts)
+         ↓
+   localhost:7777 (HTTP)
+         ↓
+   poml binary (src/manager.ts spawned)
+         ↓
+   .poml file (active editor)
+```
+
+---
+
+## Environment Setup
+
+### Development
+- Go 1.25+ (for building binaries)
+- Node.js 18+ (for extension)
+- VS Code 1.80+ (for testing)
+- Git (for version control)
+
+### CI/CD
+- GitHub Actions (free for public repos)
+- PAT tokens for marketplace publishing (optional; manual publishing also works)
+
+---
+
+## Testing Strategy
+
+### Unit Tests
+```bash
+npm test                          # Run all tests
+npm test -- manager.test.ts       # Run specific test file
+npm test -- --coverage            # Generate coverage report
+```
+
+**Coverage Targets:**
+- Lines: 50%+
+- Functions: 50%+
+- Branches: 50%+
+- Statements: 50%+
+
+### Integration Tests
+```bash
+npm test integration.test.ts      # Full workflow tests
+```
+
+**What to Test:**
+1. Binary detection and execution
+2. Server startup/shutdown
+3. MCP tool invocation (all 6 tools)
+4. Error handling and fallbacks
+5. Cross-platform binary compatibility
+
+### Manual Testing
+1. Open `.poml` file in VS Code
+2. Server should auto-start
+3. Run MCP tool commands via client
+4. Verify results match poml CLI output
+
+---
+
+## Publishing Workflow
+
+### 1. Pre-Release
+```bash
+# Update version in package.json
+# Update CHANGELOG.md
+# Commit and push
+git add .
+git commit -m "chore: release v0.1.0"
+git push origin main
+```
+
+### 2. Create Tag
+```bash
+git tag v0.1.0
+git push origin --tags
+```
+
+### 3. GitHub Actions Automates
+- Builds all 6 binaries
+- Packages extension
+- Creates GitHub Release
+- Publishes to marketplaces (if tokens configured)
+
+### 4. Verify
+- Check GitHub Release page
+- Wait for marketplace sync (~1–24 hours for VS Code, ~1 hour for Open VSX)
+- Test install from marketplace
+
+---
+
+## Marketplace Accounts
+
+### VS Code Marketplace
+- **URL:** https://marketplace.visualstudio.com
+- **Publisher:** Create at https://dev.azure.com/_usersSettings/tokens
+- **Token Scope:** Marketplace (Manage)
+- **Cost:** Free
+- **Setup:** Set `VSCODE_MARKETPLACE_TOKEN` secret in GitHub
+
+### Open VSX Registry
+- **URL:** https://open-vsx.org
+- **Account:** Create at https://open-vsx.org/user/profile
+- **Token Scope:** Publishing
+- **Cost:** Free
+- **Setup:** Set `OVSX_TOKEN` secret in GitHub
+
+### MCP Registry
+- **URL:** https://registry.modelcontextprotocol.io
+- **Type:** Community registry
+- **Cost:** Free
+- **Process:** Manual registration after marketplace publication
+
+---
+
+## Binary Distribution Details
+
+### Platforms Supported
+| OS | Arch | Binary Name | Notes |
+|----|----|---|---|
+| macOS | amd64 | `poml` | Intel Macs |
+| macOS | arm64 | `poml` | M1/M2/M3 Macs |
+| Linux | amd64 | `poml` | Intel Linux |
+| Linux | arm64 | `poml` | ARM Linux (Raspberry Pi, etc.) |
+| Windows | amd64 | `poml.exe` | Intel Windows |
+| Windows | arm64 | `poml.exe` | ARM Windows |
+
+### Binary Detection Logic
+1. Detect platform (`process.platform`) and arch (`process.arch`)
+2. Map Node.js arch (`x64`) to Go arch (`amd64`)
+3. Look for bundled binary at `bin/{platform}/{arch}/poml[.exe]`
+4. If not found, fall back to system PATH
+5. If neither found, show error with installation instructions
+
+### Size Optimization
+- Build flags: `-ldflags="-s -w"` (strip symbols and debug info)
+- Result: ~15 MB per platform
+- Total bundled: ~100 MB (6 platforms)
+- Extracted (users): ~15 MB per platform
+
+---
+
+## MCP Tools Reference
+
+| Tool | Input | Output | Use Case |
+|------|-------|--------|----------|
+| `poml_validate` | None | Validation result | Check POML syntax/semantics |
+| `poml_convert` | format (json/dict/openai_chat/langchain) | Converted doc | Export to other formats |
+| `poml_search` | query, limit | Search results | Find tags/attributes/text |
+| `poml_patch` | path, value | Updated doc | Mutate elements |
+| `poml_diagram` | format (mermaid/json) | Diagram | Visualize structure |
+| `poml_get_ast` | None | Full AST | Access document tree |
+
+---
+
+## Troubleshooting
+
+### Extension Won't Start
+- Check if `.poml` file is open
+- Verify binary exists: `ls -la vscode-extension/bin/`
+- Check VS Code output: View → Output → POML MCP
+
+### Port Already in Use
+- Change port in `manager.ts` constructor
+- Or kill process: `lsof -i :7777 | grep LISTEN | awk '{print $2}' | xargs kill -9`
+
+### Binary Not Found
+- Run `bash scripts/build-binaries.sh`
+- Check `echo $GOOS $GOARCH` for current platform
+- Fall back to system: `go install github.com/atlas-foundry/poml-go-sdk/cmd/poml@latest`
+
+### Tests Failing
+- Delete `node_modules/`: `rm -rf node_modules`
+- Reinstall: `npm install`
+- Rebuild binaries: `bash scripts/build-binaries.sh`
+
+### TypeScript Errors
+- Ensure binaries exist (see above)
+- Run `npm run lint` to check code style
+- Use VS Code TypeScript language server (built-in)
+
+---
+
+## Performance Considerations
+
+### Binary Size
+- Extension size in marketplace: ~2 MB (code only)
+- Downloaded size: ~15 MB per platform (binaries)
+- Installation time: ~30 seconds (network-dependent)
+
+### Memory Usage
+- VS Code extension: ~50–100 MB
+- poml HTTP server: ~20–50 MB (depends on file size)
+- Total: ~100–150 MB
+
+### Startup Time
+- Extension activation: &lt;1 second
+- Server startup: 1–2 seconds
+- First MCP call: ~100–500 ms (includes HTTP roundtrip)
+
+### Caching
+- Extension caches binary path after first detection
+- HTTP client reuses connection pool
+- Server keeps file in memory (fast access)
+
+---
+
+## Contributing Guidelines
+
+### Code Style
+- Follow TypeScript strict mode
+- Use ESLint: `npm run lint`
+- Format with Prettier: See `.prettierrc`
+- Commit messages: Use Conventional Commits (feat:, fix:, chore:, etc.)
+
+### Testing
+- Write tests for new features
+- Run `npm test` before pushing
+- Aim for 50%+ coverage (target 80%+)
+
+### Documentation
+- Update `README.md` for user-facing changes
+- Update this guide for developer-facing changes
+- Use POML format for new docs (except this reference)
+
+---
+
+## Release Cycle
+
+### Patch (0.0.1 → 0.0.2)
+- Bug fixes only
+- Released ASAP (same day if critical)
+- No feature additions
+
+### Minor (0.1.0 → 0.2.0)
+- New features
+- Released every 2–4 weeks
+- Backward compatible
+
+### Major (1.0.0 → 2.0.0)
+- Breaking changes
+- Coordinate with Go SDK major release
+- Documented migration guide
+
+---
+
+## Support & Contact
+
+- **Issues:** https://github.com/atlas-foundry/poml-go-sdk/issues
+- **Discussions:** https://github.com/atlas-foundry/poml-go-sdk/discussions
+- **Email:** support@atlas-foundry.com (example)
+- **Twitter/X:** @atlas_foundry (example)
+- **Slack/Discord:** (TBD for community)
+
+---
+
+## Additional Resources
+
+- **MCP Spec:** https://modelcontextprotocol.io/specification
+- **VS Code API:** https://code.visualstudio.com/api
+- **VS Code Extension Guide:** https://code.visualstudio.com/api/extension-guides/overview
+- **Go Binary Distribution:** https://golang.org/doc/install/source
+- **npm Packaging:** https://docs.npmjs.com/cli/v9/commands/npm-publish
+
+---
+
+**Last Updated:** November 23, 2025  
+**Version:** 0.1.0  
+**Maintainer:** Atlas Foundry  
+**License:** MIT

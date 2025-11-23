@@ -1,0 +1,95 @@
+name: Build and Release POML Extension
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build-binaries:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.25"
+
+      - name: Build binaries
+        run: bash scripts/build-binaries.sh
+
+      - name: Upload binaries artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: poml-binaries
+          path: vscode-extension/bin/
+
+  package-extension:
+    needs: build-binaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Download binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: poml-binaries
+          path: vscode-extension/bin/
+
+      - name: Install dependencies
+        run: cd vscode-extension && npm install
+
+      - name: Build extension
+        run: cd vscode-extension && npm run esbuild
+
+      - name: Package VSIX
+        run: cd vscode-extension && npx vsce package --out ../poml-mcp.vsix
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: poml-mcp.vsix
+          draft: false
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-marketplace:
+    needs: package-extension
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Download binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: poml-binaries
+          path: vscode-extension/bin/
+
+      - name: Install dependencies
+        run: cd vscode-extension && npm install
+
+      - name: Build extension
+        run: cd vscode-extension && npm run esbuild
+
+      - name: Publish to VS Code Marketplace
+        run: cd vscode-extension && npx vsce publish -p ${{ secrets.VSCODE_MARKETPLACE_TOKEN }}
+        if: secrets.VSCODE_MARKETPLACE_TOKEN != ''
+
+      - name: Publish to Open VSX
+        run: cd vscode-extension && npx ovsx publish -p ${{ secrets.OVSX_TOKEN }}
+        if: secrets.OVSX_TOKEN != ''

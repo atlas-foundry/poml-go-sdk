@@ -1,0 +1,150 @@
+<poml>
+  <meta>
+    <id>vscode-extension.quickstart</id>
+    <version>0.1.0</version>
+    <owner>poml-vscode-extension</owner>
+  </meta>
+  <role>Provide a quick-start guide for developers to build, test, and publish the POML VS Code extension.</role>
+  <task>Walk through setup, local development, testing, and publishing workflows.</task>
+
+  <hint caption="Prerequisites">
+    <list>
+      <item>Go 1.25+</item>
+      <item>Node.js 18+ and npm</item>
+      <item>VS Code 1.80+</item>
+      <item>Git</item>
+    </list>
+  </hint>
+
+  <hint caption="1. Local Development Setup">
+    <cp>
+# Clone and enter the project
+git clone https://github.com/atlas-foundry/poml-go-sdk.git
+cd poml-go-sdk
+
+# Build all platform binaries
+bash scripts/build-binaries.sh
+
+# Navigate to extension directory
+cd vscode-extension
+
+# Install dependencies
+npm install
+
+# Build TypeScript (watch mode for development)
+npm run esbuild-watch
+    </cp>
+  </hint>
+
+  <hint caption="2. Running the Extension Locally">
+    <list>
+      <item>Open the `vscode-extension` folder in VS Code: `code .`</item>
+      <item>Press `F5` to launch the extension in debug mode (requires `.vscode/launch.json`)</item>
+      <item>Create or open a `.poml` file in the debug window</item>
+      <item>Run command: `POML: Start MCP Server`</item>
+      <item>Check output panel for logs</item>
+    </list>
+  </hint>
+
+  <hint caption="3. Testing">
+    <cp>
+# Run unit tests
+npm test
+
+# Run with coverage
+npm test -- --coverage
+
+# Lint code
+npm run lint
+    </cp>
+  </hint>
+
+  <hint caption="4. Packaging">
+    <cp>
+# Build for production (minified)
+npm run vscode:prepublish
+
+# Package as VSIX
+npm run package
+
+# Output: poml-mcp-0.1.0.vsix
+    </cp>
+  </hint>
+
+  <hint caption="5. Manual Publishing">
+    <cp>
+# Create personal access token (PAT) at https://dev.azure.com/_usersSettings/tokens
+# Export token
+export VSCODE_PAT="your-token-here"
+
+# Create publisher (one-time)
+npx vsce create-publisher atlas-foundry
+
+# Publish to VS Code Marketplace
+npx vsce publish -p $VSCODE_PAT
+
+# Publish to Open VSX (optional)
+npx ovsx publish -p $OVSX_PAT
+    </cp>
+  </hint>
+
+  <hint caption="6. Automated Release (GitHub Actions)">
+    <list>
+      <item>Update version in `vscode-extension/package.json`</item>
+      <item>Commit: `git commit -am "chore: bump version to 0.1.1"`</item>
+      <item>Tag: `git tag v0.1.1`</item>
+      <item>Push: `git push origin main --tags`</item>
+      <item>GitHub Actions automatically builds, packages, and publishes</item>
+      <item>Monitor: https://github.com/atlas-foundry/poml-go-sdk/actions</item>
+    </list>
+  </hint>
+
+  <hint caption="7. Debugging">
+    <list>
+      <item><strong>Extension logs:</strong> VS Code output panel → "POML MCP"</item>
+      <item><strong>Server logs:</strong> Check if `poml` binary is running: `ps aux | grep poml`</item>
+      <item><strong>HTTP endpoints:</strong> Test manually: `curl http://localhost:7777/validate`</item>
+      <item><strong>MCP protocol:</strong> Use VS Code debugger to trace stdio communication</item>
+    </list>
+  </hint>
+
+  <hint caption="Directory Structure">
+    <cp>
+vscode-extension/
+├── src/
+│   ├── extension.ts       # VS Code extension entrypoint
+│   ├── manager.ts         # Binary lifecycle management
+│   ├── server.ts          # MCP server adapter
+│   ├── http-client.ts     # HTTP client wrapper
+│   └── *.test.ts          # Unit tests
+├── bin/
+│   └── {darwin,linux,windows}/
+│       └── {amd64,arm64}/
+│           └── poml[.exe]  # Bundled binaries
+├── package.json
+├── tsconfig.json
+└── README.md
+    </cp>
+  </hint>
+
+  <hint caption="Common Issues">
+    <object>
+      <key>Binary not found</key>
+      <value>Run `bash ../scripts/build-binaries.sh` to rebuild all platform binaries.</value>
+    </object>
+    <object>
+      <key>Port already in use</key>
+      <value>POML defaults to `:7777`. Change in `manager.ts` constructor or use `lsof -i :7777` to find conflicting process.</value>
+    </object>
+    <object>
+      <key>Dependencies not installing</key>
+      <value>Delete `node_modules` and `package-lock.json`, then run `npm install` again.</value>
+    </object>
+    <object>
+      <key>TypeScript compilation errors</key>
+      <value>Ensure Go binaries are built first; check `bin/` directory exists with binaries.</value>
+    </object>
+  </hint>
+
+  <output-format>Step-by-step developer guide with code examples and troubleshooting.</output-format>
+</poml>

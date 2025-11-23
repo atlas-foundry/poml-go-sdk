@@ -1,0 +1,56 @@
+<poml>
+  <meta>
+    <id>benchmarks.plan.poml-go-sdk</id>
+    <version>0.1.0</version>
+    <owner>poml-go-sdk</owner>
+  </meta>
+
+  <role>
+    Cross-SDK benchmark plan to beat Python and TypeScript POML SDKs across parse/encode/validate, diagram↔scene converters, scenejson round-trips, and renderer throughput. Treat results as release gates.
+  </role>
+
+  <task caption="Scope & Targets">
+    <list>
+      <item>Bench categories: parse→AST, encode→POML, validate, diagram→scene, scene→diagram, scenejson round-trip, renderer throughput (where comparable), and memory profiles.</item>
+      <item>Goals: Go SDK wins p50/p95 latency and memory vs Python/TS on identical fixtures; publish deltas and regressions per release.</item>
+      <item>Fidelity: include failure/invalid fixtures to ensure error-path performance coverage.</item>
+    </list>
+  </task>
+
+  <task caption="Fixtures (shared)">
+    <list>
+      <item>Use public fixtures aligned across SDKs: chain/star/grid/styled diagrams; large doc (10–50 diagrams); invalid samples (missing ids, bad edges).</item>
+      <item>Store canonical POML under `poml/testdata/diagrams` and reuse for other SDKs; avoid proprietary refs.</item>
+      <item>Freeze fixtures per benchmark release; bump versions when formats change.</item>
+    </list>
+  </task>
+
+  <task caption="Harness">
+    <list>
+      <item>Go: `scripts/benchmarks/run.sh` → `go test -bench=Benchmark -run=^$ -benchmem -json ./poml` into `benchmarks/results/go_bench.json`.</item>
+      <item>Python/TS: runnable when env vars point to sibling repos (`PY_POML_REPO`, `TS_POML_REPO`); execute their bench runners and emit JSON sidecars next to Go output.</item>
+      <item>Normalize hardware/runtime (CPU model, Go/Python/Node versions); capture env in report header.</item>
+    </list>
+  </task>
+
+  <task caption="Metrics & Reporting">
+    <list>
+      <item>Record p50/p95/p99 latency, throughput, allocs/op, bytes/op; flag regressions >5% from last release.</item>
+      <item>Generate comparative summary (Go vs Python vs TS) per category; store under `benchmarks/results/summary.md`.</item>
+      <item>Publish public summary in README.mdx/go.quality.poml; keep proprietary renderer results private.</item>
+    </list>
+  </task>
+
+  <task caption="Governance">
+    <list>
+      <item>Gate releases: run benchmarks on release branches; block if Go is not strictly better or if regression exceeds threshold without waiver.</item>
+      <item>Track trends quarterly; add Codecov-like badge once stable.</item>
+      <item>Ownership: SDK core team; CI to run Go benches, optional cross-SDK when repos available.</item>
+    </list>
+  </task>
+
+  <notes>
+    <item>Align benchmark names across SDKs (e.g., BenchmarkParseChain, BenchmarkDiagramToSceneGrid) for easier comparison.</item>
+    <item>Add extended-mode cases once other SDKs support Extended tags.</item>
+  </notes>
+</poml>

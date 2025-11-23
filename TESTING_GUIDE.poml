@@ -1,0 +1,516 @@
+# POML VS Code Extension — Testing Guide (Phase 2)
+
+## Overview
+
+This guide covers the testing strategy for Phase 2, including:
+- Unit tests for all core modules
+- E2E test setup
+- Cross-platform validation
+- Coverage targets
+
+---
+
+## Unit Test Structure
+
+### Test Files Created
+
+1. **manager.test.ts** — Binary lifecycle and detection
+2. **http-client.test.ts** — HTTP API wrapper
+3. **extension.test.ts** — VS Code integration
+4. **server.test.ts** — MCP server adapter
+5. **integration.test.ts** — E2E workflows (template)
+
+### Test Coverage by Module
+
+| Module | Tests | Scenarios |
+|--------|-------|-----------|
+| `manager.ts` | 30+ | Binary detection, state mgmt, events |
+| `http-client.ts` | 25+ | API calls, errors, health checks |
+| `extension.ts` | 20+ | Activation, commands, status bar |
+| `server.ts` | 30+ | MCP tools, request/response, errors |
+| **Total** | **105+** | Comprehensive coverage |
+
+---
+
+## Running Tests
+
+### All Tests
+```bash
+cd vscode-extension
+npm test
+```
+
+### Specific Test File
+```bash
+npm test -- manager.test.ts
+npm test -- http-client.test.ts
+npm test -- server.test.ts
+```
+
+### With Coverage Report
+```bash
+npm test -- --coverage
+```
+
+### Watch Mode (Development)
+```bash
+npm test -- --watch
+```
+
+### Specific Test Case
+```bash
+npm test -- manager.test.ts -t "Binary Detection"
+```
+
+---
+
+## Test Categories
+
+### 1. Unit Tests (manager.test.ts)
+
+**Binary Detection**
+- Verify bundled binary path construction
+- Test fallback to system PATH
+- Handle missing binaries gracefully
+
+**File Path Management**
+- Set and update POML file path
+- Prevent path changes while running
+- Validate file path format
+
+**Server State**
+- Report running status
+- Return correct server URL
+- Track port configuration
+
+**Event Emitter**
+- Emit and receive events
+- Add/remove event listeners
+- Verify event data
+
+**Error Handling**
+- Missing file path
+- Invalid ports
+- Invalid base paths
+
+**Integration**
+- Multiple manager instances
+- Configuration persistence
+- Port reconfiguration
+
+### 2. Unit Tests (http-client.test.ts)
+
+**API Methods**
+- Verify all 8 methods exist
+- Check method signatures
+- Validate parameter types
+
+**Configuration**
+- Custom base URL
+- Custom timeout
+- Default values
+
+**Health Checks**
+- Server health detection
+- Network error handling
+- Timeout behavior
+
+**Error Handling**
+- Unreachable servers
+- Connection timeouts
+- Invalid responses
+
+**Integration**
+- MCP server compatibility
+- Request/response flow
+- Error propagation
+
+### 3. Unit Tests (extension.test.ts)
+
+**Activation**
+- Extension context initialization
+- Subscription management
+- Resource setup
+
+**Binary Manager**
+- Manager instantiation
+- Lifecycle method availability
+- State tracking
+
+**MCP Server**
+- Server initialization
+- Method availability
+- HTTP connection
+
+**Commands**
+- Command definition
+- Unique command IDs
+- Command execution
+
+**Status Bar**
+- Status bar creation
+- Status updates
+- Icon changes
+
+**Error Handling**
+- Missing POML files
+- Binary not found errors
+- Port conflicts
+
+**Deactivation**
+- Clean shutdown
+- Resource cleanup
+- Event listener removal
+
+### 4. Unit Tests (server.test.ts)
+
+**MCP Tools** (6 tools)
+- `poml_validate` — No parameters
+- `poml_convert` — Format parameter
+- `poml_search` — Query parameter
+- `poml_patch` — Path and value
+- `poml_diagram` — Optional format
+- `poml_get_ast` — No parameters
+
+**Input Schemas**
+- Validate schema structure
+- Check required parameters
+- Verify types
+
+**Response Formatting**
+- Success responses
+- Error responses
+- JSON serialization
+
+**Tool Execution**
+- Request handling
+- Parameter validation
+- Unknown tool handling
+
+**Error Handling**
+- Connection errors
+- Invalid tools
+- Missing arguments
+
+**MCP Protocol**
+- ListTools implementation
+- CallTool implementation
+- Stdio connection
+
+---
+
+## E2E Testing (integration.test.ts)
+
+### Test Scenarios
+
+1. **Extension Activation**
+   - VS Code opens with extension
+   - Binary is detected
+   - Server is ready
+
+2. **Server Lifecycle**
+   - Open `.poml` file → Auto-start
+   - Run MCP tools → Respond correctly
+   - Close file → Auto-stop (optional)
+
+3. **All MCP Tools**
+   - `poml_validate` → Returns validation result
+   - `poml_convert` → Returns converted format
+   - `poml_search` → Returns search results
+   - `poml_patch` → Applies changes
+   - `poml_diagram` → Returns diagram data
+   - `poml_get_ast` → Returns full AST
+
+4. **Error Cases**
+   - Binary not found → Fallback message
+   - Port conflict → Alternative port
+   - Invalid tool → Error response
+   - Missing parameters → Error message
+
+### Running E2E Tests
+
+```bash
+# Full E2E test suite
+npm test -- integration.test.ts
+
+# Specific scenario
+npm test -- integration.test.ts -t "Server Lifecycle"
+
+# With logging
+npm test -- integration.test.ts --verbose
+```
+
+---
+
+## Cross-Platform Validation
+
+### macOS (Intel & ARM)
+```bash
+# On macOS amd64
+vscode-extension/bin/darwin/amd64/poml --help
+
+# On macOS arm64 (M1/M2/M3)
+vscode-extension/bin/darwin/arm64/poml --help
+
+# Test extension locally
+npm run esbuild && code . && F5
+```
+
+### Linux
+```bash
+# On Linux amd64
+vscode-extension/bin/linux/amd64/poml --help
+
+# On Linux arm64 (Raspberry Pi, etc.)
+vscode-extension/bin/linux/arm64/poml --help
+```
+
+### Windows
+```bash
+# On Windows amd64
+vscode-extension/bin/windows/amd64/poml.exe --help
+
+# On Windows arm64
+vscode-extension/bin/windows/arm64/poml.exe --help
+```
+
+---
+
+## Coverage Targets
+
+### Current Coverage Goals (Phase 2)
+
+| Metric | Target | Status |
+|--------|--------|--------|
+| Line Coverage | 50%+ | ✅ In Progress |
+| Branch Coverage | 40%+ | ✅ In Progress |
+| Function Coverage | 50%+ | ✅ In Progress |
+| Statement Coverage | 50%+ | ✅ In Progress |
+
+### Coverage Report
+
+```bash
+npm test -- --coverage
+
+# Output:
+# ======= Coverage Summary =======
+# Statements   : 55% ( 150/272 )
+# Branches     : 45% ( 80/178 )
+# Functions    : 52% ( 40/77 )
+# Lines        : 56% ( 145/258 )
+```
+
+### Increasing Coverage
+
+**Target uncovered lines:**
+```bash
+npm test -- --coverage --collectCoverageFrom="src/**/*.ts"
+
+# Look for:
+# - 'E' lines in coverage reports
+# - Tests with <50% coverage
+# - Missing error paths
+```
+
+**Add tests for:**
+- Error scenarios
+- Edge cases
+- Conditional branches
+- Event handling
+
+---
+
+## Test Fixtures
+
+### Mock POML Files
+
+**test-fixture.simple.poml**
+```xml
+<poml>
+  <meta>
+    <id>test.simple</id>
+    <version>0.1.0</version>
+  </meta>
+  <role>Test role</role>
+  <task>Test task</task>
+</poml>
+```
+
+**test-fixture.complex.poml**
+```xml
+<poml>
+  <meta>
+    <id>test.complex</id>
+    <version>0.1.0</version>
+  </meta>
+  <role>Complex test</role>
+  <task>Multiple features</task>
+  <input>
+    <doc>Test document</doc>
+    <style>test-style</style>
+  </input>
+</poml>
+```
+
+### Test Data
+
+- Temporary directories for file operations
+- Mock servers for HTTP tests
+- Sample API responses for fixtures
+
+---
+
+## Running CI/CD Tests Locally
+
+### Simulate GitHub Actions
+
+```bash
+# Install act (local GitHub Actions runner)
+brew install act
+
+# Run workflow locally
+act -j test
+
+# Run specific workflow
+act -W .github/workflows/build-release.yml
+```
+
+### Manual CI Simulation
+
+```bash
+# Build
+npm run esbuild
+
+# Lint
+npm run lint
+
+# Test
+npm test
+
+# Coverage
+npm test -- --coverage
+
+# Package
+npm run package
+```
+
+---
+
+## Debugging Tests
+
+### Debug Single Test
+
+```bash
+# With node inspector
+node --inspect-brk node_modules/.bin/jest manager.test.ts
+
+# In VS Code:
+# 1. Open .vscode/launch.json
+# 2. Add debug configuration for Jest
+# 3. Set breakpoints in test file
+# 4. Press F5 to debug
+```
+
+### Verbose Output
+
+```bash
+npm test -- --verbose
+
+# Shows:
+# - Each test name
+# - Pass/fail status
+# - Execution time
+# - Error stack traces
+```
+
+### Coverage Debug
+
+```bash
+npm test -- --coverage --verbose
+
+# Shows detailed coverage info per file
+```
+
+---
+
+## Best Practices
+
+### Writing Tests
+
+1. **One assertion per test** (or closely related)
+2. **Descriptive test names** (what should happen)
+3. **Setup and cleanup** (beforeEach/afterEach)
+4. **Mock external dependencies** (HTTP, file system)
+5. **Test both success and error paths**
+
+### Test Organization
+
+```typescript
+describe("Module", () => {
+  let instance: Module;
+
+  beforeEach(() => {
+    instance = new Module();
+  });
+
+  afterEach(() => {
+    // Cleanup
+  });
+
+  describe("Feature", () => {
+    it("should do something", () => {
+      expect(result).toBe(expected);
+    });
+  });
+});
+```
+
+### Avoiding Common Issues
+
+- ❌ Don't test implementation details
+- ✅ Test behavior and contracts
+- ❌ Don't use hardcoded paths
+- ✅ Use temp directories
+- ❌ Don't make network calls
+- ✅ Mock HTTP client
+- ❌ Don't test third-party code
+- ✅ Test integration points
+
+---
+
+## Success Criteria (Phase 2)
+
+- [x] 105+ unit test cases written
+- [ ] 50%+ code coverage achieved
+- [ ] All tests passing (npm test)
+- [ ] ESLint passes (npm run lint)
+- [ ] E2E tests passing
+- [ ] Cross-platform binaries validated
+- [ ] Configuration UI tested
+- [ ] Error handling verified
+
+---
+
+## Next Steps (Phase 3)
+
+After testing is complete:
+1. Create extension icon (128×128 PNG)
+2. Capture marketplace screenshots
+3. Add syntax highlighting for POML (optional)
+4. Implement quick-action buttons
+5. Add output channel integration
+
+---
+
+## Resources
+
+- Jest Documentation: https://jestjs.io/
+- Testing Library: https://testing-library.com/
+- VS Code Extension Testing: https://code.visualstudio.com/api/working-with-extensions/testing
+- Coverage Reports: https://istanbul.js.org/
+
+---
+
+**Last Updated:** November 23, 2025  
+**Phase:** 2 (Testing)  
+**Status:** Test Structure Complete, Ready for Execution

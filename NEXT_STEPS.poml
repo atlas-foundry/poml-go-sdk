@@ -1,0 +1,440 @@
+# POML VS Code Extension — Actionable Next Steps
+
+## 🎯 Immediate Actions (This Week)
+
+### 1. Verify Build Process
+```bash
+# From project root
+bash scripts/build-binaries.sh
+
+# Expected output:
+# ✓ All binaries built successfully in /path/to/bin
+# - darwin/amd64/poml
+# - darwin/arm64/poml
+# - linux/amd64/poml
+# - linux/arm64/poml
+# - windows/amd64/poml.exe
+# - windows/arm64/poml.exe
+```
+
+**Acceptance Criteria:**
+- [ ] No build errors
+- [ ] All 6 binaries exist
+- [ ] Each binary is ~15 MB
+- [ ] Binaries are executable
+
+### 2. Test Extension Locally
+```bash
+cd vscode-extension
+npm install
+npm run esbuild
+code . &  # Opens current dir in VS Code
+
+# In VS Code:
+# 1. Press F5 to launch extension in debug mode
+# 2. Create/open a test.poml file
+# 3. Check "POML Server" in status bar → should show "$(debug-disconnect)"
+# 4. Run command: "POML: Start MCP Server"
+# 5. Status bar should change to "$(debug-start) POML Server"
+# 6. Check output panel for logs
+```
+
+**Acceptance Criteria:**
+- [ ] Extension activates without errors
+- [ ] Status bar shows correct indicators
+- [ ] Server starts and logs appear
+- [ ] No TypeScript/lint errors in console
+
+### 3. Verify MCP Endpoints
+```bash
+# While extension is running (server on :7777):
+curl http://localhost:7777/ast
+curl http://localhost:7777/validate
+curl -X POST http://localhost:7777/search -d '{"query":"role"}'
+```
+
+**Acceptance Criteria:**
+- [ ] HTTP endpoints respond
+- [ ] No 404 or 500 errors
+- [ ] Responses are valid JSON
+
+---
+
+## 📋 Week 1 (Unit Tests)
+
+### 4. Write Unit Tests
+```bash
+# Create test cases for:
+cd vscode-extension
+
+# Test files to update:
+# - src/manager.test.ts (skeleton exists)
+# - src/http-client.test.ts (skeleton exists)
+# - src/server.test.ts (create new)
+
+# Test coverage:
+npm test -- --coverage
+
+# Expected: 50%+ coverage across all files
+```
+
+**Checklist:**
+- [ ] `manager.ts`: Binary detection, spawn, lifecycle
+- [ ] `http-client.ts`: HTTP calls, error handling
+- [ ] `server.ts`: MCP tool mapping, request/response
+- [ ] Coverage report generated
+- [ ] All tests pass
+
+### 5. Create E2E Test Harness
+```bash
+# Create e2e-test/ directory with:
+# - test-fixture.poml (sample file)
+# - test-runner.js (spawn VS Code, open file, verify MCP calls)
+
+npm test integration.test.ts
+
+# Expected: All integration tests pass
+```
+
+**Checklist:**
+- [ ] Integration test file created
+- [ ] Test fixtures included
+- [ ] All MCP tools tested (6 tools)
+- [ ] Server lifecycle tested
+- [ ] Error scenarios covered
+
+### 6. Cross-Platform Validation
+```bash
+# On macOS:
+vscode-extension/bin/darwin/amd64/poml --help
+vscode-extension/bin/darwin/arm64/poml --help
+
+# On Linux (VM or CI):
+vscode-extension/bin/linux/amd64/poml --help
+
+# On Windows (VM or CI):
+vscode-extension/bin/windows/amd64/poml.exe --help
+
+# Expected: Each binary runs without errors
+```
+
+**Checklist:**
+- [ ] macOS Intel binary verified
+- [ ] macOS ARM binary verified
+- [ ] Linux Intel binary verified (if possible)
+- [ ] Windows binary verified (if possible)
+- [ ] No dependency issues (statically linked)
+
+---
+
+## 🎨 Week 2 (Polish & UX)
+
+### 7. Create Extension Icon
+**Specifications:**
+- Dimensions: 128×128 pixels (minimum)
+- Format: PNG or SVG
+- Colors: Match VS Code dark/light theme
+- Placement: `resources/icon.png`
+
+**Reference:**
+- VS Code icon guidelines: https://code.visualstudio.com/api/extension-guides/overview
+- Example: Use Atlas Foundry logo or POML-themed icon
+
+**Checklist:**
+- [ ] Icon created (128×128)
+- [ ] Icon placed in `resources/icon.png`
+- [ ] Icon displays correctly in marketplace
+- [ ] Icon visible in VS Code extension sidebar
+
+### 8. Capture Marketplace Screenshots
+**Requirements:**
+- 1–5 screenshots showing:
+  1. Extension installed in VS Code
+  2. `.poml` file open
+  3. Server running (status bar indicator)
+  4. Output panel with server logs
+  5. MCP client using the server (optional)
+
+**Specifications:**
+- Dimensions: 1200×750 minimum
+- Format: PNG
+- Placement: `screenshots/` directory
+
+**Checklist:**
+- [ ] 3–5 screenshots captured
+- [ ] Screenshots show key features
+- [ ] Screenshots have captions
+- [ ] Screenshots look professional
+
+### 9. Add Configuration UI
+```typescript
+// In package.json, add:
+"configuration": {
+  "title": "POML MCP Server",
+  "properties": {
+    "poml.binaryPath": {
+      "type": "string",
+      "default": "",
+      "description": "Path to poml binary (leave empty to auto-detect)"
+    },
+    "poml.port": {
+      "type": "number",
+      "default": 7777,
+      "description": "Port for POML HTTP server"
+    },
+    "poml.enableTracing": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable OpenTelemetry stdout tracing"
+    }
+  }
+}
+```
+
+**Checklist:**
+- [ ] Configuration properties added to `package.json`
+- [ ] `manager.ts` reads settings
+- [ ] Settings UI appears in VS Code Settings
+- [ ] Settings are applied on restart
+
+### 10. Add Output Channel
+```typescript
+// In src/extension.ts:
+const outputChannel = vscode.window.createOutputChannel("POML MCP");
+// Forward all logs to output channel
+binaryManager.on("stdout", (data) => outputChannel.append(data));
+binaryManager.on("stderr", (data) => outputChannel.append(data));
+outputChannel.show();
+```
+
+**Checklist:**
+- [ ] Output channel created
+- [ ] Server logs forwarded
+- [ ] Output visible in VS Code Output panel
+- [ ] Channel auto-opens on errors
+
+---
+
+## 🔗 Week 3 (Registry Integration)
+
+### 11. VS Code Marketplace Setup
+```bash
+# 1. Create Microsoft account (if needed)
+# 2. Visit https://dev.azure.com/_usersSettings/tokens
+# 3. Create Personal Access Token (PAT)
+#    - Scopes: Marketplace > Manage
+#    - Expiration: 90 days
+# 4. Copy token to clipboard
+
+# 5. Create publisher (one-time):
+npx vsce create-publisher atlas-foundry
+
+# 6. Set GitHub secret:
+# GitHub Repo → Settings → Secrets & Variables → Actions
+# New secret: VSCODE_MARKETPLACE_TOKEN = <PAT>
+```
+
+**Checklist:**
+- [ ] Microsoft account created/verified
+- [ ] PAT token created
+- [ ] Publisher account created
+- [ ] GitHub secret configured
+
+### 12. Open VSX Setup
+```bash
+# 1. Visit https://open-vsx.org
+# 2. Sign up with GitHub/email
+# 3. Navigate to user settings
+# 4. Create Personal Access Token
+# 5. Copy token
+
+# 6. Set GitHub secret:
+# GitHub Repo → Settings → Secrets & Variables → Actions
+# New secret: OVSX_TOKEN = <token>
+```
+
+**Checklist:**
+- [ ] Open VSX account created
+- [ ] PAT token created
+- [ ] GitHub secret configured
+
+### 13. MCP Registry Registration
+```bash
+# After VS Code Marketplace publication:
+# 1. Visit https://registry.modelcontextprotocol.io/submit
+# 2. Fill out submission form:
+#    - Name: POML MCP Server
+#    - Type: Server
+#    - Repository: https://github.com/atlas-foundry/poml-go-sdk
+#    - Installation: npx @atlas-foundry/poml-mcp
+# 3. Submit for review
+
+# Timeline: 1–2 weeks for approval
+```
+
+**Checklist:**
+- [ ] Marketplace ready for submission
+- [ ] Submission form filled out accurately
+- [ ] Repository public and documented
+- [ ] Installation command tested
+
+---
+
+## 🚀 Week 4 (Launch)
+
+### 14. Final Testing Before Release
+```bash
+# Checklist:
+# - [ ] All unit tests passing (npm test)
+# - [ ] All E2E tests passing
+# - [ ] ESLint passes (npm run lint)
+# - [ ] TypeScript strict mode passes
+# - [ ] No console errors in debug mode
+# - [ ] Extension packages successfully (npm run package)
+# - [ ] .vsix can be installed manually
+# - [ ] All 6 platform binaries work
+# - [ ] Documentation complete and accurate
+# - [ ] CHANGELOG updated
+```
+
+### 15. Create Release
+```bash
+# 1. Update version in package.json:
+# "version": "0.1.0"
+
+# 2. Update CHANGELOG.md:
+# ## [0.1.0] - 2025-11-30
+# ### Added
+# - Initial release with cross-platform binary bundling
+# - MCP server with 6 tools (validate, convert, search, patch, diagram, ast)
+# - Auto-activation and status bar integration
+
+# 3. Commit and tag:
+cd poml-go-sdk
+git add .
+git commit -m "chore: release v0.1.0"
+git tag v0.1.0
+git push origin main --tags
+
+# GitHub Actions will automatically:
+# - Build all binaries
+# - Package extension
+# - Create Release
+# - Publish to marketplaces
+```
+
+**Checklist:**
+- [ ] Version bumped in `package.json`
+- [ ] CHANGELOG updated
+- [ ] Git tag created
+- [ ] Push triggers CI/CD
+
+### 16. Verify Marketplace Publication
+```bash
+# 1. Check GitHub Release page:
+# https://github.com/atlas-foundry/poml-go-sdk/releases/tag/v0.1.0
+# - Should show .vsix artifact
+
+# 2. Check VS Code Marketplace (24 hours):
+# https://marketplace.visualstudio.com/items?itemName=atlas-foundry.poml-mcp
+# - Should show version 0.1.0
+# - Should show icon, screenshots, description
+
+# 3. Check Open VSX (typically 1 hour):
+# https://open-vsx.org/extension/atlas-foundry/poml-mcp
+# - Should show version 0.1.0
+
+# 4. Test installation from marketplace:
+# Open VS Code → Extensions → Search "poml" → Install
+```
+
+**Checklist:**
+- [ ] GitHub Release created
+- [ ] VS Code Marketplace updated
+- [ ] Open VSX Registry updated
+- [ ] Test install successful
+- [ ] Server starts without errors
+
+---
+
+## 📊 Success Metrics (Track)
+
+### Week 1
+- [ ] 100% test coverage for core functions
+- [ ] All tests passing
+- [ ] Zero linting errors
+
+### Week 2–3
+- [ ] Icon and screenshots reviewed
+- [ ] Documentation reviewed for accuracy
+- [ ] Configuration UI tested
+
+### Week 4+
+- [ ] ≥100 installs (1 month post-release)
+- [ ] ≥4.5 star rating
+- [ ] &lt;5% of issues from binary/installation
+- [ ] &lt;1 hour median issue response time
+
+---
+
+## 📚 Documentation Checklist
+
+- [x] README.md (extension user guide)
+- [x] VSCODE_EXTENSION_SUMMARY.md (implementation overview)
+- [x] ARCHITECTURE_SUMMARY.md (visual diagrams)
+- [x] DEVELOPER_REFERENCE.md (complete reference)
+- [x] RELEASE_CHECKLIST.md (pre-release guide)
+- [x] docs/vscode-extension.distribution.poml (distribution strategy)
+- [x] docs/vscode-extension.quickstart.poml (developer guide)
+- [x] docs/vscode-extension.e2e-plan.poml (roadmap)
+- [ ] docs/vscode-extension.api-reference.poml (MCP tools reference)
+- [ ] TROUBLESHOOTING.md (common issues & fixes)
+
+---
+
+## 🏁 Final Checklist Before Shipping
+
+- [ ] Phase 1: Foundation ✅ Complete
+- [ ] Phase 2: Testing ✅ Complete
+- [ ] Phase 3: Polish ✅ Complete
+- [ ] Phase 4: Registry ✅ Complete
+- [ ] All tests passing
+- [ ] All platforms verified
+- [ ] All documentation complete
+- [ ] All secrets/tokens configured
+- [ ] Marketplace accounts ready
+- [ ] Git tag pushed
+- [ ] CI/CD pipeline executed
+- [ ] Release artifact verified
+- [ ] Marketplace publication verified
+- [ ] Customer feedback collected
+
+---
+
+## 🎉 Post-Launch
+
+### Monitor & Support
+- Watch GitHub Issues closely (respond within 24 hours)
+- Collect early user feedback
+- Track marketplace metrics (installs, ratings, reviews)
+- Monitor CI/CD for any failures
+
+### Plan Next Release
+- Gather feature requests from users
+- Plan Phase 5 marketing initiatives
+- Create minor version releases every 2–4 weeks
+- Coordinate with main poml-go-sdk releases
+
+### Long-term Maintenance
+- Keep dependencies updated
+- Monitor Go version compatibility
+- Add new poml server features to extension
+- Expand to other IDE/editors if demand high
+
+---
+
+**Timeline Estimate:** 4–6 weeks to MVP (Phase 1–4)  
+**Ready to Start:** Yes, all infrastructure in place  
+**Estimated Customer Acquisition:** Week 5–6 onwards  
+
+**Questions?** See DEVELOPER_REFERENCE.md or ARCHITECTURE_SUMMARY.md

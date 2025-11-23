@@ -1,0 +1,172 @@
+<poml>
+  <meta>
+    <id>vscode-extension.e2e-plan</id>
+    <version>0.1.0</version>
+    <owner>poml-vscode-extension</owner>
+  </meta>
+  <role>Define the end-to-end plan for delivering a feature-complete, production-ready POML VS Code extension to the MCP registry and GitHub Copilot Marketplace.</role>
+  <task>Break down implementation phases, feature scope, testing strategy, and go-to-market approach.</task>
+
+  <hint caption="Phase 1: Foundation (Current) ✅">
+    <list>
+      <item>✅ Binary bundling infrastructure (cross-platform compilation)</item>
+      <item>✅ VS Code extension scaffold (package.json, tsconfig, build config)</item>
+      <item>✅ Binary manager (detect, spawn, lifecycle)</item>
+      <item>✅ MCP server adapter (stdio-based)</item>
+      <item>✅ HTTP client wrapper (poml API)</item>
+      <item>✅ Extension entrypoint (activation, commands, status bar)</item>
+      <item>✅ CI/CD workflow (GitHub Actions)</item>
+      <item>✅ Documentation (distribution, quickstart)</item>
+    </list>
+  </hint>
+
+  <hint caption="Phase 2: Core Features &amp; Testing">
+    <list>
+      <item>⬜ Implement unit tests (manager, http-client, server)</item>
+      <item>⬜ E2E test: Open .poml file → Auto-start server → Validate via MCP</item>
+      <item>⬜ E2E test: Commands (start/stop/restart/status)</item>
+      <item>⬜ E2E test: All MCP tools (validate, convert, search, patch, diagram, ast)</item>
+      <item>⬜ Verify binary bundling: Each platform binary works as expected</item>
+      <item>⬜ Error handling: Graceful fallback when binary missing/corrupted</item>
+      <item>⬜ Settings: Allow users to override binary path or port</item>
+    </list>
+  </hint>
+
+  <hint caption="Phase 3: Polish &amp; UX">
+    <list>
+      <item>⬜ Add icon and screenshots for marketplace</item>
+      <item>⬜ Status bar updates (running/stopped with visual feedback)</item>
+      <item>⬜ Output channel for server logs</item>
+      <item>⬜ Welcome tab / onboarding (first-time setup guidance)</item>
+      <item>⬜ Syntax highlighting for POML files (if not exists)</item>
+      <item>⬜ Quick-action buttons in editor (validate, convert, etc.)</item>
+      <item>⬜ Configuration UI for advanced options (tracing, port, baseDir)</item>
+    </list>
+  </hint>
+
+  <hint caption="Phase 4: Registry Integration">
+    <list>
+      <item>⬜ Publish to VS Code Marketplace</item>
+      <item>⬜ Publish to Open VSX Registry (for non-Microsoft environments)</item>
+      <item>⬜ Add to MCP Registry: https://registry.modelcontextprotocol.io</item>
+      <item>⬜ Register with GitHub Copilot (submit for approval if needed)</item>
+      <item>⬜ Verify install from marketplace works end-to-end</item>
+    </list>
+  </hint>
+
+  <hint caption="Phase 5: Marketing &amp; Customer Acquisition">
+    <list>
+      <item>⬜ Blog post: "Introducing POML MCP Extension for VS Code"</item>
+      <item>⬜ GitHub release notes with feature highlights</item>
+      <item>⬜ Demo video: Open file → Start server → Use with Claude Desktop</item>
+      <item>⬜ Community outreach: Post to r/LanguageModels, HackerNews, ProductHunt</item>
+      <item>⬜ SEO optimization: Keywords like "POML", "MCP", "VS Code extension"</item>
+      <item>⬜ Early adopter feedback: Collect via issues/discussions</item>
+    </list>
+  </hint>
+
+  <hint caption="Feature Scope for MVP">
+    <object>
+      <key>MCP Tools Exposed</key>
+      <value>
+        <list>
+          <item><code>poml_validate</code> – Validate POML document</item>
+          <item><code>poml_convert</code> – Convert to json/dict/openai_chat/langchain</item>
+          <item><code>poml_search</code> – Search tags/attributes/text</item>
+          <item><code>poml_patch</code> – Update elements (path-based mutations)</item>
+          <item><code>poml_diagram</code> – Structural diagram (mermaid/json)</item>
+          <item><code>poml_get_ast</code> – Full AST access</item>
+        </list>
+      </value>
+    </object>
+    <object>
+      <key>VS Code Features</key>
+      <value>
+        <list>
+          <item>Auto-start on .poml file open</item>
+          <item>Status bar indicator (running/stopped)</item>
+          <item>Commands: start/stop/restart/status</item>
+          <item>Error notifications with helpful messages</item>
+          <item>Output channel for server logs</item>
+        </list>
+      </value>
+    </object>
+    <object>
+      <key>Binary Distribution</key>
+      <value>
+        <list>
+          <item>Cross-platform binaries (macOS amd64/arm64, Linux amd64/arm64, Windows amd64/arm64)</item>
+          <item>Bundled in extension; auto-extracted on activation</item>
+          <item>Fallback to system PATH if bundled binary missing</item>
+          <item>Size: ~100 MB total, ~15 MB per platform</item>
+        </list>
+      </value>
+    </object>
+  </hint>
+
+  <hint caption="Success Metrics">
+    <list>
+      <item><strong>Installation:</strong> 100+ installs within 1 month of public release</item>
+      <item><strong>Usage:</strong> Extension active on 50+ machines</item>
+      <item><strong>Ratings:</strong> ≥4.5 stars on VS Code Marketplace</item>
+      <item><strong>Support:</strong> &lt;5% of issues due to binary/installation problems</item>
+      <item><strong>CI/CD:</strong> 100% automated release pipeline (tag → build → publish)</item>
+    </list>
+  </hint>
+
+  <hint caption="Risk Mitigation">
+    <object>
+      <key>Risk: Binary bundling fails</key>
+      <value>
+        Fallback to system `poml` binary; user instructed to install via Go.
+      </value>
+    </object>
+    <object>
+      <key>Risk: Port conflicts</key>
+      <value>
+        Allow configurable port via settings; detect and suggest alternatives.
+      </value>
+    </object>
+    <object>
+      <key>Risk: Marketplace approval delays</key>
+      <value>
+        Start with Open VSX (faster approval); parallel submission to VS Code Marketplace.
+      </value>
+    </object>
+    <object>
+      <key>Risk: MCP SDK compatibility</key>
+      <value>
+        Pin `@modelcontextprotocol/sdk` version; test on stable releases.
+      </value>
+    </object>
+    <object>
+      <key>Risk: Go version mismatch</key>
+      <value>
+        Use Go 1.25 (current); document minimum version; lock in CI.
+      </value>
+    </object>
+  </hint>
+
+  <hint caption="Timeline Estimate">
+    <list>
+      <item><strong>Phase 2 (Testing):</strong> 2–3 weeks (unit + E2E)</item>
+      <item><strong>Phase 3 (Polish):</strong> 2–3 weeks (UX, icons, docs)</item>
+      <item><strong>Phase 4 (Registry):</strong> 1 week (submissions + verification)</item>
+      <item><strong>Phase 5 (Marketing):</strong> Ongoing (parallel with phases)</item>
+      <item><strong>Total to MVP:</strong> 5–7 weeks from today</item>
+    </list>
+  </hint>
+
+  <hint caption="Next Steps">
+    <list>
+      <item>1️⃣ Create issue tracker for Phase 2 work</item>
+      <item>2️⃣ Write unit tests for `manager.ts` and `http-client.ts`</item>
+      <item>3️⃣ Build E2E test harness (spawn VS Code, open .poml, validate MCP calls)</item>
+      <item>4️⃣ Test binary bundling: Build extension locally, verify all platform binaries</item>
+      <item>5️⃣ Set up marketplace accounts (VS Code + Open VSX)</item>
+      <item>6️⃣ Create GitHub Release template with feature highlights</item>
+    </list>
+  </hint>
+
+  <output-format>Comprehensive end-to-end roadmap with phases, features, success metrics, and timeline.</output-format>
+</poml>

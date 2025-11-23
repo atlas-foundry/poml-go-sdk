@@ -1,0 +1,101 @@
+<poml>
+  <meta>
+    <id>vscode-extension.distribution</id>
+    <version>0.1.0</version>
+    <owner>poml-vscode-extension</owner>
+  </meta>
+  <role>Document the distribution strategy for the POML VS Code extension, including binary bundling, CI/CD, and marketplace publishing.</role>
+  <task>Explain how the extension bundles pre-compiled binaries, builds and releases the extension, and publishes to marketplaces.</task>
+
+  <hint caption="Binary Bundling Strategy">
+    The extension uses a "batteries-included" distribution model:
+    <list>
+      <item><strong>What:</strong> Pre-compiled `poml` binaries for macOS (amd64/arm64), Linux (amd64/arm64), and Windows (amd64/arm64).</item>
+      <item><strong>Where:</strong> Stored in `vscode-extension/bin/{os}/{arch}/poml[.exe]`.</item>
+      <item><strong>When:</strong> Built during CI/CD on every release tag (e.g., `v0.1.0`).</item>
+      <item><strong>Why:</strong> Eliminates dependency on `go` or system-level installation; improves user experience by 10x.</item>
+      <item><strong>How:</strong> `scripts/build-binaries.sh` cross-compiles using `GOOS` and `GOARCH` flags.</item>
+    </list>
+  </hint>
+
+  <hint caption="Build Pipeline">
+    <object>
+      <key>Job: build-binaries</key>
+      <value>
+        <list>
+          <item>Runs on: Ubuntu (Linux)</item>
+          <item>Steps: Set up Go, run `build-binaries.sh`, upload artifact</item>
+          <item>Artifact: `vscode-extension/bin/` with all 6 platform binaries</item>
+        </list>
+      </value>
+    </object>
+    <object>
+      <key>Job: package-extension</key>
+      <value>
+        <list>
+          <item>Depends on: build-binaries</item>
+          <item>Steps: Download binaries, install Node deps, build TS/esbuild, package VSIX</item>
+          <item>Output: `poml-mcp.vsix` artifact</item>
+        </list>
+      </value>
+    </object>
+    <object>
+      <key>Job: publish-marketplace</key>
+      <value>
+        <list>
+          <item>Depends on: package-extension</item>
+          <item>Publishes to: VS Code Marketplace (with PAT token)</item>
+          <item>Publishes to: Open VSX Registry (with token, if provided)</item>
+        </list>
+      </value>
+    </object>
+  </hint>
+
+  <hint caption="Runtime Binary Discovery">
+    When the extension starts:
+    <list>
+      <item>Detect platform/arch (e.g., `darwin` / `arm64`).</item>
+      <item>Look for bundled binary at `bin/{os}/{arch}/poml[.exe]`.</item>
+      <item>If not found, fall back to system `$PATH` (allows user override).</item>
+      <item>If neither exists, show error: "Install with `go install ...@latest`".</item>
+    </list>
+  </hint>
+
+  <hint caption="Versioning &amp; Release">
+    <list>
+      <item>Extension version bumped in `vscode-extension/package.json` (e.g., `0.1.0` → `0.1.1`).</item>
+      <item>Git tag created: `v0.1.1`.</item>
+      <item>Push tag: GitHub Actions triggered automatically.</item>
+      <item>CI builds, packages, and publishes to all marketplaces.</item>
+      <item>Release draft created on GitHub with `.vsix` artifact.</item>
+    </list>
+  </hint>
+
+  <hint caption="Fallback &amp; Offline Use">
+    <list>
+      <item>Users <strong>cannot</strong> use the extension offline without a bundled binary.</item>
+      <item>If bundled binary is missing/corrupted, user can install system `poml` and extension will auto-detect.</item>
+      <item>Future improvement: Allow users to override binary path via settings.</item>
+    </list>
+  </hint>
+
+  <hint caption="Marketplace Requirements">
+    <list>
+      <item><strong>VS Code Marketplace:</strong> Requires verified publisher account + PAT token.</item>
+      <item><strong>Open VSX:</strong> Community registry; simpler approval process; supports unpublished extensions.</item>
+      <item><strong>License:</strong> Must declare (MIT in this case).</item>
+      <item><strong>Icon/Screenshot:</strong> Recommended for discoverability.</item>
+    </list>
+  </hint>
+
+  <hint caption="File Size &amp; Performance">
+    <list>
+      <item>Go binary size: ~15–20 MB per platform (stripped with `-ldflags="-s -w"`).</item>
+      <item>Total bundled size: ~100 MB (6 platforms).</item>
+      <item>Extension package size: Minimal (~2 MB) + binaries on publish.</item>
+      <item>Installation size: Only target platform binary extracted (~15 MB).</item>
+    </list>
+  </hint>
+
+  <output-format>Structured guidance for extension distribution, binary management, and CI/CD workflows.</output-format>
+</poml>

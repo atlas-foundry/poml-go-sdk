@@ -1,0 +1,29 @@
+{
+  "package": "poml (PyPI)",
+  "iterations": {
+    "default": 50,
+    "cli": 20
+  },
+  "benchmarks": [
+    {
+      "name": "parse_message_dict",
+      "ns_per_op": 347098237.66
+    },
+    {
+      "name": "parse_dict",
+      "ns_per_op": 355029953.12
+    },
+    {
+      "name": "parse_openai_chat",
+      "ns_per_op": 358690504.84
+    },
+    {
+      "name": "parse_langchain",
+      "ns_per_op": 355880982.38
+    },
+    {
+      "name": "cli_dict",
+      "ns_per_op": 60425648.35
+    }
+  ]
+}

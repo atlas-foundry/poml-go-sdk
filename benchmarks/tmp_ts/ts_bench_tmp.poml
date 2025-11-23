@@ -1,0 +1,7 @@
+<poml>
+  <meta><id>bench.demo</id><version>1.0</version><owner>tester</owner></meta>
+  <role>Bench role</role>
+  <task>Do a thing</task>
+  <system-msg>System hello</system-msg>
+  <human-msg>Hello</human-msg>
+</poml>
