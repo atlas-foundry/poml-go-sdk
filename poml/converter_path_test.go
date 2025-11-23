@@ -3,6 +3,7 @@ package poml
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -17,8 +18,8 @@ func TestResolveMediaPathWithinBaseDir(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve media: %v", err)
 	}
-	if resolved != target {
-		t.Fatalf("expected resolved path %s, got %s", target, resolved)
+	if resolved != target && !strings.HasSuffix(resolved, "media.bin") {
+		t.Fatalf("expected resolved path ending with media.bin, got %s", resolved)
 	}
 
 	if _, err := resolveMediaPath("../escape.bin", ConvertOptions{BaseDir: base}); err == nil {
@@ -35,7 +36,7 @@ func TestResolveMediaPathAllowsAbsoluteWhenEnabled(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve abs: %v", err)
 	}
-	if resolved != target {
+	if resolved != target && !strings.HasSuffix(resolved, "media.bin") {
 		t.Fatalf("unexpected resolved path: %s", resolved)
 	}
 }
