@@ -226,7 +226,7 @@ func TestWebSocketInitialAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ws dial: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	// initial message
 	_, msg, err := conn.ReadMessage()

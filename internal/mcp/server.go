@@ -25,7 +25,6 @@ type Server struct {
 	doc        poml.Document
 	mux        *http.ServeMux
 	once       sync.Once
-	summary    inspectSummary
 	tracer     trace.Tracer
 	sourcePath string
 	mu         sync.RWMutex
@@ -515,7 +514,7 @@ func (s *Server) watch(w http.ResponseWriter, r *http.Request) {
 			"summary": buildSummary(doc),
 		}
 		blob, _ := json.Marshal(payload)
-		fmt.Fprintf(w, "data: %s\n\n", blob)
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", blob)
 		flusher.Flush()
 	}
 
@@ -534,14 +533,14 @@ func (s *Server) watch(w http.ResponseWriter, r *http.Request) {
 				} else {
 					payload := map[string]any{"event": "error", "error": err.Error()}
 					blob, _ := json.Marshal(payload)
-					fmt.Fprintf(w, "data: %s\n\n", blob)
+					_, _ = fmt.Fprintf(w, "data: %s\n\n", blob)
 					flusher.Flush()
 				}
 			}
 		case err := <-s.watcher.Errors:
 			payload := map[string]any{"event": "error", "error": err.Error()}
 			blob, _ := json.Marshal(payload)
-			fmt.Fprintf(w, "data: %s\n\n", blob)
+			_, _ = fmt.Fprintf(w, "data: %s\n\n", blob)
 			flusher.Flush()
 		}
 	}
