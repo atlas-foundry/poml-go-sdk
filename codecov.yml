@@ -1,0 +1,15 @@
+codecov:
+  require_ci_to_pass: yes
+
+coverage:
+  status:
+    project:
+      default:
+        # Match CI threshold (80%) and allow minimal noise.
+        target: 80%
+        threshold: 1%
+    patch:
+      default:
+        # Keep PRs from reducing coverage meaningfully.
+        target: auto
+        threshold: 1%
