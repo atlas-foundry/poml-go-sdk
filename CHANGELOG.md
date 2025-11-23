@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.2.0...v1.2.1) (2025-11-23)
+
+
+### Bug Fixes
+
+* avoid concurrent ws writes and add request metrics/auth ([9e264bc](https://github.com/atlas-foundry/poml-go-sdk/commit/9e264bc43350e57c008d0a6e398ba72d2dfe7072))
+
 # [1.2.0](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.1.0...v1.2.0) (2025-11-23)
 
 
