@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/atlas-foundry/poml-go-sdk/poml"
@@ -206,5 +207,45 @@ func TestRoundtripEndpoint(t *testing.T) {
 	}
 	if ok, _ := resp["ok"].(bool); !ok {
 		t.Fatalf("expected roundtrip ok true, got %v", resp["ok"])
+	}
+}
+
+func TestDiffEndpoint(t *testing.T) {
+	srv := New(poml.Document{})
+	body := `{"a":"<poml><meta><id>a</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task></poml>","b":"<poml><meta><id>b</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task></poml>"}`
+	req := httptest.NewRequest(http.MethodPost, "/diff", strings.NewReader(body))
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("diff status = %d", rec.Code)
+	}
+	var resp map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode diff: %v", err)
+	}
+	if equal, _ := resp["equal_meta"].(bool); equal {
+		t.Fatalf("expected meta differ")
+	}
+}
+
+func TestPatchEndpoint(t *testing.T) {
+	doc, err := poml.ParseString(`<poml><meta><id>a</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task><human-msg>hi</human-msg></poml>`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	srv := New(doc)
+	body := `{"tag":"human_msg","index":0,"body":"updated"}`
+	req := httptest.NewRequest(http.MethodPost, "/patch", strings.NewReader(body))
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("patch status = %d", rec.Code)
+	}
+	var resp map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode patch: %v", err)
+	}
+	if ok, _ := resp["ok"].(bool); !ok {
+		t.Fatalf("expected ok true, got %v", resp["ok"])
 	}
 }

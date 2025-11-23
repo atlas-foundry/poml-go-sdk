@@ -213,6 +213,8 @@ Endpoints:
 * `/tools` — list tool-defs/reqs/responses/results/errors
 * `/diagram` — list diagram elements (nodes/edges/etc. included)
 * `/roundtrip` — encode→parse→encode check for losslessness
+* `/diff` — compare two POML bodies (POST json: {"a":"...","b":"..."})
+* `/patch` — minimal edits for role/task/messages (POST json: {"tag":"role|task|human_msg|assistant_msg|system_msg","index":0,"body":"..."})
 
 Roadmap highlights (see `meta.plan.poml`):
 * Search endpoints (tag/attr/text), validation error details, conversions on demand.

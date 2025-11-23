@@ -45,6 +45,8 @@ func New(doc poml.Document) *Server {
 	s.mux.HandleFunc("/tools", s.tools)
 	s.mux.HandleFunc("/diagram", s.diagram)
 	s.mux.HandleFunc("/roundtrip", s.roundtrip)
+	s.mux.HandleFunc("/diff", s.diff)
+	s.mux.HandleFunc("/patch", s.patch)
 	return s
 }
 
@@ -365,6 +367,81 @@ func (s *Server) roundtrip(w http.ResponseWriter, _ *http.Request) {
 		"ok":        ok,
 		"original":  encoded,
 		"roundtrip": buf2.String(),
+	})
+}
+
+func (s *Server) diff(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		A string `json:"a"`
+		B string `json:"b"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+	docA, err := poml.ParseString(body.A)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("parse A: %v", err), http.StatusBadRequest)
+		return
+	}
+	docB, err := poml.ParseString(body.B)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("parse B: %v", err), http.StatusBadRequest)
+		return
+	}
+	equal := docA.Meta == docB.Meta && len(docA.Elements) == len(docB.Elements)
+	writeJSON(w, map[string]any{
+		"equal_meta":    docA.Meta == docB.Meta,
+		"equal_counts":  len(docA.Elements) == len(docB.Elements),
+		"meta_a":        docA.Meta,
+		"meta_b":        docB.Meta,
+		"count_a":       len(docA.Elements),
+		"count_b":       len(docB.Elements),
+		"approx_equal":  equal,
+	})
+}
+
+func (s *Server) patch(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Tag   string `json:"tag"`
+		Index int    `json:"index"`
+		Body  string `json:"body"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+	doc := s.doc
+	updated := false
+	switch poml.ElementType(req.Tag) {
+	case poml.ElementRole:
+		doc.Role.Body = req.Body
+		updated = true
+	case poml.ElementTask:
+		if req.Index >= 0 && req.Index < len(doc.Tasks) {
+			doc.Tasks[req.Index].Body = req.Body
+			updated = true
+		}
+	case poml.ElementHumanMsg, poml.ElementAssistantMsg, poml.ElementSystemMsg:
+		if req.Index >= 0 && req.Index < len(doc.Messages) {
+			doc.Messages[req.Index].Body = req.Body
+			updated = true
+		}
+	}
+	if !updated {
+		http.Error(w, "unsupported tag or index", http.StatusBadRequest)
+		return
+	}
+	var buf strings.Builder
+	if err := doc.EncodeWithOptions(&buf, poml.EncodeOptions{IncludeHeader: false, PreserveOrder: true, PreserveWS: true}); err != nil {
+		http.Error(w, fmt.Sprintf("encode error: %v", err), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, map[string]any{
+		"ok":     true,
+		"poml":   buf.String(),
+		"tag":    req.Tag,
+		"index":  req.Index,
 	})
 }
 
