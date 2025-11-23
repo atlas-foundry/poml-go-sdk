@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/atlas-foundry/poml-go-sdk/poml"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Server exposes a minimal MCP-style HTTP surface to inspect parsed POML docs.
@@ -20,6 +22,7 @@ type Server struct {
 	mux     *http.ServeMux
 	once    sync.Once
 	summary inspectSummary
+	tracer  trace.Tracer
 }
 
 type inspectSummary struct {
@@ -33,8 +36,9 @@ type inspectSummary struct {
 // New creates a server for the given document.
 func New(doc poml.Document) *Server {
 	s := &Server{
-		doc: doc,
-		mux: http.NewServeMux(),
+		doc:    doc,
+		mux:    http.NewServeMux(),
+		tracer: trace.NewNoopTracerProvider().Tracer("github.com/atlas-foundry/poml-go-sdk/mcp"),
 	}
 	s.mux.HandleFunc("/health", s.health)
 	s.mux.HandleFunc("/inspect", s.inspect)
@@ -90,6 +94,8 @@ func (s *Server) convert(w http.ResponseWriter, r *http.Request) {
 		formatStr = "dict"
 	}
 	format := poml.Format(formatStr)
+	_, span := s.tracer.Start(r.Context(), "mcp.convert")
+	defer span.End()
 	out, err := poml.Convert(s.doc, format, poml.ConvertOptions{})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("convert error: %v", err), http.StatusBadRequest)
@@ -346,13 +352,15 @@ func (s *Server) diagram(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) roundtrip(w http.ResponseWriter, _ *http.Request) {
+	ctx, span := s.tracer.Start(context.Background(), "mcp.roundtrip")
+	defer span.End()
 	var buf strings.Builder
 	if err := s.doc.EncodeWithOptions(&buf, poml.EncodeOptions{IncludeHeader: false, PreserveOrder: true, PreserveWS: true}); err != nil {
 		http.Error(w, fmt.Sprintf("encode error: %v", err), http.StatusInternalServerError)
 		return
 	}
 	encoded := buf.String()
-	doc2, err := poml.ParseString(encoded)
+	doc2, err := poml.ParseStringWithTrace(ctx, encoded, poml.TraceOptions{TracerProvider: span.TracerProvider()})
 	if err != nil {
 		writeJSON(w, map[string]any{"ok": false, "error": fmt.Sprintf("parse after encode failed: %v", err)})
 		return
@@ -391,13 +399,13 @@ func (s *Server) diff(w http.ResponseWriter, r *http.Request) {
 	}
 	equal := docA.Meta == docB.Meta && len(docA.Elements) == len(docB.Elements)
 	writeJSON(w, map[string]any{
-		"equal_meta":    docA.Meta == docB.Meta,
-		"equal_counts":  len(docA.Elements) == len(docB.Elements),
-		"meta_a":        docA.Meta,
-		"meta_b":        docB.Meta,
-		"count_a":       len(docA.Elements),
-		"count_b":       len(docB.Elements),
-		"approx_equal":  equal,
+		"equal_meta":   docA.Meta == docB.Meta,
+		"equal_counts": len(docA.Elements) == len(docB.Elements),
+		"meta_a":       docA.Meta,
+		"meta_b":       docB.Meta,
+		"count_a":      len(docA.Elements),
+		"count_b":      len(docB.Elements),
+		"approx_equal": equal,
 	})
 }
 
@@ -438,10 +446,10 @@ func (s *Server) patch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, map[string]any{
-		"ok":     true,
-		"poml":   buf.String(),
-		"tag":    req.Tag,
-		"index":  req.Index,
+		"ok":    true,
+		"poml":  buf.String(),
+		"tag":   req.Tag,
+		"index": req.Index,
 	})
 }
 

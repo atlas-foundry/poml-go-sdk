@@ -36,6 +36,7 @@ func runMCP(args []string) {
 	addr := fs.String("addr", ":7777", "address to listen on")
 	file := fs.String("file", "", "path to POML file (required unless --stdin)")
 	useStdin := fs.Bool("stdin", false, "read POML from stdin instead of file")
+	traceStdout := fs.Bool("trace-stdout", false, "enable OTEL stdout tracing")
 	fs.Parse(args)
 
 	if *file == "" && !*useStdin {
@@ -54,11 +55,16 @@ func runMCP(args []string) {
 		log.Fatalf("read POML: %v", err)
 	}
 
+	var traceOpts poml.TraceOptions
+	if *traceStdout {
+		traceOpts.TracerProvider = mcp.StdoutTracerProvider()
+	}
+
 	doc, err := poml.ParseString(string(body))
 	if err != nil {
 		log.Fatalf("parse POML: %v", err)
 	}
-	if err := doc.ValidateWithTrace(context.Background(), poml.TraceOptions{}); err != nil {
+	if err := doc.ValidateWithTrace(context.Background(), traceOpts); err != nil {
 		log.Fatalf("validate POML: %v", err)
 	}
 
