@@ -300,11 +300,11 @@ jobs:
       - name: Generate docs
         run: |
           mkdir -p build/docs
-          npx @mdx-js/mdx README.mdx > build/docs/index.html
+          npx -y @mdx-js/mdx@3 README.mdx > build/docs/index.html
 
       - name: MDX smoke test
         run: |
-          npx @mdx-js/mdx --help >/dev/null
+          npx -y @mdx-js/mdx@3 --help >/dev/null
           test -s build/docs/index.html
 
       - name: Upload Docs Artifact
