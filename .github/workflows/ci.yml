@@ -233,6 +233,34 @@ jobs:
         run: go test ./...
 
   # =====================================================
+  # 2c. WINDOWS TESTS
+  # =====================================================
+  windows:
+    name: Windows Build & Test
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+
+      - name: Verify formatting
+        shell: bash
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "❌ gofmt check failed:"
+            gofmt -l .
+            exit 1
+          fi
+
+      - name: Run tests
+        run: go test ./...
+
+  # =====================================================
   # 3. DOCS BUILD
   # =====================================================
   docs:
