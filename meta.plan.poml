@@ -50,6 +50,17 @@
     </list>
   </task>
 
+  <task caption="Parallel workstreams (assignable to multiple agents)">
+    <list>
+      <item>Workstream A — Fuzz/Boundary: implement parser fuzz (ParseString/ParseStringFast round-trips), size-limit and path-escape boundary tests; own Codecov badge updates.</item>
+      <item>Workstream B — Golden/Deterministic: build golden fixtures for Markdown/Org converters, Graphviz/DeckGL renderers, deterministic parser fast/strict differentials.</item>
+      <item>Workstream C — E2E/Matrix: extend semantic_test.go with BaseDir/MaxMediaBytes cases, add arm64 runner, keep Docker tag fixes stable.</item>
+      <item>Workstream D — Concurrency/Builder/Vet: concurrency tests for ConverterRegistry, table-driven builder coverage, integrate go vet job/badge.</item>
+      <item>Workstream E — Docs/Quality Spec: MDX smoke test stability, surface go.quality.poml in docs/CI, add quality badge, ensure lint/govulncheck stay green.</item>
+      <item>Workstream F — Lossless/Extras: finalize lossless round-trip fixtures (extras/unknowns/styles), registry UX errors, and update README/PLAN narrative.</item>
+    </list>
+  </task>
+
   <task caption="CI and quality">
     <list>
       <item>gofmt + go test ./... required.</item>
