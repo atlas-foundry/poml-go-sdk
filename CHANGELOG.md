@@ -1,3 +1,24 @@
+# [1.2.0](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.1.0...v1.2.0) (2025-11-23)
+
+
+### Bug Fixes
+
+* resolve ineffassign lint warnings in tracing ([0ead083](https://github.com/atlas-foundry/poml-go-sdk/commit/0ead083dee74702083c65964bb3bd87ffeb20d4e))
+
+
+### Features
+
+* add diff/patch endpoints to poml mcp ([8d7c512](https://github.com/atlas-foundry/poml-go-sdk/commit/8d7c512c06ca2016895ec3869d505c5d083dccfe))
+* add metrics endpoint and optional auth for all MCP routes ([3405258](https://github.com/atlas-foundry/poml-go-sdk/commit/3405258d220a96268e517eb2e3d3b43b24c6ba6d))
+* add OTEL stdout tracing toggle and diff/patch docs ([98a976a](https://github.com/atlas-foundry/poml-go-sdk/commit/98a976a3ed407be37b6ad1d56de9993640209a3c))
+* add OTLP tracing options and update docs ([68a86cb](https://github.com/atlas-foundry/poml-go-sdk/commit/68a86cb1850299fd5d3228024f55603dc338ef52))
+* add pomp CLI with poml mcp AST server ([f6ae2de](https://github.com/atlas-foundry/poml-go-sdk/commit/f6ae2de373d6529d7139f6c1c00f9829af9547b5))
+* add tools/diagram/roundtrip endpoints to poml mcp ([cff3722](https://github.com/atlas-foundry/poml-go-sdk/commit/cff3722e505a6ec0e564b2499ca0af881de18fcf))
+* add watch/SSE support and tracing toggle to poml mcp ([6805c6f](https://github.com/atlas-foundry/poml-go-sdk/commit/6805c6f9029109250f9263f6a7deaa02023e54ba))
+* add WebSocket watch endpoint and tracing toggle ([12e7cd4](https://github.com/atlas-foundry/poml-go-sdk/commit/12e7cd4f5eed802d2878cddaa630767d82ed1826))
+* enhance ws watch with auth, heartbeat, and tests ([d970ffa](https://github.com/atlas-foundry/poml-go-sdk/commit/d970ffa7e4b391f01fd6ac34624bea51bfddc652))
+* extend poml mcp with validate/convert/search endpoints ([3143c6b](https://github.com/atlas-foundry/poml-go-sdk/commit/3143c6ba372fe4b08eaf2fedb193e309b262b2d9))
+
 ## [1.1.0](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.0.0...v1.1.0) (2025-11-23)
 
 ### Features
