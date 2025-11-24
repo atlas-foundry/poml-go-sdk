@@ -208,7 +208,7 @@ func main() {
 			fmt.Printf("Failed to encode file %d: %v\n", i, err)
 			continue
 		}
-		
+
 		finalContent := buf.Bytes()
 
 		filename := filepath.Join(*outDir, fmt.Sprintf("gen_%03d.poml", i))
