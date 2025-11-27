@@ -47,7 +47,7 @@ func TestGeneratedGoldenFiles(t *testing.T) {
 				// We don't include header in generator, so we shouldn't here if we want exact match,
 				// OR we should check if generator includes header.
 				// Generator code: sb.WriteString("<poml>\n") -> No XML header.
-				IncludeHeader: false, 
+				IncludeHeader: false,
 			})
 			if err != nil {
 				t.Fatalf("failed to encode: %v", err)
