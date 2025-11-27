@@ -13,7 +13,7 @@ import (
 type Executor struct {
 	Transport contracts.TransportService
 	Mesh      contracts.MeshService
-	client    *plugin.Client
+	clients   []*plugin.Client
 }
 
 // LoadTransport starts a plugin binary and returns an executor with a transport client wired.
@@ -36,7 +36,7 @@ func LoadTransport(path string) (*Executor, error) {
 		return nil, err
 	}
 	transportSvc := raw.(contracts.TransportService)
-	return &Executor{Transport: transportSvc, client: client}, nil
+	return &Executor{Transport: transportSvc, clients: []*plugin.Client{client}}, nil
 }
 
 // LoadMeshLogger starts a mesh plugin that only logs events.
@@ -59,7 +59,7 @@ func (e *Executor) LoadMeshLogger(path string) error {
 		return err
 	}
 	e.Mesh = raw.(contracts.MeshService)
-	e.client = client
+	e.clients = append(e.clients, client)
 	return nil
 }
 
@@ -81,8 +81,8 @@ func (e *Executor) ExecuteTransportPing(addr string) error {
 
 // Close shuts down any plugin client.
 func (e *Executor) Close() {
-	if e.client != nil {
-		e.client.Kill()
+	for _, c := range e.clients {
+		c.Kill()
 	}
 }
 
