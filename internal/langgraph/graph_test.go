@@ -4,12 +4,16 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
 func TestExecuteGraphWithDummyPlugin(t *testing.T) {
 	tmp := t.TempDir()
 	pluginPath := filepath.Join(tmp, "plugin-dummy")
+	if runtime.GOOS == "windows" {
+		pluginPath += ".exe"
+	}
 	if out, err := runCmd(t, "go", "build", "-o", pluginPath, "./cmd/plugin-dummy"); err != nil {
 		t.Fatalf("build plugin: %v\n%s", err, string(out))
 	}
