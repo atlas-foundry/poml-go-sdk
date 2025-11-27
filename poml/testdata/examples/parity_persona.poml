@@ -1,0 +1,11 @@
+<poml>
+  <meta>
+    <id>persona.demo</id>
+    <version>1.0</version>
+    <owner>test</owner>
+  </meta>
+  <role>guide</role>
+  <persona>friendly helper</persona>
+  <task>say hello</task>
+  <human-msg>Hello</human-msg>
+</poml>

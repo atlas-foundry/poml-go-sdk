@@ -144,6 +144,18 @@ func main() {
 go run main.go
 ```
 
+#### Persona example
+
+```go
+doc := poml.Document{}
+doc.AddRole("guide")
+doc.Persona = poml.Block{Body: "friendly helper"}
+doc.AddTask("say hello")
+doc.AddMessage("human", "hi there")
+out, _ := poml.Convert(doc, poml.FormatOpenAIChat, poml.ConvertOptions{})
+fmt.Printf("%+v\n", out)
+```
+
 ---
 
 ## 🎬 See It in Action (VHS)
@@ -376,7 +388,9 @@ Converters enforce:
 
 * BaseDir containment (symlink-aware) with optional absolute path allowance
 * 10MB default caps for image/audio/video—including data URIs (override via ConvertOptions; -1 disables)
-* Proper emission across formats
+* Extension-based MIME sniffing for common image (png/jpg/gif/svg/webp/tiff/heic/avif) and media (mp3/wav/ogg/opus/flac/aac/m4a/mp4/mpeg/m4v/avi/mkv/3gp) types
+* Proper emission across formats; persona is surfaced as user content
+* Runtime blocks merge with normalization (e.g., `maxTokens` → `max_tokens`); later runtime entries override earlier keys
 
 ---
 

@@ -568,9 +568,10 @@ func TestBuilderAndValidation(t *testing.T) {
 func TestValidateToolEvents(t *testing.T) {
 	makeDoc := func() Document {
 		return Document{
-			Meta:  Meta{ID: "tool.demo", Version: "1", Owner: "me"},
-			Role:  Block{Body: "role"},
-			Tasks: []Block{{Body: "task"}},
+			Meta:    Meta{ID: "tool.demo", Version: "1", Owner: "me"},
+			Role:    Block{Body: "role"},
+			Persona: Block{Body: "persona"},
+			Tasks:   []Block{{Body: "task"}},
 		}
 	}
 	tests := []struct {
@@ -1027,6 +1028,43 @@ func containsType(list []ElementType, target ElementType) bool {
 		}
 	}
 	return false
+}
+
+func TestPersonaRoundTripAndConvert(t *testing.T) {
+	src := `<poml>
+  <meta><id>x</id><version>1</version><owner>me</owner></meta>
+  <role>role</role>
+  <persona>friendly</persona>
+  <task>do</task>
+  <human-msg>hi</human-msg>
+</poml>`
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if strings.TrimSpace(doc.Persona.Body) != "friendly" {
+		t.Fatalf("persona missing: %+v", doc.Persona)
+	}
+	if len(doc.Elements) < 3 || doc.Elements[2].Type != ElementPersona {
+		t.Fatalf("persona not ordered: %+v", doc.Elements)
+	}
+
+	var buf bytes.Buffer
+	if err := doc.Encode(&buf); err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	if !strings.Contains(buf.String(), "<persona>friendly</persona>") {
+		t.Fatalf("persona not encoded: %s", buf.String())
+	}
+
+	msgAny, err := Convert(doc, FormatMessageDict, ConvertOptions{})
+	if err != nil {
+		t.Fatalf("convert: %v", err)
+	}
+	msgs := msgAny.([]messageDict)
+	if len(msgs) < 2 || msgs[0].Content != "friendly" {
+		t.Fatalf("persona not surfaced first: %+v", msgs)
+	}
 }
 
 func TestMutatorInsertDocumentAndStyle(t *testing.T) {

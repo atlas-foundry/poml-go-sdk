@@ -234,3 +234,78 @@ func TestImageFormatsBasics(t *testing.T) {
 		t.Fatalf("expected text+image parts, got %v", parts)
 	}
 }
+
+func TestDictIncludesMedia(t *testing.T) {
+	src := `<poml><img src="data:image/png;base64,AA==" alt="tiny" syntax="image/png"/></poml>`
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	_, err = Convert(doc, FormatDict, ConvertOptions{})
+	if err != nil {
+		t.Fatalf("convert dict: %v", err)
+	}
+}
+
+func TestLangChainIncludesImage(t *testing.T) {
+	src := `<poml><img src="data:image/png;base64,AA==" alt="tiny" syntax="image/png"/></poml>`
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	outAny, err := Convert(doc, FormatLangChain, ConvertOptions{})
+	if err != nil {
+		t.Fatalf("convert langchain: %v", err)
+	}
+	out := outAny.(map[string]any)
+	msgs := out["messages"].([]map[string]any)
+	if len(msgs) != 1 {
+		t.Fatalf("expected single human message, got %d", len(msgs))
+	}
+	data := msgs[0]["data"].(map[string]any)
+	content := data["content"].([]any)
+	if len(content) != 1 {
+		t.Fatalf("expected one image part, got %v", content)
+	}
+}
+
+func TestPersonaPropagatesAcrossFormats(t *testing.T) {
+	src := `<poml><persona>cheerful assistant</persona><role>helper</role><task>do it</task><human-msg>hello</human-msg></poml>`
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	msgAny, err := Convert(doc, FormatMessageDict, ConvertOptions{})
+	if err != nil {
+		t.Fatalf("message_dict convert: %v", err)
+	}
+	msgs := msgAny.([]messageDict)
+	if len(msgs) < 2 || msgs[0].Content != "cheerful assistant" {
+		t.Fatalf("persona not surfaced first: %+v", msgs)
+	}
+
+	openAny, err := Convert(doc, FormatOpenAIChat, ConvertOptions{})
+	if err != nil {
+		t.Fatalf("openai convert: %v", err)
+	}
+	open := openAny.(map[string]any)
+	openMsgs := open["messages"].([]map[string]any)
+	if len(openMsgs) < 2 || openMsgs[0]["content"] != "cheerful assistant" {
+		t.Fatalf("persona missing in openai messages: %+v", openMsgs)
+	}
+
+	langAny, err := Convert(doc, FormatLangChain, ConvertOptions{})
+	if err != nil {
+		t.Fatalf("langchain convert: %v", err)
+	}
+	lang := langAny.(map[string]any)
+	langMsgs := lang["messages"].([]map[string]any)
+	if len(langMsgs) < 2 {
+		t.Fatalf("expected persona + human messages")
+	}
+	data := langMsgs[0]["data"].(map[string]any)
+	if data["content"] != "cheerful assistant" {
+		t.Fatalf("persona not in langchain content: %+v", data)
+	}
+}

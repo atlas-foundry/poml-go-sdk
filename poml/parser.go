@@ -42,6 +42,7 @@ const (
 	ElementRuntime        ElementType = "runtime"
 	ElementImage          ElementType = "image"
 	ElementDiagram        ElementType = "diagram"
+	ElementPersona        ElementType = "persona"
 	ElementUnknown        ElementType = "unknown"
 )
 
@@ -64,6 +65,7 @@ type Element struct {
 type Document struct {
 	Meta         Meta     `xml:"meta"`
 	Role         Block    `xml:"role"`
+	Persona      Block    `xml:"persona"`
 	Tasks        []Block  `xml:"task"`
 	Inputs       []Input  `xml:"input"`
 	Documents    []DocRef `xml:"document"`
@@ -648,15 +650,17 @@ type ValidateOptions struct {
 func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 	var issues []string
 	var details []ValidationDetail
-	metaCount, roleCount, taskCount := 0, 0, len(d.Tasks)
+	metaCount, roleCount, personaCount, taskCount := 0, 0, 0, len(d.Tasks)
 	if len(d.Elements) > 0 {
-		metaCount, roleCount, taskCount = 0, 0, 0
+		metaCount, roleCount, personaCount, taskCount = 0, 0, 0, 0
 		for _, el := range d.Elements {
 			switch el.Type {
 			case ElementMeta:
 				metaCount++
 			case ElementRole:
 				roleCount++
+			case ElementPersona:
+				personaCount++
 			case ElementTask:
 				taskCount++
 			case ElementUnknown:
@@ -672,6 +676,9 @@ func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 	}
 	if roleCount == 0 && strings.TrimSpace(d.Role.Body) != "" {
 		roleCount = 1
+	}
+	if personaCount == 0 && strings.TrimSpace(d.Persona.Body) != "" {
+		personaCount = 1
 	}
 
 	if metaCount == 0 {
@@ -693,6 +700,10 @@ func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 	if roleCount > 1 {
 		issues = append(issues, "only one role section is allowed")
 		details = append(details, ValidationDetail{Element: ElementRole, Message: "duplicate role"})
+	}
+	if personaCount > 1 {
+		issues = append(issues, "only one persona section is allowed")
+		details = append(details, ValidationDetail{Element: ElementPersona, Message: "duplicate persona"})
 	}
 	if strings.TrimSpace(d.Meta.ID) == "" {
 		issues = append(issues, "meta.id is required")
@@ -1280,6 +1291,17 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 					el.Leading = leading
 				}
 				doc.Elements = append(doc.Elements, el)
+			case "persona":
+				var b Block
+				if err := dec.DecodeElement(&b, &t); err != nil {
+					return doc, wrapXMLError(err, "<persona>")
+				}
+				doc.Persona = b
+				el := doc.newElement(ElementPersona, -1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
 			case "task":
 				var b Block
 				if err := dec.DecodeElement(&b, &t); err != nil {
@@ -1746,6 +1768,8 @@ func encodeElement(enc *xml.Encoder, out io.Writer, doc Document, el Element, op
 		if err = enc.Flush(); err == nil {
 			_, err = io.WriteString(out, el.RawXML)
 		}
+	case ElementPersona:
+		err = enc.EncodeElement(doc.Persona, xml.StartElement{Name: xml.Name{Local: "persona"}})
 	default:
 	}
 	if err != nil {
@@ -1825,6 +1849,9 @@ func (d *Document) defaultElements() []Element {
 	}
 	if d.Role.Body != "" {
 		out = append(out, d.newElement(ElementRole, -1, ""))
+	}
+	if d.Persona.Body != "" {
+		out = append(out, d.newElement(ElementPersona, -1, "persona"))
 	}
 	for i := range d.Tasks {
 		out = append(out, d.newElement(ElementTask, i, ""))

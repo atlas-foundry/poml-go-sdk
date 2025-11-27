@@ -35,6 +35,13 @@ func (b *Builder) Role(body string) *Builder {
 	return b
 }
 
+// Persona sets the persona block (optional).
+func (b *Builder) Persona(body string, attrs ...xml.Attr) *Builder {
+	b.doc.Persona = Block{Body: body, Attrs: attrs}
+	b.doc.Elements = append(b.doc.Elements, b.doc.newElement(ElementPersona, -1, "persona"))
+	return b
+}
+
 // Task appends a task block.
 func (b *Builder) Task(body string, attrs ...xml.Attr) *Builder {
 	b.doc.Tasks = append(b.doc.Tasks, Block{Body: body, Attrs: attrs})

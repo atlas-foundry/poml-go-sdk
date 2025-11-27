@@ -167,6 +167,11 @@ func convertMessageDict(doc Document, opts ConvertOptions) ([]messageDict, error
 			if body != "" {
 				msgs = append(msgs, messageDict{Speaker: "human", Content: body})
 			}
+		case ElementPersona:
+			body := strings.TrimSpace(doc.Persona.Body)
+			if body != "" {
+				msgs = append(msgs, messageDict{Speaker: "human", Content: body})
+			}
 		case ElementObject:
 			obj := doc.Objects[el.Index]
 			msgs = append(msgs, messageDict{
@@ -291,6 +296,14 @@ func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error
 			})
 		case ElementHint, ElementExample, ElementContentPart:
 			body := strings.TrimSpace(doc.elementBody(el))
+			if body != "" {
+				messages = append(messages, map[string]any{
+					"role":    "user",
+					"content": body,
+				})
+			}
+		case ElementPersona:
+			body := strings.TrimSpace(doc.Persona.Body)
 			if body != "" {
 				messages = append(messages, map[string]any{
 					"role":    "user",
@@ -537,6 +550,14 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 					"data": map[string]any{"content": body},
 				})
 			}
+		case ElementPersona:
+			body := strings.TrimSpace(doc.Persona.Body)
+			if body != "" {
+				messages = append(messages, map[string]any{
+					"type": "human",
+					"data": map[string]any{"content": body},
+				})
+			}
 		case ElementAudio:
 			au := doc.Audios[el.Index]
 			part, err := buildMediaPart(au, opts)
@@ -562,6 +583,20 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 				"data": map[string]any{
 					"content": []any{
 						map[string]any{"type": "video", "source_type": "base64", "mime_type": part["type"], "data": part["base64"]},
+					},
+				},
+			})
+		case ElementImage:
+			im := doc.Images[el.Index]
+			part, err := buildImagePart(im, opts)
+			if err != nil {
+				return nil, err
+			}
+			messages = append(messages, map[string]any{
+				"type": "human",
+				"data": map[string]any{
+					"content": []any{
+						map[string]any{"type": "image", "source_type": "base64", "mime_type": part["type"], "data": part["base64"]},
 					},
 				},
 			})
@@ -647,20 +682,6 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 					},
 				})
 			}
-		case ElementImage:
-			im := doc.Images[el.Index]
-			part, err := buildImagePart(im, opts)
-			if err != nil {
-				return nil, err
-			}
-			messages = append(messages, map[string]any{
-				"type": "human",
-				"data": map[string]any{
-					"content": []any{
-						map[string]any{"type": "image", "source_type": "base64", "mime_type": part["type"], "data": part["base64"]},
-					},
-				},
-			})
 		}
 	}
 	out := map[string]any{"messages": messages}
@@ -908,6 +929,18 @@ func guessMime(path string) string {
 		return "image/jpeg"
 	case ".gif":
 		return "image/gif"
+	case ".svg":
+		return "image/svg+xml"
+	case ".webp":
+		return "image/webp"
+	case ".tif", ".tiff":
+		return "image/tiff"
+	case ".heic":
+		return "image/heic"
+	case ".heif":
+		return "image/heif"
+	case ".avif":
+		return "image/avif"
 	}
 	return ""
 }
@@ -921,12 +954,30 @@ func guessMediaMime(path string) string {
 		return "audio/wav"
 	case ".ogg":
 		return "audio/ogg"
+	case ".opus":
+		return "audio/ogg; codecs=opus"
+	case ".flac":
+		return "audio/flac"
+	case ".aac":
+		return "audio/aac"
+	case ".m4a":
+		return "audio/mp4"
 	case ".mp4":
 		return "video/mp4"
 	case ".mov":
 		return "video/quicktime"
 	case ".webm":
 		return "video/webm"
+	case ".m4v":
+		return "video/x-m4v"
+	case ".mpeg", ".mpg":
+		return "video/mpeg"
+	case ".avi":
+		return "video/x-msvideo"
+	case ".mkv":
+		return "video/x-matroska"
+	case ".3gp":
+		return "video/3gpp"
 	}
 	return "application/octet-stream"
 }
@@ -979,6 +1030,14 @@ func (d Document) elementBody(el Element) string {
 	case ElementContentPart:
 		if el.Index >= 0 && el.Index < len(d.ContentParts) {
 			return d.ContentParts[el.Index].Body
+		}
+	case ElementPersona:
+		return d.Persona.Body
+	case ElementRole:
+		return d.Role.Body
+	case ElementTask:
+		if el.Index >= 0 && el.Index < len(d.Tasks) {
+			return d.Tasks[el.Index].Body
 		}
 	}
 	return ""

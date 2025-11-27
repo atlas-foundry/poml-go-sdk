@@ -30,7 +30,7 @@
       <item>Tag coverage for missing Python tags and multimedia types.</item>
       <item>Converters parity (MessageDict/Dict/OpenAIChat/LangChain/Pydantic), runtime merge rules.</item>
       <item>Builder/tag helpers mirroring Python prompt helpers.</item>
-      <item>Multimedia MIME sniffing and ingestion rules; tracing hooks.</item>
+      <item>Multimedia MIME sniffing and ingestion rules; tracing hooks; parity fixtures/CI notes updated.</item>
       <item>Exit: APIs mirrored; converter outputs match fixtures; validation updated.</item>
     </list>
   </cp>
@@ -63,10 +63,19 @@
     </list>
   </cp>
 
-  <runtime track="security">A</runtime>
-  <runtime track="parity">B</runtime>
-  <runtime track="fixtures">C</runtime>
+  <runtime track="security">A ✅</runtime>
+  <runtime track="parity">B ✅</runtime>
+  <runtime track="fixtures">C ✅</runtime>
   <runtime track="polish">D</runtime>
+
+  <log>
+    <entry date="2025-11-23" actor="ai.architect">Merged lossless plan with original badge/test roadmap to retain CI quality goals while pursuing lossless parity.</entry>
+    <entry date="2025-11-22" actor="ai.architect">Replaced badge roadmap with lossless round-trip plan aligned with registry and adapter separation.</entry>
+    <entry date="2025-11-23" actor="ai.coder">Phase 2 parity delivered: persona support, extended multimedia MIME mapping, LangChain image handling, runtime merge notes/fixtures updated; tests green.</entry>
+    <entry date="2025-11-24" actor="ai.coder">Phase 3 fixtures/CI touch-up: added persona parity fixture/goldens and parity test wiring; CI remains gofmt + go test -cover ./...; tests green.</entry>
+    <entry date="2025-11-24" actor="ai.coder">Phase 1–3 validated complete (security hardening, parity surface, fixtures/CI); proceeding toward Phase 4 docs/release readiness.</entry>
+    <entry date="2025-11-24" actor="ai.coder">Phase 4 docs/release readiness: README updated (persona example, runtime merge note), CHANGELOG Unreleased updated, plan/logs refreshed; tests green.</entry>
+  </log>
 
   <output-format>Canonical execution script for codex agents; preserve ordering.</output-format>
 </poml>

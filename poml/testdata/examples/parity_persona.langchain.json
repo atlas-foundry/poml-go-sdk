@@ -1,0 +1,16 @@
+{
+  "messages": [
+    {
+      "data": {
+        "content": "friendly helper"
+      },
+      "type": "human"
+    },
+    {
+      "data": {
+        "content": "Hello"
+      },
+      "type": "human"
+    }
+  ]
+}

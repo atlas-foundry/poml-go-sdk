@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -29,11 +30,27 @@ func TestConverterParityFixtures(t *testing.T) {
 		{"dict", FormatDict, filepath.Join("testdata", "examples", "parity_basic.dict.json"), ConvertOptions{}},
 		{"openai_chat", FormatOpenAIChat, filepath.Join("testdata", "examples", "parity_basic.openai_chat.json"), ConvertOptions{}},
 		{"langchain", FormatLangChain, filepath.Join("testdata", "examples", "parity_basic.langchain.json"), ConvertOptions{}},
+		{"persona_message_dict", FormatMessageDict, filepath.Join("testdata", "examples", "parity_persona.message_dict.json"), ConvertOptions{}},
+		{"persona_dict", FormatDict, filepath.Join("testdata", "examples", "parity_persona.dict.json"), ConvertOptions{}},
+		{"persona_openai_chat", FormatOpenAIChat, filepath.Join("testdata", "examples", "parity_persona.openai_chat.json"), ConvertOptions{}},
+		{"persona_langchain", FormatLangChain, filepath.Join("testdata", "examples", "parity_persona.langchain.json"), ConvertOptions{}},
 	}
 
 	for _, tc := range tests {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			fixturePath := filepath.Join("testdata", "examples", "parity_basic.poml")
+			if strings.HasPrefix(tc.name, "persona_") {
+				fixturePath = filepath.Join("testdata", "examples", "parity_persona.poml")
+			}
+			doc, err := ParseFile(fixturePath)
+			if err != nil {
+				t.Fatalf("parse fixture: %v", err)
+			}
+			if err := doc.Validate(); err != nil {
+				t.Fatalf("validate fixture: %v", err)
+			}
+
 			out, err := Convert(doc, tc.format, tc.opts)
 			if err != nil {
 				t.Fatalf("convert (%s): %v", tc.name, err)

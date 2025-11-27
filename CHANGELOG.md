@@ -7,6 +7,7 @@
 * Harden image/media path resolution against symlink escapes and require BaseDir to resolve cleanly before access.
 * Enforce default 10MB caps for image/audio/video, including data URIs; allow overriding or disabling via ConvertOptions.
 * Strengthen tool validation coverage to keep responses/results/errors aligned with declared tool-requests/definitions.
+* Add persona parity support across parsers/builders/converters; extend multimedia MIME mapping and parity fixtures.
 
 # [1.5.0](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.4.0...v1.5.0) (2025-11-23)
 

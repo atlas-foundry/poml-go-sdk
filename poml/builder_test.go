@@ -10,6 +10,7 @@ func TestBuilderCreatesToolingAndSchema(t *testing.T) {
 	b := NewBuilder().
 		Meta("builder.demo", "1.0.0", "me").
 		Role("role").
+		Persona("persona").
 		Task("t").
 		Human("hi").
 		Assistant("calling tool").
@@ -22,6 +23,10 @@ func TestBuilderCreatesToolingAndSchema(t *testing.T) {
 	doc := b.Build()
 	if err := doc.Validate(); err != nil {
 		t.Fatalf("validate: %v", err)
+	}
+
+	if strings.TrimSpace(doc.Persona.Body) != "persona" {
+		t.Fatalf("persona not set: %+v", doc.Persona)
 	}
 
 	outAny, err := Convert(doc, FormatDict, ConvertOptions{})
