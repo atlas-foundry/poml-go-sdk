@@ -44,7 +44,7 @@
   <task caption="Governance">
     <list>
       <item>Gate releases: run benchmarks on release branches; block if Go is not strictly better or if regression exceeds threshold without waiver.</item>
-      <item>Track trends quarterly; add Codecov-like badge once stable.</item>
+      <item>Track trends quarterly; add coverage badge once stable.</item>
       <item>Ownership: SDK core team; CI to run Go benches, optional cross-SDK when repos available.</item>
     </list>
   </task>

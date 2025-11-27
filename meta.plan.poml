@@ -33,7 +33,7 @@
 
   <task caption="Badge targets mapped to new tests (prioritized by usefulness × rarity)">
     <list>
-      <item>Coverage/Codecov (High, fuzz): Add property-based fuzz cases for ParseString/ParseStringFast → Encode/Validate round-trips; seed corpus from poml/testdata and malformed samples.</item>
+      <item>Coverage (High, fuzz): Add property-based fuzz cases for ParseString/ParseStringFast → Encode/Validate round-trips; seed corpus from poml/testdata and malformed samples.</item>
       <item>Deterministic outputs (High, golden): Golden snapshots for convertMarkdownToPOML/convertOrgToPOML and renderer adapters (deck.gl/Graphviz) to stabilize changes.</item>
       <item>Path safety (High, boundary): Image/media path escape tests (symlink + ..), size-limit enforcement for readFileWithLimit/media bodies.</item>
       <item>Integration/E2E matrix (High, integration): Expand semantic_test.go to include BaseDir + MaxMediaBytes options; add arm64 runner badge.</item>
@@ -49,7 +49,7 @@
 
   <task caption="Execution order for badges/tests">
     <list>
-      <item>1) Fuzz + boundary tests; wire Codecov badge.</item>
+      <item>1) Fuzz + boundary tests; wire coverage badge.</item>
       <item>2) Golden render/converter tests and parser fast/strict differentials.</item>
       <item>3) Extend semantic E2E for limits/BaseDir; add arm64 runner and matrix badge.</item>
       <item>4) Concurrency tests + builder tables; add go vet job/badge.</item>
@@ -59,7 +59,7 @@
 
   <task caption="Parallel workstreams (assignable to multiple agents)">
     <list>
-      <item>Workstream A — Fuzz/Boundary: implement parser fuzz (ParseString/ParseStringFast round-trips), size-limit and path-escape boundary tests; own Codecov badge updates.</item>
+      <item>Workstream A — Fuzz/Boundary: implement parser fuzz (ParseString/ParseStringFast round-trips), size-limit and path-escape boundary tests; own coverage badge updates.</item>
       <item>Workstream B — Golden/Deterministic: build golden fixtures for Markdown/Org converters, Graphviz/DeckGL renderers, deterministic parser fast/strict differentials.</item>
       <item>Workstream C — E2E/Matrix: extend semantic_test.go with BaseDir/MaxMediaBytes cases, add arm64 runner, keep Docker tag fixes stable.</item>
       <item>Workstream D — Concurrency/Builder/Vet: concurrency tests for ConverterRegistry, table-driven builder coverage, integrate go vet job/badge.</item>
