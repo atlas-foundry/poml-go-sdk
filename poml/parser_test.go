@@ -310,6 +310,37 @@ func TestParseExtendedRootlessTextFallback(t *testing.T) {
 	}
 }
 
+func TestParseExtendedTextEscapeLiteral(t *testing.T) {
+	src := `<poml mode="extended"><meta><id>x</id><version>1</version><owner>o</owner></meta><text><role>literal</role></text><role>r</role><task>t</task></poml>`
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(doc.Texts) != 1 {
+		t.Fatalf("expected text escape captured, got %+v", doc.Texts)
+	}
+	if !strings.Contains(doc.Texts[0].Body, "<role>literal</role>") {
+		t.Fatalf("expected literal tags inside text block, got %q", doc.Texts[0].Body)
+	}
+	if strings.TrimSpace(doc.Role.Body) != "r" || len(doc.Tasks) != 1 {
+		t.Fatalf("expected role/task parsed, got role=%q tasks=%d", doc.Role.Body, len(doc.Tasks))
+	}
+}
+
+func TestParseExtendedRootlessSegmentation(t *testing.T) {
+	body := `before <role>r</role> between <task>t</task> after`
+	doc, err := ParseReaderWithOptions(strings.NewReader(body), ParseOptions{PreserveWhitespace: true, Validate: false, Extended: ExtendedStrict})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if strings.TrimSpace(doc.Role.Body) != "r" || len(doc.Tasks) != 1 {
+		t.Fatalf("expected role/task parsed from rootless fragment, got role=%q tasks=%d", doc.Role.Body, len(doc.Tasks))
+	}
+	if len(doc.Texts) == 0 {
+		t.Fatalf("expected text segments preserved, got %#v", doc.Texts)
+	}
+}
+
 func TestParseOptionsValidateWithInvalidDiagramAndUnknownTags(t *testing.T) {
 	src := `<poml>
   <diagram id="bad">

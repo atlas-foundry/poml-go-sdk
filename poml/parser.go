@@ -322,15 +322,29 @@ func applyRootExtendedMode(opts ParseOptions, root xml.StartElement) ParseOption
 }
 
 // parseExtendedMixed handles mixed text/POML files when no <poml> root is present.
-// Today it treats the entire body as a text block to preserve content; future work
-// can segment embedded tags if needed.
 func parseExtendedMixed(body []byte, opts ParseOptions) (Document, error) {
 	doc := Document{}
 	doc.nextID = 1
-	trimmed := strings.TrimSpace(string(body))
-	if trimmed == "" {
+	if strings.TrimSpace(string(body)) == "" {
 		return doc, fmt.Errorf("parse poml: empty document")
 	}
+	// Try to segment as an extended fragment by wrapping in a synthetic root.
+	synth := fmt.Sprintf("<poml mode=\"extended\">%s</poml>", string(body))
+	dec := xml.NewDecoder(strings.NewReader(synth))
+	// consume synthetic root
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			break
+		}
+		if se, ok := tok.(xml.StartElement); ok && se.Name.Local == "poml" {
+			break
+		}
+	}
+	if frag, err := decodePoml(dec, opts); err == nil {
+		return frag, nil
+	}
+	// Fallback: preserve entire body as a text block.
 	doc.Texts = append(doc.Texts, TextBlock{Body: string(body)})
 	el := doc.newElement(ElementText, 0, "")
 	doc.Elements = append(doc.Elements, el)

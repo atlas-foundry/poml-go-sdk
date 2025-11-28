@@ -152,3 +152,28 @@ func TestConvertExtendedRootlessTextFallback(t *testing.T) {
 		t.Fatalf("expected plain text content, got %+v", msgs[0].Content)
 	}
 }
+
+func TestConvertExtendedTextEscapeLiteral(t *testing.T) {
+	src := `<poml mode="extended"><meta><id>x</id><version>1</version><owner>o</owner></meta><text><role>literal</role></text><role>r</role><task>t</task></poml>`
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	outAny, err := Convert(doc, FormatMessageDict, ConvertOptions{Extended: ExtendedStrict})
+	if err != nil {
+		t.Fatalf("convert: %v", err)
+	}
+	msgs, ok := outAny.([]messageDict)
+	if !ok {
+		t.Fatalf("unexpected type %T", outAny)
+	}
+	found := false
+	for _, m := range msgs {
+		if s, ok := m.Content.(string); ok && strings.Contains(s, "<role>literal</role>") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected literal text content in messages: %+v", msgs)
+	}
+}
