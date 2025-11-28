@@ -185,11 +185,38 @@ Extended mode lets you mix plain text and POML (`<poml mode="extended"> ...`). K
 
 ### Onboarding at a glance (ASCII map)
 
+Goal: go from a `.poml` file to something an LLM/tool can consume, with sanity checks along the way.
+
 ```
-[ POML file ] --parse/validate--> [ poml-go SDK ] --convert--> [ Chat JSON / tools / scenes ]
-         ↑                               ↑                          ↑
-         │                               │                          │
-     tests/goldens                 builder / CLI (mcp)          converters/output adapters
+Step 1: [ POML file ]
+        | parse + validate (keep whitespace, unknown tags)
+        | code:
+        | doc, err := poml.ParseFile("hello.poml")   // or ParseString / ParseReader
+        | if err != nil { log.Fatal(err) }
+        | if err := doc.Validate(); err != nil { log.Fatal(err) }
+        v
+Step 2: [ poml-go SDK Document ]
+        | convert (message_dict / openai_chat / langchain / scenejson)
+        | data:
+        | doc.Meta, doc.Role, doc.Tasks, doc.Elements[] (ordered, includes unknown/text/img/tool nodes)
+        | code:
+        | for _, el := range doc.Elements { fmt.Printf("%s idx=%d\\n", el.Type, el.Index) }
+        | fmt.Println("first task:", doc.Tasks[0].Body)
+        v
+Step 3: [ Chat JSON / tool calls / scenes ]
+        | code:
+        | out, err := poml.Convert(doc, poml.FormatOpenAIChat, poml.ConvertOptions{
+        |   Extended: poml.ExtendedLenient, // allow unknown/extended tags
+        |   BaseDir:  ".",                  // resolve media paths
+        | })
+        | // out is a map[string]any matching OpenAI Chat payload
+        | b, _ := json.MarshalIndent(out, "", "  ")
+        | fmt.Println(string(b))
+
+Helpers:
+- Builder API: assemble docs in Go instead of hand-writing XML-ish POML.
+- CLI (poml mcp): hit /inspect, /ast, /validate, /convert to see what the SDK does.
+- Tests/goldens: run `go test ./poml/...` to ensure your changes stay lossless.
 ```
 ```
 
