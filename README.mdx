@@ -147,8 +147,18 @@ fmt.Printf("%+v\n", out)
 ## 📐 Spec Alignment & Coverage
 
 Quick demos (text walk-throughs):
-- CLI quickstart: parse → validate → convert a small POML file with `poml mcp`; inspect `/ast`, `/validate`, and `/convert` outputs.
-- Go builder: construct a `poml.Document` via fluent APIs, render back to POML, and convert to OpenAI Chat JSON; see snippets above and fixtures under `poml/testdata/examples`.
+### Getting started (no prior POML/XML/AI experience needed)
+
+- **CLI quickstart**: Run `go run ./cmd/poml mcp --file hello.poml --addr :7777`. Open a browser to `http://localhost:7777/inspect` to see a summary, `.../ast` for the parsed tree, `.../validate` for errors, and `.../convert?format=openai_chat` to see JSON you can send to ChatGPT/OpenAI.
+- **Go builder**: In Go, create a document with `doc := poml.Document{}; doc.AddRole("You are a helper"); doc.AddTask("Say hi"); doc.AddMessage("human","hello")`. Call `poml.Convert(doc, poml.FormatOpenAIChat, poml.ConvertOptions{})` to get a ready-to-send Chat payload. Check `poml/testdata/examples` for copy/paste samples.
+- **Mental model**: POML is just structured text. Think of it as HTML for prompts. `<role>` is the system message, `<task>` are instructions, `<human-msg>` / `<assistant-msg>` are chat turns, and `<img>`/`<audio>`/`<video>` embed media. Unknown tags are preserved (handy for future extensions).
+- **Flow**:
+
+```
+[hello.poml] --> (parse/validate) --> [poml.Document] --> (convert) --> [OpenAI JSON] --> LLM
+```
+
+Extended mode lets you mix plain text and POML (`<poml mode="extended"> ...`). Keep it off unless you need mixed content.
 
 - **Core spec (meta + components)**: Implemented with strict parsing/validation and round-trip rendering. See the canonical docs: [Meta](https://microsoft.github.io/poml/latest/language/meta/) and [Components](https://microsoft.github.io/poml/latest/language/components/). Rough coverage: ~95% of the published core; any gaps are tracked in `README.poml`.
 - **Contributing expectations**: We mirror the upstream guidance for structure and clarity ([Contributing](https://microsoft.github.io/poml/latest/contributing/)). PRs should preserve the POML-first docs policy.
@@ -176,12 +186,12 @@ Quick demos (text walk-throughs):
 ### Onboarding at a glance (ASCII map)
 
 ```
-┌──────────────┐   parse+validate    ┌──────────────┐   convert/render   ┌───────────────┐
-│  POML file   │ ───────────────────▶│  poml-go SDK │───────────────────▶│  outputs/LLMs │
-└──────────────┘                     └──────────────┘                    └───────────────┘
+┌──────────────┐   parse+validate    ┌──────────────┐   convert/render   ┌────────────────────┐
+│  POML file   │ ───────────────────▶│  poml-go SDK │───────────────────▶│  chat JSON / tools │
+└──────────────┘                     └──────────────┘                    └────────────────────┘
        ▲                ▲                    │                ▲
-       │                │                    │ VHS demos      │
-       │ tests/goldens  │ builder API        │ (CLI + Go)     │ ASCII guides
+       │                │                    │ builders       │
+       │ tests/goldens  │ CLI (mcp)          │ converters     │ guides/examples
        └────────────────┴────────────────────┴────────────────┴──────────────
 ```
 
