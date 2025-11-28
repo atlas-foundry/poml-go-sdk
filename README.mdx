@@ -43,37 +43,25 @@
   </a>
 </p>
 
-# ✨ poml-go-sdk
+# POML Go SDK — structured prompts for Go, LLMs, and tools
 
-A delightful Go SDK for **POML — Prompt Orchestration Markup Language**.
-We speak POML natively, faithfully, and with a little spark of fun ✨
+Open-source Go library for **Prompt Orchestration Markup Language (POML)** with lossless parsing, validation, rendering, and converters for OpenAI Chat, LangChain, scene/diagram formats, and more. Built to keep prompt markup deterministic, multi-modal, and ready for agents, CLIs, and IDE extensions.
 
-> **Note:** This repo uses POML for all docs.
-> The only non-POML doc allowed is this `README.mdx`.
+**Highlights**
+- Lossless POML parse/validate/encode with whitespace and unknown-tag preservation.
+- Converters: message_dict, dict, OpenAI Chat, LangChain, scene/scenejson; deterministic options for goldens and CI.
+- Extended mode: opt-in mixed text + POML, `<op>`/`<figure>`, `<text>` blocks, unknown passthrough; root opt-in via `mode="extended"` or CLI flags.
+- Diagram/scene round-trips with attrs/extras; `base_document` seeding keeps meta/role/tasks when rehydrating POML.
+- CLI: `poml mcp` serves AST/validation/convert endpoints with optional tracing (stdout/OTLP).
 
-* Full structured README: `README.poml`
-* Delivery plan: `PLAN.poml`
-* AI log: `AI.LOCK.poml`
-* Fit-for-purpose plan: `docs/fit_for_purpose.poml`
-* Agent rules: `AGENTS.poml`
-* Go quality spec: `go.quality.poml`
-* Multimedia examples: `poml/testdata/examples/*`
-
----
-
-## 💖 What is POML?
-
-POML is a structured, spec-driven language for orchestrating AI prompts.
-
-It’s:
-
-* declarative
-* expressive
-* type-safe
-* multi-modal
-* and *way* nicer to maintain than a giant prompt blob
-
-This SDK brings POML’s power to Go.
+**Docs & plans (POML-first)**
+- Structured README: `README.poml`
+- Delivery plan: `PLAN.poml`
+- AI log: `AI.LOCK.poml`
+- Fit-for-purpose: `docs/fit_for_purpose.poml`
+- Agent rules: `AGENTS.poml`
+- Go quality spec: `go.quality.poml`
+- Examples: `poml/testdata/examples/*`
 
 ---
 
