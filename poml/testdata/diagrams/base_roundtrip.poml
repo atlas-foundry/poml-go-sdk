@@ -1,0 +1,12 @@
+<poml>
+  <meta><id>golden.base</id><version>1.0.0</version><owner>qa</owner></meta>
+  <role>base role</role>
+  <task>base task</task>
+  <diagram id="base-diagram" custom="root-attr">
+    <graph>
+      <node id="n1" x="0" y="0" z="0" custom="node-attr" />
+      <edge from="n1" to="n1" directed="true" custom="edge-attr" />
+    </graph>
+    <camera azimuth="10" elevation="20" distance="30" tilt="5" />
+  </diagram>
+</poml>

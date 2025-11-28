@@ -1,0 +1,45 @@
+{
+  "id": "base-diagram",
+  "nodes": [
+    {
+      "id": "n1",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "style": {},
+      "attrs": {
+        "custom": "node-attr"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n1",
+      "directed": true,
+      "style": {},
+      "attrs": {
+        "custom": "edge-attr"
+      }
+    }
+  ],
+  "layers": [],
+  "camera": {
+    "azimuth": "10",
+    "elevation": "20",
+    "distance": "30"
+  },
+  "meta": {
+    "diagram_attrs": {
+      "custom": "root-attr"
+    },
+    "camera_attrs": {
+      "tilt": "5"
+    }
+  },
+  "extras": {
+    "custom": "root-attr"
+  }
+}
