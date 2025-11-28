@@ -1,0 +1,42 @@
+<poml>
+  <meta>
+    <id>python_parity.plan.poml-go-sdk</id>
+    <version>0.1.0</version>
+    <owner>poml-go-sdk</owner>
+  </meta>
+  <role>Align Go SDK behavior and outputs with the Python POML SDK.</role>
+
+  <task caption="Baseline comparison">
+    <list>
+      <item>Collect Python SDK outputs for shared fixtures (examples, diagrams, scenes, extended samples).</item>
+      <item>Define expected shapes for converters (message_dict/dict/openai/langchain/scenejson) and validation messages.</item>
+    </list>
+  </task>
+
+  <task caption="Converters parity">
+    <list>
+      <item>Adjust Go converters to match Python field ordering/naming where applicable; add goldens to enforce.</item>
+      <item>Ensure tool-calls, media parts, and extended nodes line up with Python outputs.</item>
+    </list>
+  </task>
+
+  <task caption="Validation parity">
+    <list>
+      <item>Compare validation errors/fields to Python for common failure cases; align messaging and details where reasonable.</item>
+      <item>Mirror Extended gating and required fields behavior.</item>
+    </list>
+  </task>
+
+  <task caption="Tracing/hooks parity">
+    <list>
+      <item>Match Python tracing hooks (spans/attributes) for parse/convert where supported; add opt-in tests.</item>
+    </list>
+  </task>
+
+  <task caption="Acceptance criteria">
+    <list>
+      <item>Parity fixtures added; go test ./poml/... compares Go output to stored Python-derived goldens.</item>
+      <item>README notes parity status and known deltas (if any).</item>
+    </list>
+  </task>
+</poml>

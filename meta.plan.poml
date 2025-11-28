@@ -1,120 +1,35 @@
 <poml>
   <meta>
     <id>meta.plan.poml-go-sdk</id>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <owner>poml-go-sdk</owner>
   </meta>
-  <role>Lossless, pluggable POML SDK plan with test coverage to match or exceed Python parity; keep the badge/test roadmap intact for CI quality signals.</role>
+  <role>Prioritize Extended POML parity, then Python SDK parity; everything else waits.</role>
 
-  <task caption="Lossless round-trip goals">
+  <task caption="Priority 1: Extended POML parity">
     <list>
-      <item>Carry all attrs and unknowns: diagram/graph/node/edge/layer/camera attrs, unknown tags, and multiple styles preserved through Scene Extras and back.</item>
-      <item>Deterministic both ways: stable ordering for nodes/edges/layers/styles on scene→diagram and diagram→scene paths.</item>
-      <item>Zero-loss POML round-trip: POML→diagram→scene→scenejson→scene→diagram→POML retains meta/role/tasks/unknown elements when base_document is provided.</item>
+      <item>See <cp>extended_parity.plan.poml</cp> for the full end-to-end breakdown.</item>
     </list>
   </task>
 
-  <task caption="Benchmark parity">
+  <task caption="Priority 2: Python SDK parity">
     <list>
-      <item>Track cross-SDK benchmarks vs Python/TypeScript; see benchmarks.plan.poml for matrix, fixtures, and harness.</item>
-      <item>Release gate: Go must beat other SDKs on p50/p95 latency and memory for parse/encode/validate and diagram/scene conversions.</item>
+      <item>See <cp>python_parity.plan.poml</cp> for the end-to-end breakdown.</item>
     </list>
   </task>
 
-  <task caption="SDK implementation steps (do in order)">
+  <task caption="Backlog (after parity)">
     <list>
-      <item>Scene Extras: add extras/unknown bags on Scene; map diagram/graph attrs and multi-style slices to Scene and back; keep attrs sorted.</item>
-      <item>Reverse determinism: sort nodes/edges/layers/styles on scene→diagram; add graph attrs passthrough.</item>
-      <item>Error UX: registry Convert errors list available converters; document lowercase keys and base_document option.</item>
-      <item>Fixtures/tests: golden lossless round-trips with base_document; multi-style preservation; unknown-tag passthrough; negative tests for bad JSON/missing converters.</item>
-      <item>Docs: README/PLAN snippets explaining registry API, extras format, and lossless expectations.</item>
-      <item>Extended POML parity (top priority): implement mixed TEXT+POML segmentation, metadata-anywhere, and text escape handling per upstream extended spec; default remains standard mode unless mode="extended" or flags are set.</item>
-      <item>Extended converters: ensure message_dict/langchain/openai/dict carry text segments, ops/figures, and unknowns in Extended mode; add goldens.</item>
-      <item>Extended validation: tighten rules for Extended vs default (unknown gating, text blocks allowed only in Extended); add error details.</item>
-      <item>Extended docs/tests: document Extended behavior/flags in README/CLI help; add round-trip fixtures for mixed content; sync with upstream examples once available.</item>
+      <item>Benchmark parity vs other SDKs (benchmarks.plan.poml).</item>
+      <item>Badge/test expansion (fuzz, matrix, lint/vuln) — maintenance only.</item>
+      <item>MCP/CLI feature extensions (search/auth/patch/diff) — defer until parity is done.</item>
+      <item>Quality governance: keep gofmt + go test ./... required; refer to go.quality.poml.</item>
     </list>
-  </task>
-
-  <task caption="Badge targets mapped to new tests (prioritized by usefulness × rarity)">
-    <list>
-      <item>Coverage (High, fuzz): Add property-based fuzz cases for ParseString/ParseStringFast → Encode/Validate round-trips; seed corpus from poml/testdata and malformed samples.</item>
-      <item>Deterministic outputs (High, golden): Golden snapshots for convertMarkdownToPOML/convertOrgToPOML and renderer adapters (deck.gl/Graphviz) to stabilize changes.</item>
-      <item>Path safety (High, boundary): Image/media path escape tests (symlink + ..), size-limit enforcement for readFileWithLimit/media bodies.</item>
-      <item>Integration/E2E matrix (High, integration): Expand semantic_test.go to include BaseDir + MaxMediaBytes options; add arm64 runner badge.</item>
-      <item>Fast/strict parser fidelity (Medium, differential): Tests comparing default vs fast vs strict options on whitespace preservation and validation failures.</item>
-      <item>Concurrency safety (Medium, race/unit): Tests for ConverterRegistry concurrent Register/List.</item>
-      <item>Builder completeness (Medium, combinatorial): Table-driven tests covering builder methods (OutputFormat, Style, Raw, System/Human/Assistant ordering).</item>
-      <item>Limits/DoS hardening (Medium, limit): Tests for base64 size limits and negative/zero limit semantics.</item>
-      <item>Docs pipeline (Medium, docs): MDX render smoke test (npx mdx README.mdx).</item>
-      <item>Lint/vuln badges (Low, monitoring): golangci-lint/govulncheck/go vet jobs and badges.</item>
-      <item>Quality spec badge (Low, governance): Link go.quality.poml into CI/docs; add checks for unchecked errors, context propagation, race-free patterns, and deterministic tests.</item>
-    </list>
-  </task>
-
-  <task caption="Execution order for badges/tests">
-    <list>
-      <item>1) Fuzz + boundary tests; wire coverage badge.</item>
-      <item>2) Golden render/converter tests and parser fast/strict differentials.</item>
-      <item>3) Extend semantic E2E for limits/BaseDir; add arm64 runner and matrix badge.</item>
-      <item>4) Concurrency tests + builder tables; add go vet job/badge.</item>
-      <item>5) Docs smoke test; keep lint/vuln badges green; surface go.quality.poml in READMEs and CI links.</item>
-    </list>
-  </task>
-
-  <task caption="Parallel workstreams (assignable to multiple agents)">
-    <list>
-      <item>Workstream A — Fuzz/Boundary: implement parser fuzz (ParseString/ParseStringFast round-trips), size-limit and path-escape boundary tests; own coverage badge updates.</item>
-      <item>Workstream B — Golden/Deterministic: build golden fixtures for Markdown/Org converters, Graphviz/DeckGL renderers, deterministic parser fast/strict differentials.</item>
-      <item>Workstream C — E2E/Matrix: extend semantic_test.go with BaseDir/MaxMediaBytes cases, add arm64 runner, keep Docker tag fixes stable.</item>
-      <item>Workstream D — Concurrency/Builder/Vet: concurrency tests for ConverterRegistry, table-driven builder coverage, integrate go vet job/badge.</item>
-      <item>Workstream E — Docs/Quality Spec: MDX smoke test stability, surface go.quality.poml in docs/CI, add quality badge, ensure lint/govulncheck stay green.</item>
-      <item>Workstream F — Lossless/Extras: finalize lossless round-trip fixtures (extras/unknowns/styles), registry UX errors, and update README/PLAN narrative.</item>
-    </list>
-  </task>
-
-  <task caption="CI and quality">
-    <list>
-      <item>gofmt + go test ./... required.</item>
-      <item>Golden fixtures kept deterministic; add/update via scripts.</item>
-      <item>Optional: fuzz parse→encode round-trips to harden extras handling.</item>
-      <item>Reference go.quality.poml for reviews: unchecked errors, bounds checks, race-free patterns, context propagation, deterministic tests/fuzzing, no hardcoded secrets.</item>
-    </list>
-  </task>
-
-  <task caption="Upstream parity automation">
-    <list>
-      <item>Version numbers mirror the official <cp>poml-lang/poml</cp> tags; no custom semver track.</item>
-      <item><cp>scripts/sync_upstream.sh</cp> + <code>make sync-upstream TAG=vX.Y.Z</code> refresh vendored assets in <cp>third_party/upstream</cp> and immediately run parity tests.</item>
-      <item><cp>.github/workflows/upstream-sync.yml</cp> runs weekly (and via manual dispatch) to open PRs whenever a new stable upstream release lands.</item>
-    </list>
-  </task>
-
-  <task caption="Version parity enforcement">
-    <list>
-      <item>Tags mirror upstream <cp>poml-lang/poml</cp> 1:1; no forks or custom semver.</item>
-      <item>Parity rewrites include README/CHANGELOG/meta updates plus annotated tags stating <cp>Upstream-Parity: vX.Y.Z</cp>.</item>
-      <item>Freeze merges during a parity rewrite and broadcast force-push guidance so downstream consumers can re-align.</item>
-    </list>
-  </task>
-
-  <task caption="MCP / CLI roadmap">
-    <list>
-      <item>CLI: ship `poml` binary; subcommands: `mcp` (serve), future `convert`, `validate`, `render`.</item>
-      <item>MCP server features (phased): health/inspect/ast (done); search by tag/attr/text; validation errors with line/column; conversions (Chat/LangChain/dict); tool-def/req introspection; diagram extraction.</item>
-      <item>Safety: BaseDir/media cap signals; unknown-tag preservation; round-trip check endpoint; optional auth token.</item>
-      <item>DX: OTEL tracing/metrics; watch/reload and SSE/WebSocket push; patch/diff endpoints; examples registry/goldens; lint rules endpoint.</item>
-      <item>Docs: README + docs/doc_plan.poml alignment; VHS demo of `poml mcp` once endpoints stabilize.</item>
-    </list>
-  </task>
-
-  <task caption="Premium split orchestration">
-    <list/>
   </task>
 
   <log>
-    <entry date="2025-11-23" actor="ai.architect">Merged lossless plan with original badge/test roadmap to retain CI quality goals while pursuing lossless parity.</entry>
-    <entry date="2025-11-22" actor="ai.architect">Replaced badge roadmap with lossless round-trip plan aligned with registry and adapter separation.</entry>
+    <entry date="2025-11-28" actor="ai.assistant">Rewritten to focus on Extended parity and Python parity; moved other items to backlog.</entry>
   </log>
 
-  <output-format>Keep concise; update after each step lands.</output-format>
+  <output-format>Keep concise; update after each priority lands.</output-format>
 </poml>
