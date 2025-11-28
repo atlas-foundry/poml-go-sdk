@@ -77,16 +77,40 @@ func (r *ConverterRegistry) Convert(ctx context.Context, from, to string, input 
 	key := converterKey(from, to)
 	r.mu.RLock()
 	conv, ok := r.converters[key]
+	// snapshot of converters for better errors
+	snapshot := r.converters
 	r.mu.RUnlock()
 	if !ok {
-		r.mu.RLock()
-		var keys []string
-		for k := range r.converters {
-			keys = append(keys, k)
+		targets := make(map[string][]string)
+		for k := range snapshot {
+			parts := strings.SplitN(k, "->", 2)
+			if len(parts) == 2 {
+				targets[parts[0]] = append(targets[parts[0]], parts[1])
+			}
 		}
-		r.mu.RUnlock()
-		sort.Strings(keys)
-		return nil, fmt.Errorf("no converter for %s (available: %s)", key, strings.Join(keys, ", "))
+		var msg strings.Builder
+		msg.WriteString("no converter for ")
+		msg.WriteString(key)
+		if len(targets) > 0 {
+			if outs, ok := targets[strings.ToLower(from)]; ok && len(outs) > 0 {
+				sort.Strings(outs)
+				msg.WriteString(" (available targets from ")
+				msg.WriteString(strings.ToLower(from))
+				msg.WriteString(": ")
+				msg.WriteString(strings.Join(outs, ", "))
+				msg.WriteString(")")
+			} else {
+				var keys []string
+				for k := range snapshot {
+					keys = append(keys, k)
+				}
+				sort.Strings(keys)
+				msg.WriteString(" (available: ")
+				msg.WriteString(strings.Join(keys, ", "))
+				msg.WriteString(")")
+			}
+		}
+		return nil, errors.New(msg.String())
 	}
 	return conv.Convert(ctx, input, opts)
 }

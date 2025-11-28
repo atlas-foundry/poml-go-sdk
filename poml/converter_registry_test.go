@@ -218,6 +218,20 @@ func TestConverterRegistryListSorted(t *testing.T) {
 	}
 }
 
+func TestConverterRegistryErrorListsTargets(t *testing.T) {
+	reg := NewConverterRegistry()
+	_ = reg.Register(basicConverter{from: "a", to: "x", fn: func(context.Context, any, map[string]any) (any, error) { return nil, nil }})
+	_ = reg.Register(basicConverter{from: "a", to: "y", fn: func(context.Context, any, map[string]any) (any, error) { return nil, nil }})
+	_, err := reg.Convert(context.Background(), "a", "z", nil, nil)
+	if err == nil {
+		t.Fatalf("expected error")
+	}
+	msg := err.Error()
+	if !strings.Contains(strings.ToLower(msg), "available targets from a") || !strings.Contains(msg, "a->z") || !strings.Contains(msg, "x") || !strings.Contains(msg, "y") {
+		t.Fatalf("expected helpful error, got %q", msg)
+	}
+}
+
 func TestConverterRegistryMissingErrorListsAvailable(t *testing.T) {
 	reg := NewConverterRegistry()
 	_ = reg.Register(basicConverter{from: "x", to: "y", fn: func(context.Context, any, map[string]any) (any, error) { return nil, nil }})
