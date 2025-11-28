@@ -129,3 +129,12 @@ func hasMetaRoleTask(doc Document) bool {
 		strings.TrimSpace(doc.Role.Body) != "" &&
 		len(doc.Tasks) > 0
 }
+
+func hasUnknownElements(doc Document) bool {
+	for _, el := range doc.Elements {
+		if el.Type == ElementUnknown {
+			return true
+		}
+	}
+	return false
+}

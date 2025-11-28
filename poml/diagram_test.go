@@ -272,6 +272,16 @@ func TestSceneToDiagramMultiStyleAndExtras(t *testing.T) {
 	}
 }
 
+func TestDiagramUnknownPassthroughDoesNotBreakScene(t *testing.T) {
+	doc, err := ParseFile(filepath.Join("testdata", "diagrams", "unknown_passthrough.poml"))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if _, err := diagramsToScenes(doc.Diagrams, defaultSceneExportOptions); err != nil {
+		t.Fatalf("diagramsToScenes: %v", err)
+	}
+}
+
 func TestInvalidDiagramFixtures(t *testing.T) {
 	cases := []string{"missing_ids.poml"}
 	for _, file := range cases {

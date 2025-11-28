@@ -1,0 +1,19 @@
+<poml>
+  <meta>
+    <id>unknown.passthrough</id>
+    <version>1</version>
+    <owner>qa</owner>
+  </meta>
+  <role>unknown passthrough</role>
+  <task>keep unknowns</task>
+  <diagram id="unknown-diagram">
+    <graph>
+      <node id="n1" x="0" y="0" z="0">
+        <mystery attr="node-attr">payload</mystery>
+      </node>
+      <edge from="n1" to="n1" directed="true">
+        <unknown-edge flag="yes"/>
+      </edge>
+    </graph>
+  </diagram>
+</poml>
