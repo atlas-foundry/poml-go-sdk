@@ -186,13 +186,11 @@ Extended mode lets you mix plain text and POML (`<poml mode="extended"> ...`). K
 ### Onboarding at a glance (ASCII map)
 
 ```
-┌──────────────┐   parse+validate    ┌──────────────┐   convert/render   ┌────────────────────┐
-│  POML file   │ ───────────────────▶│  poml-go SDK │───────────────────▶│  chat JSON / tools │
-└──────────────┘                     └──────────────┘                    └────────────────────┘
-       ▲                ▲                    │                ▲
-       │                │                    │ builders       │
-       │ tests/goldens  │ CLI (mcp)          │ converters     │ guides/examples
-       └────────────────┴────────────────────┴────────────────┴──────────────
+[ POML file ] --parse/validate--> [ poml-go SDK ] --convert--> [ Chat JSON / tools / scenes ]
+         ↑                               ↑                          ↑
+         │                               │                          │
+     tests/goldens                 builder / CLI (mcp)          converters/output adapters
+```
 ```
 
 ### `poml` CLI (MCP starter)
