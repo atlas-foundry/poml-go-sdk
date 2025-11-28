@@ -130,3 +130,25 @@ func TestConvertExtendedTextSegments(t *testing.T) {
 		t.Fatalf("expected text segments preserved (before=%v after=%v)", foundBefore, foundAfter)
 	}
 }
+
+func TestConvertExtendedRootlessTextFallback(t *testing.T) {
+	body := "plain text only"
+	doc, err := ParseReaderWithOptions(strings.NewReader(body), ParseOptions{PreserveWhitespace: true, Validate: false, Extended: ExtendedStrict})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	outAny, err := Convert(doc, FormatMessageDict, ConvertOptions{Extended: ExtendedStrict})
+	if err != nil {
+		t.Fatalf("convert: %v", err)
+	}
+	msgs, ok := outAny.([]messageDict)
+	if !ok {
+		t.Fatalf("unexpected type %T", outAny)
+	}
+	if len(msgs) != 1 {
+		t.Fatalf("expected single text message, got %d", len(msgs))
+	}
+	if s, ok := msgs[0].Content.(string); !ok || !strings.Contains(s, "plain text") {
+		t.Fatalf("expected plain text content, got %+v", msgs[0].Content)
+	}
+}

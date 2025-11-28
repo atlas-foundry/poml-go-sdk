@@ -285,6 +285,31 @@ func TestParseExtendedTextSegments(t *testing.T) {
 	}
 }
 
+func TestParseExtendedTextElement(t *testing.T) {
+	src := `<poml mode="extended"><text>hello</text><meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task></poml>`
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(doc.Texts) != 1 || strings.TrimSpace(doc.Texts[0].Body) != "hello" {
+		t.Fatalf("expected text element captured, got %+v", doc.Texts)
+	}
+}
+
+func TestParseExtendedRootlessTextFallback(t *testing.T) {
+	body := "plain text only"
+	doc, err := ParseReaderWithOptions(strings.NewReader(body), ParseOptions{PreserveWhitespace: true, Validate: false, Extended: ExtendedStrict})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(doc.Texts) != 1 || !strings.Contains(doc.Texts[0].Body, "plain text") {
+		t.Fatalf("expected rootless text captured, got %+v", doc.Texts)
+	}
+	if len(doc.Elements) != 1 || doc.Elements[0].Type != ElementText {
+		t.Fatalf("expected text element recorded, got %+v", doc.Elements)
+	}
+}
+
 func TestParseOptionsValidateWithInvalidDiagramAndUnknownTags(t *testing.T) {
 	src := `<poml>
   <diagram id="bad">

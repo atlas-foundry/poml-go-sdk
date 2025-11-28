@@ -220,6 +220,7 @@ go run ./cmd/poml mcp --file hello.poml --addr :7777
 Extended parsing/conversion switches:
 - Root opt-in: set `<poml mode="extended">` to enable Extended parsing/validation for a document. Otherwise Extended stays off unless you pass the CLI flags below.
 - Runtime flags: `--extended` enables lenient Extended mode; `--extended-strict` enables strict Extended mode (parsing + validation).
+- Extended text: in Extended mode we capture raw text blocks (including `<text>...</text>` wrappers) and surface them through converters; root-less text files also parse as text blocks.
 
 Endpoints:
 * `/health` — readiness ping

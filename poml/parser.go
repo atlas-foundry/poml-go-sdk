@@ -321,6 +321,22 @@ func applyRootExtendedMode(opts ParseOptions, root xml.StartElement) ParseOption
 	return opts
 }
 
+// parseExtendedMixed handles mixed text/POML files when no <poml> root is present.
+// Today it treats the entire body as a text block to preserve content; future work
+// can segment embedded tags if needed.
+func parseExtendedMixed(body []byte, opts ParseOptions) (Document, error) {
+	doc := Document{}
+	doc.nextID = 1
+	trimmed := strings.TrimSpace(string(body))
+	if trimmed == "" {
+		return doc, fmt.Errorf("parse poml: empty document")
+	}
+	doc.Texts = append(doc.Texts, TextBlock{Body: string(body)})
+	el := doc.newElement(ElementText, 0, "")
+	doc.Elements = append(doc.Elements, el)
+	return doc, nil
+}
+
 type ErrorType string
 
 const (
@@ -714,6 +730,11 @@ func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 				if opts.Extended == ExtendedOff {
 					issues = append(issues, fmt.Sprintf("unknown element <%s>", el.Name))
 					details = append(details, ValidationDetail{Element: ElementUnknown, Message: "unknown element " + el.Name})
+				}
+			case ElementText:
+				if opts.Extended == ExtendedOff {
+					issues = append(issues, "text content outside POML is only allowed in extended mode")
+					details = append(details, ValidationDetail{Element: ElementText, Message: "text blocks require extended mode"})
 				}
 			case ElementOp, ElementFigure:
 				if opts.Extended == ExtendedOff {
@@ -1278,13 +1299,24 @@ func (d *Document) insertElement(after Element, newEl Element) {
 }
 
 func parseWithOptions(r io.Reader, opts ParseOptions) (Document, error) {
-	dec := xml.NewDecoder(r)
+	var buf []byte
+	var err error
+	// Read upfront to allow mixed-text fallback in Extended mode.
+	buf, err = io.ReadAll(r)
+	if err != nil {
+		return Document{}, err
+	}
+
+	dec := xml.NewDecoder(bytes.NewReader(buf))
 	dec.Strict = true
 
 	for {
 		tok, err := dec.Token()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
+				if opts.Extended != ExtendedOff {
+					return parseExtendedMixed(buf, opts)
+				}
 				return Document{}, fmt.Errorf("parse poml: unexpected EOF (missing <poml> root?)")
 			}
 			return Document{}, wrapXMLError(err, "parse poml")
@@ -1294,6 +1326,9 @@ func parseWithOptions(r io.Reader, opts ParseOptions) (Document, error) {
 			continue
 		}
 		if start.Name.Local != "poml" {
+			if opts.Extended != ExtendedOff {
+				return parseExtendedMixed(buf, opts)
+			}
 			return Document{}, &POMLError{
 				Type:    ErrDecode,
 				Message: fmt.Sprintf("parse poml: expected <poml> root, got <%s>", start.Name.Local),
@@ -1636,6 +1671,19 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 				}
 				doc.Diagrams = append(doc.Diagrams, dg)
 				el := doc.newElement(ElementDiagram, len(doc.Diagrams)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "text":
+				var inner struct {
+					Body string `xml:",innerxml"`
+				}
+				if err := dec.DecodeElement(&inner, &t); err != nil {
+					return doc, wrapXMLError(err, "<text>")
+				}
+				doc.Texts = append(doc.Texts, TextBlock{Body: inner.Body})
+				el := doc.newElement(ElementText, len(doc.Texts)-1, "")
 				if preserveWS {
 					el.Leading = leading
 				}
