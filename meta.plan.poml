@@ -28,6 +28,10 @@
       <item>Error UX: registry Convert errors list available converters; document lowercase keys and base_document option.</item>
       <item>Fixtures/tests: golden lossless round-trips with base_document; multi-style preservation; unknown-tag passthrough; negative tests for bad JSON/missing converters.</item>
       <item>Docs: README/PLAN snippets explaining registry API, extras format, and lossless expectations.</item>
+      <item>Extended POML parity (top priority): implement mixed TEXT+POML segmentation, metadata-anywhere, and text escape handling per upstream extended spec; default remains standard mode unless mode="extended" or flags are set.</item>
+      <item>Extended converters: ensure message_dict/langchain/openai/dict carry text segments, ops/figures, and unknowns in Extended mode; add goldens.</item>
+      <item>Extended validation: tighten rules for Extended vs default (unknown gating, text blocks allowed only in Extended); add error details.</item>
+      <item>Extended docs/tests: document Extended behavior/flags in README/CLI help; add round-trip fixtures for mixed content; sync with upstream examples once available.</item>
     </list>
   </task>
 

@@ -39,6 +39,7 @@ const (
 	ElementExample        ElementType = "example"
 	ElementContentPart    ElementType = "content_part"
 	ElementObject         ElementType = "object"
+	ElementText           ElementType = "text"
 	ElementRuntime        ElementType = "runtime"
 	ElementImage          ElementType = "image"
 	ElementDiagram        ElementType = "diagram"
@@ -77,6 +78,7 @@ type Document struct {
 	Examples     []Example
 	ContentParts []ContentPart
 	Objects      []ObjectTag
+	Texts        []TextBlock
 	Audios       []Media
 	Videos       []Media
 	Messages     []Message
@@ -159,6 +161,11 @@ type ObjectTag struct {
 	Syntax string     `xml:"syntax,attr"`
 	Body   string     `xml:",innerxml"`
 	Attrs  []xml.Attr `xml:",any,attr"`
+}
+
+// TextBlock represents raw text content in Extended files (outside structured tags).
+type TextBlock struct {
+	Body string
 }
 
 // Image represents an <img> block (often used for multimedia).
@@ -1311,6 +1318,25 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 	doc.nextID = 1
 	var lastElement *Element
 	pending := ""
+	flushText := func(body string) {
+		if opts.Extended == ExtendedOff {
+			return
+		}
+		if strings.TrimSpace(body) == "" {
+			return
+		}
+		tb := TextBlock{Body: body}
+		doc.Texts = append(doc.Texts, tb)
+		el := doc.newElement(ElementText, len(doc.Texts)-1, "")
+		if opts.PreserveWhitespace {
+			el.Leading = ""
+			el.Trailing = ""
+		}
+		doc.Elements = append(doc.Elements, el)
+		if lastElement != nil && opts.PreserveWhitespace {
+			lastElement.Trailing = ""
+		}
+	}
 	preserveWS := opts.PreserveWhitespace
 	for {
 		tok, err := dec.Token()
@@ -1332,6 +1358,12 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 		case xml.StartElement:
 			leading := pending
 			pending = ""
+			if strings.TrimSpace(leading) != "" {
+				if opts.Extended != ExtendedOff {
+					flushText(leading)
+					leading = ""
+				}
+			}
 			switch t.Name.Local {
 			case "meta":
 				var m Meta
@@ -1696,6 +1728,10 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 			pending = ""
 		case xml.EndElement:
 			if t.Name.Local == "poml" {
+				if strings.TrimSpace(pending) != "" && opts.Extended != ExtendedOff {
+					flushText(pending)
+					pending = ""
+				}
 				if preserveWS && lastElement != nil && pending != "" {
 					lastElement.Trailing = pending
 				}
@@ -1860,6 +1896,10 @@ func encodeElement(enc *xml.Encoder, out io.Writer, doc Document, el Element, op
 			return fmt.Errorf("encode output-format: index %d out of range", el.Index)
 		}
 		err = enc.EncodeElement(doc.OutFormats[el.Index], xml.StartElement{Name: xml.Name{Local: "output-format"}})
+	case ElementText:
+		if err = enc.Flush(); err == nil {
+			_, err = io.WriteString(out, doc.Texts[el.Index].Body)
+		}
 	case ElementRuntime:
 		if el.Index < 0 || el.Index >= len(doc.Runtimes) {
 			return fmt.Errorf("encode runtime: index %d out of range", el.Index)
@@ -2018,6 +2058,9 @@ func (d *Document) defaultElements() []Element {
 	for i := range d.OutFormats {
 		out = append(out, d.newElement(ElementOutputFormat, i, ""))
 	}
+	for i := range d.Texts {
+		out = append(out, d.newElement(ElementText, i, ""))
+	}
 	for i := range d.Messages {
 		// Preserve role-specific element types.
 		elType := ElementHumanMsg
@@ -2125,6 +2168,10 @@ func (d Document) payloadFor(el Element) ElementPayload {
 		if el.Index >= 0 && el.Index < len(d.OutFormats) {
 			return ElementPayload{OutputFormat: &d.OutFormats[el.Index]}
 		}
+	case ElementText:
+		if el.Index >= 0 && el.Index < len(d.Texts) {
+			return ElementPayload{Raw: d.Texts[el.Index].Body}
+		}
 	case ElementObject:
 		if el.Index >= 0 && el.Index < len(d.Objects) {
 			return ElementPayload{Object: &d.Objects[el.Index]}
@@ -2231,7 +2278,7 @@ func renderToken(tok xml.Token) string {
 // reindex updates element indices to match current slice state after mutations.
 func (d *Document) reindex() {
 	taskIdx, inputIdx, docIdx, styleIdx, hintIdx, exIdx, cpIdx, outFmtIdx := 0, 0, 0, 0, 0, 0, 0, 0
-	msgIdx, toolDefIdx, toolReqIdx, toolRespIdx, toolResultIdx, toolErrorIdx, runtimeIdx, audioIdx, videoIdx, objIdx, imageIdx, diagramIdx, opIdx, figureIdx := 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	msgIdx, toolDefIdx, toolReqIdx, toolRespIdx, toolResultIdx, toolErrorIdx, runtimeIdx, audioIdx, videoIdx, objIdx, imageIdx, diagramIdx, opIdx, figureIdx, textIdx := 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	for i := range d.Elements {
 		switch d.Elements[i].Type {
 		case ElementTask:
@@ -2258,6 +2305,9 @@ func (d *Document) reindex() {
 		case ElementOutputFormat:
 			d.Elements[i].Index = outFmtIdx
 			outFmtIdx++
+		case ElementText:
+			d.Elements[i].Index = textIdx
+			textIdx++
 		case ElementHumanMsg, ElementAssistantMsg, ElementSystemMsg:
 			d.Elements[i].Index = msgIdx
 			msgIdx++

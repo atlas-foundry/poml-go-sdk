@@ -264,6 +264,27 @@ func TestParseExtendedElementsCaptured(t *testing.T) {
 	}
 }
 
+func TestParseExtendedTextSegments(t *testing.T) {
+	src := `<poml mode="extended">before<meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task>after</poml>`
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(doc.Texts) != 2 {
+		t.Fatalf("expected 2 text blocks, got %d", len(doc.Texts))
+	}
+	foundText := false
+	for _, el := range doc.Elements {
+		if el.Type == ElementText {
+			foundText = true
+			break
+		}
+	}
+	if !foundText {
+		t.Fatalf("expected text elements in ordering")
+	}
+}
+
 func TestParseOptionsValidateWithInvalidDiagramAndUnknownTags(t *testing.T) {
 	src := `<poml>
   <diagram id="bad">

@@ -96,3 +96,37 @@ func TestConvertExtendedOpAndFigure(t *testing.T) {
 		t.Fatalf("expected figure/image_url in second message: %+v", secondContent)
 	}
 }
+
+func TestConvertExtendedTextSegments(t *testing.T) {
+	src := `<poml mode="extended">before<meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task>after</poml>`
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	outAny, err := Convert(doc, FormatMessageDict, ConvertOptions{Extended: ExtendedStrict})
+	if err != nil {
+		t.Fatalf("convert: %v", err)
+	}
+	msgs, ok := outAny.([]messageDict)
+	if !ok {
+		t.Fatalf("unexpected type %T", outAny)
+	}
+	if len(msgs) < 2 {
+		t.Fatalf("expected text messages surfaced, got %d", len(msgs))
+	}
+	foundBefore := false
+	foundAfter := false
+	for _, m := range msgs {
+		if s, ok := m.Content.(string); ok {
+			if s == "before" {
+				foundBefore = true
+			}
+			if s == "after" {
+				foundAfter = true
+			}
+		}
+	}
+	if !foundBefore || !foundAfter {
+		t.Fatalf("expected text segments preserved (before=%v after=%v)", foundBefore, foundAfter)
+	}
+}

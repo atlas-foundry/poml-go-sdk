@@ -235,6 +235,11 @@ func convertMessageDict(doc Document, opts ConvertOptions) ([]messageDict, error
 				return nil, err
 			}
 			msgs = append(msgs, messageDict{Speaker: "human", Content: part})
+		case ElementText:
+			body := strings.TrimSpace(doc.elementBody(el))
+			if body != "" {
+				msgs = append(msgs, messageDict{Speaker: "human", Content: body})
+			}
 		case ElementUnknown:
 			if opts.Extended != ExtendedOff {
 				msgs = append(msgs, messageDict{
@@ -453,6 +458,14 @@ func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error
 					}},
 				})
 			}
+		case ElementText:
+			body := strings.TrimSpace(doc.elementBody(el))
+			if body != "" {
+				messages = append(messages, map[string]any{
+					"role":    "user",
+					"content": body,
+				})
+			}
 		case ElementAudio:
 			au := doc.Audios[el.Index]
 			part, err := buildMediaPart(au, opts)
@@ -640,6 +653,14 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 			}
 		case ElementPersona:
 			body := strings.TrimSpace(doc.Persona.Body)
+			if body != "" {
+				messages = append(messages, map[string]any{
+					"type": "human",
+					"data": map[string]any{"content": body},
+				})
+			}
+		case ElementText:
+			body := strings.TrimSpace(doc.elementBody(el))
 			if body != "" {
 				messages = append(messages, map[string]any{
 					"type": "human",
@@ -1230,6 +1251,10 @@ func (d Document) elementBody(el Element) string {
 	case ElementTask:
 		if el.Index >= 0 && el.Index < len(d.Tasks) {
 			return d.Tasks[el.Index].Body
+		}
+	case ElementText:
+		if el.Index >= 0 && el.Index < len(d.Texts) {
+			return d.Texts[el.Index].Body
 		}
 	case ElementOp:
 		if el.Index >= 0 && el.Index < len(d.Ops) {
