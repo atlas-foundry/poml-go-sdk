@@ -164,24 +164,37 @@ func DiagramToSceneWithOptions(d Diagram, opts SceneExportOptions) (Scene, error
 	if opts.Deterministic != nil {
 		deterministic = *opts.Deterministic
 	}
+	sortAttrs := func(attrs []xml.Attr) []xml.Attr {
+		if len(attrs) == 0 {
+			return attrs
+		}
+		out := append([]xml.Attr(nil), attrs...)
+		sort.Slice(out, func(i, j int) bool { return out[i].Name.Local < out[j].Name.Local })
+		return out
+	}
 
 	scene := Scene{
 		ID:     d.ID,
 		Camera: SceneCamera{Azimuth: d.Camera.Azimuth, Elevation: d.Camera.Elevation, Distance: d.Camera.Distance},
 		Meta:   make(map[string]any),
 	}
-	if m := attrsMap(d.Attrs); len(m) > 0 {
+	if m := attrsMap(sortAttrs(d.Attrs)); len(m) > 0 {
 		scene.Extras = m
 		scene.Meta["diagram_attrs"] = m
 	}
-	if m := attrsMap(d.Camera.Attrs); len(m) > 0 {
+	if m := attrsMap(sortAttrs(d.Camera.Attrs)); len(m) > 0 {
 		scene.Meta["camera_attrs"] = m
 	}
 	nodes := append([]DiagramNode(nil), d.Graph.Nodes...)
 	edges := append([]DiagramEdge(nil), d.Graph.Edges...)
 	layers := append([]DiagramLayer(nil), d.Layers...)
 	if deterministic {
-		sort.Slice(nodes, func(i, j int) bool { return nodes[i].ID < nodes[j].ID })
+		sort.Slice(nodes, func(i, j int) bool {
+			if nodes[i].ID == nodes[j].ID {
+				return nodes[i].Label < nodes[j].Label
+			}
+			return nodes[i].ID < nodes[j].ID
+		})
 		sort.Slice(edges, func(i, j int) bool {
 			ai, aj := edges[i], edges[j]
 			if ai.From != aj.From {
@@ -218,7 +231,7 @@ func DiagramToSceneWithOptions(d Diagram, opts SceneExportOptions) (Scene, error
 			Position:    pos,
 			Style:       styleMap(n.Styles),
 			Styles:      styleMaps,
-			Attrs:       attrsMap(n.Attrs),
+			Attrs:       attrsMap(sortAttrs(n.Attrs)),
 			Extras:      dataMap(n.Data),
 		}
 		for _, ds := range n.Data {
@@ -247,7 +260,7 @@ func DiagramToSceneWithOptions(d Diagram, opts SceneExportOptions) (Scene, error
 			Weight:   e.Weight,
 			Style:    styleToMap(e.Styles),
 			Styles:   styleMaps,
-			Attrs:    attrsMap(e.Attrs),
+			Attrs:    attrsMap(sortAttrs(e.Attrs)),
 		})
 	}
 	for _, l := range layers {
@@ -255,7 +268,7 @@ func DiagramToSceneWithOptions(d Diagram, opts SceneExportOptions) (Scene, error
 			ID:    l.ID,
 			Z:     l.Z,
 			Kind:  l.Kind,
-			Attrs: attrsMap(l.Attrs),
+			Attrs: attrsMap(sortAttrs(l.Attrs)),
 		})
 	}
 	if len(scene.Meta) == 0 {

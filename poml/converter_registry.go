@@ -177,6 +177,10 @@ func registerDefaultConverters(reg *ConverterRegistry) {
 			if v, ok := opts["scene_export"].(SceneExportOptions); ok {
 				exportOpts = v
 			}
+			if _, ok := opts["deterministic"]; ok {
+				b := parseBoolOption(opts["deterministic"], true)
+				exportOpts.Deterministic = &b
+			}
 			switch v := input.(type) {
 			case Diagram:
 				return DiagramToSceneWithOptions(v, exportOpts)
@@ -499,4 +503,16 @@ func attrsFromMeta(meta map[string]any, key string) []xml.Attr {
 		}
 	}
 	return attrsFromMap(m)
+}
+
+func parseBoolOption(v any, fallback bool) bool {
+	switch b := v.(type) {
+	case bool:
+		return b
+	case string:
+		l := strings.ToLower(strings.TrimSpace(b))
+		return l == "true" || l == "1" || l == "yes" || l == "on"
+	default:
+		return fallback
+	}
 }
