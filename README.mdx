@@ -144,23 +144,11 @@ out, _ := poml.Convert(doc, poml.FormatOpenAIChat, poml.ConvertOptions{})
 fmt.Printf("%+v\n", out)
 ```
 
----
-
-## 🎬 See It in Action (VHS)
-
-Two fresh tapes show both sides of the SDK—CLI and pure Go—using vivid terminal themes:
-
-* **CLI quickstart**: Parse, validate, and convert a tiny POML file with a pocket CLI wrapper.
-
-  ![POML CLI quickstart](docs/vhs/poml-cli.gif)
-
-* **Go builder**: Assemble a document with the fluent builder, render it back to POML, and emit OpenAI Chat JSON.
-
-  ![POML builder demo](docs/vhs/poml-go-builder.gif)
-
----
-
 ## 📐 Spec Alignment & Coverage
+
+Quick demos (text walk-throughs):
+- CLI quickstart: parse → validate → convert a small POML file with `poml mcp`; inspect `/ast`, `/validate`, and `/convert` outputs.
+- Go builder: construct a `poml.Document` via fluent APIs, render back to POML, and convert to OpenAI Chat JSON; see snippets above and fixtures under `poml/testdata/examples`.
 
 - **Core spec (meta + components)**: Implemented with strict parsing/validation and round-trip rendering. See the canonical docs: [Meta](https://microsoft.github.io/poml/latest/language/meta/) and [Components](https://microsoft.github.io/poml/latest/language/components/). Rough coverage: ~95% of the published core; any gaps are tracked in `README.poml`.
 - **Contributing expectations**: We mirror the upstream guidance for structure and clarity ([Contributing](https://microsoft.github.io/poml/latest/contributing/)). PRs should preserve the POML-first docs policy.
