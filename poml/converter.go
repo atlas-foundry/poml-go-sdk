@@ -204,6 +204,37 @@ func convertMessageDict(doc Document, opts ConvertOptions) ([]messageDict, error
 				return nil, err
 			}
 			msgs = append(msgs, messageDict{Speaker: "human", Content: part})
+		case ElementOp:
+			if opts.Extended == ExtendedOff {
+				continue
+			}
+			op := doc.Ops[el.Index]
+			name := strings.TrimSpace(op.Name)
+			if name == "" {
+				name = el.Name
+			}
+			msgs = append(msgs, messageDict{
+				Speaker: "human",
+				Content: map[string]any{
+					"type":   "op",
+					"name":   name,
+					"kind":   strings.TrimSpace(op.Kind),
+					"args":   parseJSONFallback(op.Args),
+					"body":   strings.TrimSpace(op.Body),
+					"attrs":  attrsToMap(op.Attrs),
+					"tag":    el.Name,
+					"source": "extended",
+				},
+			})
+		case ElementFigure:
+			if opts.Extended == ExtendedOff {
+				continue
+			}
+			part, err := buildFigurePart(doc.Figures[el.Index], opts)
+			if err != nil {
+				return nil, err
+			}
+			msgs = append(msgs, messageDict{Speaker: "human", Content: part})
 		case ElementUnknown:
 			if opts.Extended != ExtendedOff {
 				msgs = append(msgs, messageDict{
@@ -372,6 +403,42 @@ func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error
 				"name":         resp.Name,
 				"type":         "error",
 			})
+		case ElementOp:
+			if opts.Extended == ExtendedOff {
+				continue
+			}
+			op := doc.Ops[el.Index]
+			name := strings.TrimSpace(op.Name)
+			if name == "" {
+				name = el.Name
+			}
+			meta := map[string]any{}
+			if op.Kind != "" {
+				meta["kind"] = strings.TrimSpace(op.Kind)
+			}
+			if op.Args != "" {
+				meta["args"] = parseJSONFallback(op.Args)
+			}
+			if len(attrsToMap(op.Attrs)) > 0 {
+				meta["attrs"] = attrsToMap(op.Attrs)
+			}
+			if el.Name != "" {
+				meta["tag"] = el.Name
+			}
+			text := strings.TrimSpace(op.Body)
+			if text == "" {
+				text = fmt.Sprintf("[op:%s]", name)
+			} else {
+				text = fmt.Sprintf("[op:%s] %s", name, text)
+			}
+			content := map[string]any{"type": "text", "text": text}
+			if len(meta) > 0 {
+				content["metadata"] = meta
+			}
+			messages = append(messages, map[string]any{
+				"role":    "user",
+				"content": []any{content},
+			})
 		case ElementUnknown:
 			if opts.Extended != ExtendedOff {
 				raw := strings.TrimSpace(el.RawXML)
@@ -422,6 +489,27 @@ func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error
 					map[string]any{"type": "text", "text": im.Alt},
 					map[string]any{"type": "image_url", "image_url": map[string]any{"url": "data:" + imgPart["type"].(string) + ";base64," + imgPart["base64"].(string)}},
 				},
+			})
+		case ElementFigure:
+			if opts.Extended == ExtendedOff {
+				continue
+			}
+			fig := doc.Figures[el.Index]
+			part, err := buildFigurePart(fig, opts)
+			if err != nil {
+				return nil, err
+			}
+			url := "data:" + part["mime"].(string) + ";base64," + part["base64"].(string)
+			content := []any{
+				map[string]any{"type": "text", "text": strings.TrimSpace(fig.Alt)},
+				map[string]any{"type": "image_url", "image_url": map[string]any{"url": url}},
+			}
+			if strings.TrimSpace(fig.Alt) == "" {
+				content = content[1:]
+			}
+			messages = append(messages, map[string]any{
+				"role":    "user",
+				"content": content,
 			})
 		}
 	}
@@ -558,6 +646,34 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 					"data": map[string]any{"content": body},
 				})
 			}
+		case ElementOp:
+			if opts.Extended == ExtendedOff {
+				continue
+			}
+			op := doc.Ops[el.Index]
+			name := strings.TrimSpace(op.Name)
+			if name == "" {
+				name = el.Name
+			}
+			payload := map[string]any{
+				"type":  "op",
+				"name":  name,
+				"body":  strings.TrimSpace(op.Body),
+				"attrs": attrsToMap(op.Attrs),
+				"tag":   el.Name,
+			}
+			if op.Kind != "" {
+				payload["kind"] = strings.TrimSpace(op.Kind)
+			}
+			if op.Args != "" {
+				payload["args"] = parseJSONFallback(op.Args)
+			}
+			messages = append(messages, map[string]any{
+				"type": "human",
+				"data": map[string]any{
+					"content": []any{payload},
+				},
+			})
 		case ElementAudio:
 			au := doc.Audios[el.Index]
 			part, err := buildMediaPart(au, opts)
@@ -597,6 +713,23 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 				"data": map[string]any{
 					"content": []any{
 						map[string]any{"type": "image", "source_type": "base64", "mime_type": part["type"], "data": part["base64"]},
+					},
+				},
+			})
+		case ElementFigure:
+			if opts.Extended == ExtendedOff {
+				continue
+			}
+			fig := doc.Figures[el.Index]
+			part, err := buildFigurePart(fig, opts)
+			if err != nil {
+				return nil, err
+			}
+			messages = append(messages, map[string]any{
+				"type": "human",
+				"data": map[string]any{
+					"content": []any{
+						map[string]any{"type": "figure", "source_type": "base64", "mime_type": part["mime"], "data": part["base64"], "alt": fig.Alt, "tag": el.Name},
 					},
 				},
 			})
@@ -716,6 +849,65 @@ func collectRuntime(doc Document) map[string]any {
 		return nil
 	}
 	return rt
+}
+
+func buildFigurePart(fig ExtendedFigure, opts ConvertOptions) (map[string]any, error) {
+	limit := opts.MaxMediaBytes
+	if limit == 0 {
+		limit = defaultMaxMediaBytes
+	}
+	var data string
+	checkLimit := func(raw string, label string) error {
+		if limit <= 0 {
+			return nil
+		}
+		size := int64(base64.StdEncoding.DecodedLen(len(raw)))
+		return enforceByteLimit(size, limit, label)
+	}
+	switch {
+	case strings.HasPrefix(fig.Src, "data:"):
+		parts := strings.SplitN(fig.Src, ",", 2)
+		if len(parts) == 2 {
+			payload := parts[1]
+			if err := checkLimit(payload, "data URI figure"); err != nil {
+				return nil, err
+			}
+			data = payload
+		}
+	case fig.Src != "":
+		src, err := resolveMediaPath(fig.Src, opts)
+		if err != nil {
+			return nil, err
+		}
+		bytes, err := readFileWithLimit(src, limit)
+		if err != nil {
+			return nil, fmt.Errorf("read figure %s: %w", src, err)
+		}
+		data = base64.StdEncoding.EncodeToString(bytes)
+	case fig.Body != "":
+		body := []byte(fig.Body)
+		if err := enforceByteLimit(int64(len(body)), limit, "inline figure body"); err != nil {
+			return nil, err
+		}
+		data = base64.StdEncoding.EncodeToString(body)
+	}
+	mime := fig.Syntax
+	if mime == "" {
+		mime = guessMime(fig.Src)
+	}
+	if mime == "" {
+		mime = "application/octet-stream"
+	}
+	return map[string]any{
+		"type":      mime,
+		"mime":      mime,
+		"mime_type": mime,
+		"alt":       fig.Alt,
+		"base64":    data,
+		"source":    "base64",
+		"syntax":    fig.Syntax,
+		"data":      data,
+	}, nil
 }
 
 func buildImagePart(im Image, opts ConvertOptions) (map[string]any, error) {
@@ -1038,6 +1230,14 @@ func (d Document) elementBody(el Element) string {
 	case ElementTask:
 		if el.Index >= 0 && el.Index < len(d.Tasks) {
 			return d.Tasks[el.Index].Body
+		}
+	case ElementOp:
+		if el.Index >= 0 && el.Index < len(d.Ops) {
+			return d.Ops[el.Index].Body
+		}
+	case ElementFigure:
+		if el.Index >= 0 && el.Index < len(d.Figures) {
+			return d.Figures[el.Index].Body
 		}
 	}
 	return ""

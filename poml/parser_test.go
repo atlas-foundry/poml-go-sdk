@@ -229,7 +229,7 @@ func TestParseStrictHelpers(t *testing.T) {
 }
 
 func TestParseExtendedUnknownAllowed(t *testing.T) {
-	src := `<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task><extended-op foo="bar"/></poml>`
+	src := `<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task><op foo="bar"/></poml>`
 	if _, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true, Extended: ExtendedOff}); err == nil {
 		t.Fatalf("expected unknown element error when ExtendedOff")
 	}
@@ -238,6 +238,29 @@ func TestParseExtendedUnknownAllowed(t *testing.T) {
 	}
 	if _, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true, Extended: ExtendedStrict}); err != nil {
 		t.Fatalf("expected extended strict to pass (placeholder until schema), got %v", err)
+	}
+}
+
+func TestParseExtendedElementsCaptured(t *testing.T) {
+	src := `<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task><op name="demo" kind="custom" args='{"n":1}'>body</op><figure src="data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="svg" syntax="image/svg+xml"/></poml>`
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true, Extended: ExtendedStrict})
+	if err != nil {
+		t.Fatalf("expected extended parse to succeed: %v", err)
+	}
+	if len(doc.Ops) != 1 || len(doc.Figures) != 1 {
+		t.Fatalf("expected extended elements captured, got %d ops and %d figures", len(doc.Ops), len(doc.Figures))
+	}
+	var hasOp, hasFigure bool
+	for _, el := range doc.Elements {
+		if el.Type == ElementOp {
+			hasOp = true
+		}
+		if el.Type == ElementFigure {
+			hasFigure = true
+		}
+	}
+	if !hasOp || !hasFigure {
+		t.Fatalf("expected element ordering to include op and figure (got op=%v figure=%v)", hasOp, hasFigure)
 	}
 }
 

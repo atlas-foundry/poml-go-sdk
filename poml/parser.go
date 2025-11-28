@@ -43,6 +43,8 @@ const (
 	ElementImage          ElementType = "image"
 	ElementDiagram        ElementType = "diagram"
 	ElementPersona        ElementType = "persona"
+	ElementOp             ElementType = "op"
+	ElementFigure         ElementType = "figure"
 	ElementUnknown        ElementType = "unknown"
 )
 
@@ -87,6 +89,8 @@ type Document struct {
 	Schema       OutputSchema
 	Images       []Image
 	Diagrams     []Diagram
+	Ops          []ExtendedOp
+	Figures      []ExtendedFigure
 	Elements     []Element
 
 	nextID int // internal counter for element IDs
@@ -240,6 +244,24 @@ type Media struct {
 	Attrs  []xml.Attr `xml:",any,attr"`
 }
 
+// ExtendedOp represents a custom operation element enabled in Extended mode.
+type ExtendedOp struct {
+	Name  string     `xml:"name,attr"`
+	Kind  string     `xml:"kind,attr"`
+	Args  string     `xml:"args,attr"`
+	Body  string     `xml:",innerxml"`
+	Attrs []xml.Attr `xml:",any,attr"`
+}
+
+// ExtendedFigure wraps richer media payloads (e.g., SVG or custom syntax) for Extended mode.
+type ExtendedFigure struct {
+	Src    string     `xml:"src,attr"`
+	Alt    string     `xml:"alt,attr"`
+	Syntax string     `xml:"syntax,attr"`
+	Body   string     `xml:",innerxml"`
+	Attrs  []xml.Attr `xml:",any,attr"`
+}
+
 // EncodeOptions controls XML serialization.
 type EncodeOptions struct {
 	Indent        string // indentation used for Encode/EncodeWithOptions; default "  "
@@ -273,6 +295,24 @@ type ParseOptions struct {
 var defaultParseOptions = ParseOptions{PreserveWhitespace: true, Extended: ExtendedOff}
 var strictParseOptions = ParseOptions{PreserveWhitespace: true, Validate: true, Extended: ExtendedOff}
 var fastParseOptions = ParseOptions{PreserveWhitespace: false, Extended: ExtendedOff}
+
+const allowExtendedAliases = true
+
+// applyRootExtendedMode toggles Extended parsing based on root attributes when not explicitly set.
+func applyRootExtendedMode(opts ParseOptions, root xml.StartElement) ParseOptions {
+	if opts.Extended != ExtendedOff {
+		return opts
+	}
+	for _, a := range root.Attr {
+		key := strings.ToLower(strings.TrimSpace(a.Name.Local))
+		val := strings.ToLower(strings.TrimSpace(a.Value))
+		if key == "mode" && val == "extended" {
+			opts.Extended = ExtendedStrict
+			return opts
+		}
+	}
+	return opts
+}
 
 type ErrorType string
 
@@ -668,6 +708,11 @@ func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 					issues = append(issues, fmt.Sprintf("unknown element <%s>", el.Name))
 					details = append(details, ValidationDetail{Element: ElementUnknown, Message: "unknown element " + el.Name})
 				}
+			case ElementOp, ElementFigure:
+				if opts.Extended == ExtendedOff {
+					issues = append(issues, fmt.Sprintf("extended element <%s> not allowed when Extended is off", el.Name))
+					details = append(details, ValidationDetail{Element: el.Type, Message: "extended element " + el.Name})
+				}
 			}
 		}
 	}
@@ -1016,6 +1061,8 @@ type ElementPayload struct {
 	Schema       *OutputSchema
 	Runtime      *Runtime
 	Diagram      *Diagram
+	Op           *ExtendedOp
+	Figure       *ExtendedFigure
 	Raw          string
 }
 
@@ -1066,6 +1113,14 @@ func (m *Mutator) ReplaceBody(el Element, body string) {
 	case ElementImage:
 		if el.Index >= 0 && el.Index < len(d.Images) {
 			d.Images[el.Index].Body = body
+		}
+	case ElementOp:
+		if el.Index >= 0 && el.Index < len(d.Ops) {
+			d.Ops[el.Index].Body = body
+		}
+	case ElementFigure:
+		if el.Index >= 0 && el.Index < len(d.Figures) {
+			d.Figures[el.Index].Body = body
 		}
 	}
 	m.modified = true
@@ -1124,6 +1179,14 @@ func (m *Mutator) Remove(el Element) {
 	case ElementImage:
 		if el.Index >= 0 && el.Index < len(d.Images) {
 			d.Images = append(d.Images[:el.Index], d.Images[el.Index+1:]...)
+		}
+	case ElementOp:
+		if el.Index >= 0 && el.Index < len(d.Ops) {
+			d.Ops = append(d.Ops[:el.Index], d.Ops[el.Index+1:]...)
+		}
+	case ElementFigure:
+		if el.Index >= 0 && el.Index < len(d.Figures) {
+			d.Figures = append(d.Figures[:el.Index], d.Figures[el.Index+1:]...)
 		}
 	}
 	for i, e := range d.Elements {
@@ -1229,6 +1292,7 @@ func parseWithOptions(r io.Reader, opts ParseOptions) (Document, error) {
 				Message: fmt.Sprintf("parse poml: expected <poml> root, got <%s>", start.Name.Local),
 			}
 		}
+		opts = applyRootExtendedMode(opts, start)
 		doc, err := decodePoml(dec, opts)
 		if err != nil {
 			return Document{}, err
@@ -1545,25 +1609,84 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 				}
 				doc.Elements = append(doc.Elements, el)
 			default:
-				if opts.Extended == ExtendedOff {
-					// Preserve unknown elements as raw where possible.
-					raw, err := consumeRaw(dec, t)
-					if err != nil {
-						return doc, wrapXMLError(err, fmt.Sprintf("<%s>", t.Name.Local))
+				handled := false
+				if opts.Extended != ExtendedOff {
+					switch t.Name.Local {
+					case "op", "operation":
+						var op ExtendedOp
+						if err := dec.DecodeElement(&op, &t); err != nil {
+							return doc, wrapXMLError(err, fmt.Sprintf("<%s>", t.Name.Local))
+						}
+						doc.Ops = append(doc.Ops, op)
+						el := doc.newElement(ElementOp, len(doc.Ops)-1, t.Name.Local)
+						if preserveWS {
+							el.Leading = leading
+						}
+						doc.Elements = append(doc.Elements, el)
+						handled = true
+					case "extended-op":
+						if allowExtendedAliases {
+							var op ExtendedOp
+							if err := dec.DecodeElement(&op, &t); err != nil {
+								return doc, wrapXMLError(err, fmt.Sprintf("<%s>", t.Name.Local))
+							}
+							doc.Ops = append(doc.Ops, op)
+							el := doc.newElement(ElementOp, len(doc.Ops)-1, t.Name.Local)
+							if preserveWS {
+								el.Leading = leading
+							}
+							doc.Elements = append(doc.Elements, el)
+							handled = true
+						}
+					case "figure":
+						var fig ExtendedFigure
+						if err := dec.DecodeElement(&fig, &t); err != nil {
+							return doc, wrapXMLError(err, fmt.Sprintf("<%s>", t.Name.Local))
+						}
+						doc.Figures = append(doc.Figures, fig)
+						el := doc.newElement(ElementFigure, len(doc.Figures)-1, t.Name.Local)
+						if preserveWS {
+							el.Leading = leading
+						}
+						doc.Elements = append(doc.Elements, el)
+						handled = true
+					case "extended-figure":
+						if allowExtendedAliases {
+							var fig ExtendedFigure
+							if err := dec.DecodeElement(&fig, &t); err != nil {
+								return doc, wrapXMLError(err, fmt.Sprintf("<%s>", t.Name.Local))
+							}
+							doc.Figures = append(doc.Figures, fig)
+							el := doc.newElement(ElementFigure, len(doc.Figures)-1, t.Name.Local)
+							if preserveWS {
+								el.Leading = leading
+							}
+							doc.Elements = append(doc.Elements, el)
+							handled = true
+						}
 					}
-					el := doc.newElement(ElementUnknown, -1, t.Name.Local, raw)
-					if preserveWS {
-						el.Leading = leading
+				}
+				if !handled {
+					if opts.Extended == ExtendedOff {
+						// Preserve unknown elements as raw where possible.
+						raw, err := consumeRaw(dec, t)
+						if err != nil {
+							return doc, wrapXMLError(err, fmt.Sprintf("<%s>", t.Name.Local))
+						}
+						el := doc.newElement(ElementUnknown, -1, t.Name.Local, raw)
+						if preserveWS {
+							el.Leading = leading
+						}
+						doc.Elements = append(doc.Elements, el)
+					} else {
+						// Extended: store as unknown but mark name and skip raw if strict validation will handle it.
+						raw, _ := consumeRaw(dec, t)
+						el := doc.newElement(ElementUnknown, -1, t.Name.Local, raw)
+						if preserveWS {
+							el.Leading = leading
+						}
+						doc.Elements = append(doc.Elements, el)
 					}
-					doc.Elements = append(doc.Elements, el)
-				} else {
-					// Extended: store as unknown but mark name and skip raw if strict validation will handle it.
-					raw, _ := consumeRaw(dec, t)
-					el := doc.newElement(ElementUnknown, -1, t.Name.Local, raw)
-					if preserveWS {
-						el.Leading = leading
-					}
-					doc.Elements = append(doc.Elements, el)
 				}
 			}
 			if preserveWS && lastElement != nil && pending != "" {
@@ -1761,6 +1884,24 @@ func encodeElement(enc *xml.Encoder, out io.Writer, doc Document, el Element, op
 			return fmt.Errorf("encode diagram: index %d out of range", el.Index)
 		}
 		err = enc.EncodeElement(doc.Diagrams[el.Index], xml.StartElement{Name: xml.Name{Local: "diagram"}})
+	case ElementOp:
+		if el.Index < 0 || el.Index >= len(doc.Ops) {
+			return fmt.Errorf("encode op: index %d out of range", el.Index)
+		}
+		tag := el.Name
+		if tag == "" {
+			tag = "op"
+		}
+		err = enc.EncodeElement(doc.Ops[el.Index], xml.StartElement{Name: xml.Name{Local: tag}})
+	case ElementFigure:
+		if el.Index < 0 || el.Index >= len(doc.Figures) {
+			return fmt.Errorf("encode figure: index %d out of range", el.Index)
+		}
+		tag := el.Name
+		if tag == "" {
+			tag = "figure"
+		}
+		err = enc.EncodeElement(doc.Figures[el.Index], xml.StartElement{Name: xml.Name{Local: tag}})
 	case ElementUnknown:
 		if el.RawXML == "" {
 			return nil
@@ -1924,6 +2065,12 @@ func (d *Document) defaultElements() []Element {
 	for i := range d.Diagrams {
 		out = append(out, d.newElement(ElementDiagram, i, ""))
 	}
+	for i := range d.Ops {
+		out = append(out, d.newElement(ElementOp, i, ""))
+	}
+	for i := range d.Figures {
+		out = append(out, d.newElement(ElementFigure, i, ""))
+	}
 	return out
 }
 
@@ -2022,6 +2169,14 @@ func (d Document) payloadFor(el Element) ElementPayload {
 		if el.Index >= 0 && el.Index < len(d.Diagrams) {
 			return ElementPayload{Diagram: &d.Diagrams[el.Index]}
 		}
+	case ElementOp:
+		if el.Index >= 0 && el.Index < len(d.Ops) {
+			return ElementPayload{Op: &d.Ops[el.Index]}
+		}
+	case ElementFigure:
+		if el.Index >= 0 && el.Index < len(d.Figures) {
+			return ElementPayload{Figure: &d.Figures[el.Index]}
+		}
 	case ElementUnknown:
 		return ElementPayload{Raw: el.RawXML}
 	}
@@ -2076,7 +2231,7 @@ func renderToken(tok xml.Token) string {
 // reindex updates element indices to match current slice state after mutations.
 func (d *Document) reindex() {
 	taskIdx, inputIdx, docIdx, styleIdx, hintIdx, exIdx, cpIdx, outFmtIdx := 0, 0, 0, 0, 0, 0, 0, 0
-	msgIdx, toolDefIdx, toolReqIdx, toolRespIdx, toolResultIdx, toolErrorIdx, runtimeIdx, audioIdx, videoIdx, objIdx, imageIdx, diagramIdx := 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	msgIdx, toolDefIdx, toolReqIdx, toolRespIdx, toolResultIdx, toolErrorIdx, runtimeIdx, audioIdx, videoIdx, objIdx, imageIdx, diagramIdx, opIdx, figureIdx := 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	for i := range d.Elements {
 		switch d.Elements[i].Type {
 		case ElementTask:
@@ -2139,6 +2294,12 @@ func (d *Document) reindex() {
 		case ElementDiagram:
 			d.Elements[i].Index = diagramIdx
 			diagramIdx++
+		case ElementOp:
+			d.Elements[i].Index = opIdx
+			opIdx++
+		case ElementFigure:
+			d.Elements[i].Index = figureIdx
+			figureIdx++
 		}
 	}
 }

@@ -177,7 +177,7 @@ Two fresh tapes show both sides of the SDK—CLI and pure Go—using vivid termi
 - **Core spec (meta + components)**: Implemented with strict parsing/validation and round-trip rendering. See the canonical docs: [Meta](https://microsoft.github.io/poml/latest/language/meta/) and [Components](https://microsoft.github.io/poml/latest/language/components/). Rough coverage: ~95% of the published core; any gaps are tracked in `README.poml`.
 - **Contributing expectations**: We mirror the upstream guidance for structure and clarity ([Contributing](https://microsoft.github.io/poml/latest/contributing/)). PRs should preserve the POML-first docs policy.
 - **Tracing**: Python trace semantics are a reference point ([Trace docs](https://microsoft.github.io/poml/latest/python/trace/)). Go trace parity is planned; not implemented yet (0%).
-- **Extended proposal**: The POML Extended proposal is our north star ([Deep dive](https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/)). No implementation yet (0%); we keep compatibility in mind for converters and validation.
+- **Extended proposal**: The POML Extended proposal is our north star ([Deep dive](https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/)). Partial support is live (Extended-only `<op>` / `<figure>` round-trip + conversion). Optional aliases `<extended-op>` / `<extended-figure>` are gated by a build tag. The rest stays gated by the switches below.
 
 ---
 
@@ -185,7 +185,7 @@ Two fresh tapes show both sides of the SDK—CLI and pure Go—using vivid termi
 
 - 1️⃣ Core fidelity polish (Δ→ 100%): close remaining edge cases from the [Meta](https://microsoft.github.io/poml/latest/language/meta/) / [Components](https://microsoft.github.io/poml/latest/language/components/) specs; lock lossless round-trips for extended tags.
 - 2️⃣ Tracing parity (Δ→ 100%): implement Go-side tracing inspired by [Python trace](https://microsoft.github.io/poml/latest/python/trace/) with structured spans, deterministic seeds, and regression fixtures.
-- 3️⃣ Extended runway (Δ→ 30%): prototype safe subsets from the [POML Extended](https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/) proposal (custom ops, richer media), gated behind opt-in converters.
+- 3️⃣ Extended runway (Δ→ 30%): prototype safe subsets from the [POML Extended](https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/) proposal (custom ops, richer media), gated behind opt-in converters. Current subset: `<op>` and `<figure>` (aliases optional) plus base64-safe media handling. Build modes below govern how/when Extended is enabled.
 - 4️⃣ Ecosystem bridges (Δ→ 60%): deepen bindings (LangChain, OpenAI tools, CLI ergonomics) plus a POML ↔ `.tape` bridge for VHS stories.
 
 ## ✅ High-priority TODOs
@@ -195,6 +195,7 @@ Two fresh tapes show both sides of the SDK—CLI and pure Go—using vivid termi
 - [ ] Add converter round-trip goldens for extended tags (hint/example/object/data) and publish % coverage alongside CI.
 - [ ] Harden path safety: extend BaseDir/MaxMediaBytes tests with symlink and UNC path fixtures.
 - [ ] Publish the `.tape` converter and wire sample journeys into docs/VHS for end-to-end demos.
+- [ ] Expand Extended subset beyond `<extended-op>/<extended-figure>` (e.g., richer media/data tags) behind opt-in flags.
 
 ### Onboarding at a glance (ASCII map)
 
@@ -215,6 +216,10 @@ We ship an experimental Go CLI, `poml`, with an `mcp` subcommand that serves a m
 ```bash
 go run ./cmd/poml mcp --file hello.poml --addr :7777
 ```
+
+Extended parsing/conversion switches:
+- Root opt-in: set `<poml mode="extended">` to enable Extended parsing/validation for a document. Otherwise Extended stays off unless you pass the CLI flags below.
+- Runtime flags: `--extended` enables lenient Extended mode; `--extended-strict` enables strict Extended mode (parsing + validation).
 
 Endpoints:
 * `/health` — readiness ping
