@@ -232,6 +232,19 @@ func TestConverterRegistryErrorListsTargets(t *testing.T) {
 	}
 }
 
+func TestConverterRegistryBadJSONErrors(t *testing.T) {
+	reg := NewConverterRegistry()
+	registerDefaultConverters(reg)
+	ctx := context.Background()
+	_, err := reg.Convert(ctx, "scenejson", "scene", "{not-json", nil)
+	if err == nil {
+		t.Fatalf("expected JSON error")
+	}
+	if !strings.Contains(strings.ToLower(err.Error()), "invalid character") {
+		t.Fatalf("expected json parse error, got %v", err)
+	}
+}
+
 func TestConverterRegistryMissingErrorListsAvailable(t *testing.T) {
 	reg := NewConverterRegistry()
 	_ = reg.Register(basicConverter{from: "x", to: "y", fn: func(context.Context, any, map[string]any) (any, error) { return nil, nil }})

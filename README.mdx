@@ -221,6 +221,7 @@ Extended parsing/conversion switches:
 - Root opt-in: set `<poml mode="extended">` to enable Extended parsing/validation for a document. Otherwise Extended stays off unless you pass the CLI flags below.
 - Runtime flags: `--extended` enables lenient Extended mode; `--extended-strict` enables strict Extended mode (parsing + validation).
 - Extended text: in Extended mode we capture raw text blocks (including `<text>...</text>` wrappers) and surface them through converters; root-less text files also parse as text blocks.
+- Diagram/scene round-trips: use `base_document` when converting diagrams back to POML to seed meta/role/tasks; pass `deterministic` (or `scene_export` opts) to keep exports stable for goldens.
 
 Endpoints:
 * `/health` — readiness ping
