@@ -301,13 +301,18 @@ func sceneToDiagram(scene Scene) Diagram {
 			Z:           formatFloat(n.Position[2]),
 			Attrs:       attrsFromMap(n.Attrs),
 		}
-		if len(n.Style) > 0 {
+		if len(n.Styles) > 0 {
+			node.Styles = stylesFromMapsOrMap(n.Styles, n.Style)
+		} else if len(n.Style) > 0 {
 			node.Styles = append(node.Styles, styleFromMap(n.Style))
 		}
 		if len(n.Tags) > 0 {
 			if data, err := json.Marshal(n.Tags); err == nil {
 				node.Data = append(node.Data, DiagramData{Key: "tags", Body: string(data)})
 			}
+		}
+		for k, v := range n.Extras {
+			node.Data = append(node.Data, DiagramData{Key: k, Body: v})
 		}
 		diagram.Graph.Nodes = append(diagram.Graph.Nodes, node)
 	}
@@ -318,7 +323,7 @@ func sceneToDiagram(scene Scene) Diagram {
 			Kind:     e.Kind,
 			Directed: ptrBool(e.Directed),
 			Weight:   e.Weight,
-			Styles:   stylesFromMap(e.Style),
+			Styles:   stylesFromMapsOrMap(e.Styles, e.Style),
 			Attrs:    attrsFromMap(e.Attrs),
 		})
 	}
@@ -369,6 +374,17 @@ func stylesFromMap(m map[string]string) []DiagramStyle {
 		return nil
 	}
 	return []DiagramStyle{styleFromMap(m)}
+}
+
+func stylesFromMapsOrMap(maps []map[string]string, single map[string]string) []DiagramStyle {
+	if len(maps) > 0 {
+		out := make([]DiagramStyle, 0, len(maps))
+		for _, mm := range maps {
+			out = append(out, styleFromMap(mm))
+		}
+		return out
+	}
+	return stylesFromMap(single)
 }
 
 func styleToMap(styles []DiagramStyle) map[string]string {

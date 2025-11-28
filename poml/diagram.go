@@ -51,6 +51,7 @@ type DiagramEdge struct {
 	Directed *bool          `xml:"directed,attr"`
 	Weight   string         `xml:"weight,attr"`
 	Styles   []DiagramStyle `xml:"style"`
+	Data     []DiagramData  `xml:"data"`
 	Attrs    []xml.Attr     `xml:",any,attr"`
 }
 
@@ -101,26 +102,29 @@ type Scene struct {
 }
 
 type SceneNode struct {
-	ID          string            `json:"id"`
-	Label       string            `json:"label,omitempty"`
-	Owner       string            `json:"owner,omitempty"`
-	Group       string            `json:"group,omitempty"`
-	Weight      string            `json:"weight,omitempty"`
-	PctComplete string            `json:"pct_complete,omitempty"`
-	Position    [3]float64        `json:"position"`
-	Style       map[string]string `json:"style,omitempty"`
-	Tags        []string          `json:"tags,omitempty"`
-	Attrs       map[string]string `json:"attrs,omitempty"`
+	ID          string              `json:"id"`
+	Label       string              `json:"label,omitempty"`
+	Owner       string              `json:"owner,omitempty"`
+	Group       string              `json:"group,omitempty"`
+	Weight      string              `json:"weight,omitempty"`
+	PctComplete string              `json:"pct_complete,omitempty"`
+	Position    [3]float64          `json:"position"`
+	Style       map[string]string   `json:"style,omitempty"`
+	Styles      []map[string]string `json:"styles,omitempty"`
+	Tags        []string            `json:"tags,omitempty"`
+	Attrs       map[string]string   `json:"attrs,omitempty"`
+	Extras      map[string]string   `json:"extras,omitempty"`
 }
 
 type SceneEdge struct {
-	From     string            `json:"from"`
-	To       string            `json:"to"`
-	Kind     string            `json:"kind,omitempty"`
-	Directed bool              `json:"directed"`
-	Weight   string            `json:"weight,omitempty"`
-	Style    map[string]string `json:"style,omitempty"`
-	Attrs    map[string]string `json:"attrs,omitempty"`
+	From     string              `json:"from"`
+	To       string              `json:"to"`
+	Kind     string              `json:"kind,omitempty"`
+	Directed bool                `json:"directed"`
+	Weight   string              `json:"weight,omitempty"`
+	Style    map[string]string   `json:"style,omitempty"`
+	Styles   []map[string]string `json:"styles,omitempty"`
+	Attrs    map[string]string   `json:"attrs,omitempty"`
 }
 
 type SceneLayer struct {
@@ -168,8 +172,6 @@ func DiagramToSceneWithOptions(d Diagram, opts SceneExportOptions) (Scene, error
 	}
 	if m := attrsMap(d.Attrs); len(m) > 0 {
 		scene.Extras = m
-	}
-	if m := attrsMap(d.Attrs); len(m) > 0 {
 		scene.Meta["diagram_attrs"] = m
 	}
 	if m := attrsMap(d.Camera.Attrs); len(m) > 0 {
@@ -202,6 +204,10 @@ func DiagramToSceneWithOptions(d Diagram, opts SceneExportOptions) (Scene, error
 	}
 	for _, n := range nodes {
 		pos := [3]float64{parseFloat(n.X), parseFloat(n.Y), parseFloat(n.Z)}
+		styleMaps := stylesToMaps(n.Styles)
+		if len(styleMaps) <= 1 {
+			styleMaps = nil
+		}
 		node := SceneNode{
 			ID:          n.ID,
 			Label:       n.Label,
@@ -211,7 +217,9 @@ func DiagramToSceneWithOptions(d Diagram, opts SceneExportOptions) (Scene, error
 			PctComplete: n.PctComplete,
 			Position:    pos,
 			Style:       styleMap(n.Styles),
+			Styles:      styleMaps,
 			Attrs:       attrsMap(n.Attrs),
+			Extras:      dataMap(n.Data),
 		}
 		for _, ds := range n.Data {
 			if ds.Key == "tags" {
@@ -227,6 +235,10 @@ func DiagramToSceneWithOptions(d Diagram, opts SceneExportOptions) (Scene, error
 		if e.Directed != nil {
 			directed = *e.Directed
 		}
+		styleMaps := stylesToMaps(e.Styles)
+		if len(styleMaps) <= 1 {
+			styleMaps = nil
+		}
 		scene.Edges = append(scene.Edges, SceneEdge{
 			From:     e.From,
 			To:       e.To,
@@ -234,6 +246,7 @@ func DiagramToSceneWithOptions(d Diagram, opts SceneExportOptions) (Scene, error
 			Directed: directed,
 			Weight:   e.Weight,
 			Style:    styleToMap(e.Styles),
+			Styles:   styleMaps,
 			Attrs:    attrsMap(e.Attrs),
 		})
 	}
@@ -344,6 +357,35 @@ func attrsMap(attrs []xml.Attr) map[string]string {
 		m[a.Name.Local] = a.Value
 	}
 	return m
+}
+
+func stylesToMaps(styles []DiagramStyle) []map[string]string {
+	if len(styles) == 0 {
+		return nil
+	}
+	out := make([]map[string]string, 0, len(styles))
+	for _, st := range styles {
+		out = append(out, styleToMap([]DiagramStyle{st}))
+	}
+	return out
+}
+
+func dataMap(data []DiagramData) map[string]string {
+	if len(data) == 0 {
+		return nil
+	}
+	out := make(map[string]string)
+	for _, d := range data {
+		key := strings.TrimSpace(d.Key)
+		if key == "" || strings.ToLower(key) == "tags" {
+			continue
+		}
+		out[key] = strings.TrimSpace(d.Body)
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 func parseStringArray(body string) ([]string, bool) {

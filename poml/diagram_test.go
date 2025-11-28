@@ -172,6 +172,30 @@ func TestDiagramToSceneAttrsAndDirectedDefault(t *testing.T) {
 	}
 }
 
+func TestDiagramToSceneMultiStyleAndExtras(t *testing.T) {
+	src := `<poml><diagram id="multi"><graph>
+  <node id="n1" x="0" y="0" z="0"><style color="red"/><style stroke="blue"/><data key="hint">note</data></node>
+  <edge from="n1" to="n1" directed="true"><style color="green"/><style dash="5"/></edge>
+</graph></diagram></poml>`
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	scene, err := DiagramToScene(doc.Diagrams[0])
+	if err != nil {
+		t.Fatalf("to scene: %v", err)
+	}
+	if len(scene.Nodes[0].Styles) != 2 || scene.Nodes[0].Styles[0]["color"] != "red" || scene.Nodes[0].Styles[1]["stroke"] != "blue" {
+		t.Fatalf("expected multi styles on node, got %+v", scene.Nodes[0].Styles)
+	}
+	if scene.Nodes[0].Extras["hint"] != "note" {
+		t.Fatalf("expected extras captured from data, got %+v", scene.Nodes[0].Extras)
+	}
+	if len(scene.Edges[0].Styles) != 2 || scene.Edges[0].Styles[1]["dash"] != "5" {
+		t.Fatalf("expected edge multi styles, got %+v", scene.Edges[0].Styles)
+	}
+}
+
 func TestGoldenDiagramToScene(t *testing.T) {
 	cases := []struct {
 		name       string
@@ -218,6 +242,33 @@ func TestGoldenDiagramToScene(t *testing.T) {
 				t.Fatalf("scene mismatch.\n got:\n%s\nwant:\n%s", string(gotBytes), string(wantBody))
 			}
 		})
+	}
+}
+
+func TestSceneToDiagramMultiStyleAndExtras(t *testing.T) {
+	scene := Scene{
+		ID: "s1",
+		Nodes: []SceneNode{{
+			ID:     "n1",
+			Styles: []map[string]string{{"color": "red"}, {"stroke": "blue"}},
+			Extras: map[string]string{"hint": "note"},
+		}},
+		Edges: []SceneEdge{{
+			From:   "n1",
+			To:     "n1",
+			Styles: []map[string]string{{"color": "green"}, {"dash": "5"}},
+		}},
+		Layers: []SceneLayer{},
+	}
+	d := sceneToDiagram(scene)
+	if len(d.Graph.Nodes) != 1 || len(d.Graph.Nodes[0].Styles) != 2 {
+		t.Fatalf("expected two node styles, got %+v", d.Graph.Nodes[0].Styles)
+	}
+	if len(d.Graph.Nodes[0].Data) == 0 || d.Graph.Nodes[0].Data[0].Key != "hint" {
+		t.Fatalf("expected extras mapped to data, got %+v", d.Graph.Nodes[0].Data)
+	}
+	if len(d.Graph.Edges[0].Styles) != 2 {
+		t.Fatalf("expected two edge styles, got %+v", d.Graph.Edges[0].Styles)
 	}
 }
 
