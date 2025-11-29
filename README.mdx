@@ -50,9 +50,9 @@ Open-source Go library for **Prompt Orchestration Markup Language (POML)** with 
 **Highlights**
 - Lossless POML parse/validate/encode with whitespace and unknown-tag preservation.
 - Converters: message_dict, dict, OpenAI Chat, LangChain, scene/scenejson; deterministic options for goldens and CI.
-- Extended mode: opt-in mixed text + POML (`mode="extended"`), `<op>/<figure>/<text>` blocks, unknown passthrough; strict validation enforces names/JSON args/alt/mime/size; aliases via build tags; optional embedded-tag extraction flag.
+- Extended mode: opt-in mixed text + POML (`mode="extended"`), `<op>/<figure>/<text>` blocks, unknown passthrough; strict validation enforces names/JSON args/alt/mime/size/attrs; aliases via build tags; optional embedded-tag extraction flag; formatting tags handled as structured segments.
 - Diagram/scene round-trips with attrs/extras; `base_document` seeding keeps meta/role/tasks when rehydrating POML.
-- CLI: `poml mcp` serves AST/validation/convert endpoints with optional tracing (stdout/OTLP) and configurable allowlists via flags/env/POML config.
+- CLI: `poml mcp` serves AST/validation/convert endpoints with optional tracing (stdout/OTLP) and configurable allowlists via flags/env/POML config; formatting/meta attrs surfaced in converters.
 
 **Docs & plans (POML-first)**
 - Structured README: `README.poml`
@@ -251,6 +251,7 @@ Extended parsing/conversion switches:
   ```
   Run: `poml mcp --file demo.poml --extended-strict --config-poml poml/testdata/examples/validation_config.poml`
   - Segmentation (experimental): enable `ParseOptions.ExtractEmbeddedTags` or CLI `--extract-embedded-tags` to lift inline tag fragments from mixed text while preserving whitespace; off by default.
+  - Formatting/meta: formatting tags are emitted as structured `format` segments in converters; meta min/max/components/stylesheet fields surface in dict/OpenAI outputs.
 - Example (mixed content): 
   ```xml
   <poml mode="extended">
