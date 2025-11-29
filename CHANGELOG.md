@@ -63,7 +63,7 @@
 ### Features
 
 * add OpenTelemetry tracing hooks and span tests for parse/validate/convert (opt-in, no behavioral change by default)
-* add VHS demos and documentation plan/roadmap to guide onboarding
+* add demo assets and documentation plan/roadmap to guide onboarding
 * refresh badges and documentation strategy; add roadmap and spec coverage notes
 
 ### CI/CD
@@ -73,7 +73,7 @@
 
 ### Documentation
 
-* add docs plan (POML), VHS tapes/GIFs, and clarify semver expectations
+* add docs plan (POML), demo GIFs, and clarify semver expectations
 
 ### Build/Tooling
 

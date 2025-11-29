@@ -113,50 +113,36 @@ out, _ := poml.Convert(doc, poml.FormatOpenAIChat, poml.ConvertOptions{})
 fmt.Printf(&quot;%+v\n&quot;, out)
 </code></pre>
 <hr/>
-<h2>🎬 See It in Action (VHS)</h2>
-<p>Two fresh tapes show both sides of the SDK—CLI and pure Go—using vivid terminal themes:</p>
-<ul>
-<li>
-<p><strong>CLI quickstart</strong>: Parse, validate, and convert a tiny POML file with a pocket CLI wrapper.</p>
-<p><img src="docs/vhs/poml-cli.gif" alt="POML CLI quickstart"/></p>
-</li>
-<li>
-<p><strong>Go builder</strong>: Assemble a document with the fluent builder, render it back to POML, and emit OpenAI Chat JSON.</p>
-<p><img src="docs/vhs/poml-go-builder.gif" alt="POML builder demo"/></p>
-</li>
-</ul>
-<hr/>
 <h2>📐 Spec Alignment &amp; Coverage</h2>
 <ul>
 <li><strong>Core spec (meta + components)</strong>: Implemented with strict parsing/validation and round-trip rendering. See the canonical docs: <a href="https://microsoft.github.io/poml/latest/language/meta/">Meta</a> and <a href="https://microsoft.github.io/poml/latest/language/components/">Components</a>. Rough coverage: ~95% of the published core; any gaps are tracked in <code>README.poml</code>.</li>
 <li><strong>Contributing expectations</strong>: We mirror the upstream guidance for structure and clarity (<a href="https://microsoft.github.io/poml/latest/contributing/">Contributing</a>). PRs should preserve the POML-first docs policy.</li>
-<li><strong>Tracing</strong>: Python trace semantics are a reference point (<a href="https://microsoft.github.io/poml/latest/python/trace/">Trace docs</a>). Go trace parity is planned; not implemented yet (0%).</li>
-<li><strong>Extended proposal</strong>: The POML Extended proposal is our north star (<a href="https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/">Deep dive</a>). No implementation yet (0%); we keep compatibility in mind for converters and validation.</li>
+<li><strong>Tracing</strong>: Python trace semantics are a reference point (<a href="https://microsoft.github.io/poml/latest/python/trace/">Trace docs</a>). Go trace parity in-progress: OTEL exporters, span attributes, and a deterministic <code>--trace-seed</code> flag exist; fixtures pending.</li>
+<li><strong>Extended proposal</strong>: The POML Extended proposal is our north star (<a href="https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/">Deep dive</a>). Partial support is live (<code>&lt;op&gt;</code>/<code>&lt;figure&gt;</code>/<code>&lt;text&gt;</code>, strict validation, allowlists, mixed content); remaining elements/enums are tracked below.</li>
 </ul>
 <hr/>
 <h2>🗺️ Roadmap (high level)</h2>
 <ul>
-<li>1️⃣ Core fidelity polish (Δ→ 100%): close remaining edge cases from the <a href="https://microsoft.github.io/poml/latest/language/meta/">Meta</a> / <a href="https://microsoft.github.io/poml/latest/language/components/">Components</a> specs; lock lossless round-trips for extended tags.</li>
-<li>2️⃣ Tracing parity (Δ→ 100%): implement Go-side tracing inspired by <a href="https://microsoft.github.io/poml/latest/python/trace/">Python trace</a> with structured spans, deterministic seeds, and regression fixtures.</li>
-<li>3️⃣ Extended runway (Δ→ 30%): prototype safe subsets from the <a href="https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/">POML Extended</a> proposal (custom ops, richer media), gated behind opt-in converters.</li>
-<li>4️⃣ Ecosystem bridges (Δ→ 60%): deepen bindings (LangChain, OpenAI tools, CLI ergonomics) plus a POML ↔ <code>.tape</code> bridge for VHS stories.</li>
+<li>1️⃣ Core fidelity polish (Δ→ 98%): Meta/Components covered (formatting tags as structured segments, meta min/max/components/stylesheet surfaced), lossless round-trips stable, tool wiring validated. Remaining edge cases tracked in <code>meta.plan.poml</code>.</li>
+<li>2️⃣ Tracing parity (Δ→ 45%): OTEL exporters + deterministic <code>--trace-seed</code> landed; span attributes mirror parse/validate/convert. Pending: recorded fixtures + CLI helpers to dump spans.</li>
+<li>3️⃣ Extended runway (Δ→ 75%): Extended tags (<code>&lt;op&gt;/&lt;figure&gt;/&lt;text&gt;</code>), strict validation (names/JSON args/alt/mime/size/attrs), allowlists + aliases/build-tags, embedded-tag extraction flag, mixed/media/text-escape goldens. Remaining: proposal deltas (custom data/media blocks, stricter enums).</li>
+<li>4️⃣ Ecosystem bridges (Δ→ 60%): OpenAI/LangChain converters solid; CLI ergonomics improved (config/allowlists). Experimental LangGraph helpers live in <code>internal/langgraph</code> — optional, not required for core flow.</li>
 </ul>
 <h2>✅ High-priority TODOs</h2>
 <ul>
 <li>[ ] Tighten validator edge cases: unknown attributes, mixed inline content, and whitespace fidelity against upstream golden cases.</li>
-<li>[ ] Ship trace support in Go mirroring Python’s <code>trace/</code> semantics, with golden test fixtures and CLI flag parity.</li>
-<li>[ ] Add converter round-trip goldens for extended tags (hint/example/object/data) and publish % coverage alongside CI.</li>
+<li>[ ] Ship trace support in Go mirroring Python’s <code>trace/</code> semantics, with golden test fixtures and CLI flag parity (seeded spans already wired).</li>
+<li>[ ] Add converter round-trip goldens for extended tags (hint/example/object/data) and publish % coverage alongside CI; keep Extended-off compatibility fixtures.</li>
 <li>[ ] Harden path safety: extend BaseDir/MaxMediaBytes tests with symlink and UNC path fixtures.</li>
-<li>[ ] Publish the <code>.tape</code> converter and wire sample journeys into docs/VHS for end-to-end demos.</li>
+<li>[ ] Expand Extended subset beyond <code>&lt;op&gt;/&lt;figure&gt;</code> (e.g., richer media/data tags) behind opt-in flags; publish allowlist knobs in CLI/config.</li>
 </ul>
 <h3>Onboarding at a glance (ASCII map)</h3>
-<pre><code>┌──────────────┐   parse+validate    ┌──────────────┐   convert/render   ┌───────────────┐
-│  POML file   │ ───────────────────▶│  poml-go SDK │───────────────────▶│  outputs/LLMs │
-└──────────────┘                     └──────────────┘                    └───────────────┘
-       ▲                ▲                    │                ▲
-       │                │                    │ VHS demos      │
-       │ tests/goldens  │ builder API        │ (CLI + Go)     │ ASCII guides
-       └────────────────┴────────────────────┴────────────────┴──────────────
+<pre><code>┌──────────────┐   parse+validate    ┌──────────────┐   convert/render   ┌────────────────────┐
+│  POML file   │ ───────────────────▶│  poml-go SDK │───────────────────▶│  chat JSON / tools │
+└──────────────┘                     └──────────────┘                    └────────────────────┘
+        ▲                ▲                    │                ▲
+        │ tests/goldens  │ builder API        │ builders       │ guides/examples
+        └────────────────┴────────────────────┴────────────────┴──────────────
 </code></pre>
 <h3><code>poml</code> CLI (MCP starter)</h3>
 <p>We ship an experimental Go CLI, <code>poml</code>, with an <code>mcp</code> subcommand that serves a minimal MCP-style HTTP surface for AST inspection:</p>
@@ -178,25 +164,25 @@ fmt.Printf(&quot;%+v\n&quot;, out)
 <li><code>/watch</code> — SSE stream that pushes summaries when the source file changes (enabled when <code>--file</code> is provided)</li>
 <li><code>/ws</code> — WebSocket endpoint that streams summaries (initial + on change) when <code>--file</code> is provided; supports heartbeat and optional auth via <code>POML_MCP_TOKEN</code></li>
 <li><code>/metrics</code> — request counts per endpoint (auth-respects <code>POML_MCP_TOKEN</code>)</li>
-<li>Tracing exporters: <code>--trace-stdout</code> (local dev), <code>--trace-otlp-http</code> or <code>--trace-otlp-grpc</code> (with <code>--trace-insecure</code> toggle)</li>
+<li>Tracing exporters: <code>--trace-stdout</code> (local dev), <code>--trace-otlp-http</code> or <code>--trace-otlp-grpc</code> (with <code>--trace-insecure</code> toggle), <code>--trace-seed</code> for deterministic in-memory spans</li>
 </ul>
 <p>Roadmap highlights (see <code>meta.plan.poml</code>):</p>
 <ul>
 <li>Search endpoints (tag/attr/text), validation error details, conversions on demand.</li>
 <li>Tool/diagram introspection, media safety signals, round-trip checks.</li>
 <li>OTEL tracing/metrics (toggle with <code>--trace-stdout</code>), watch/reload + push, patch/diff APIs, auth toggle.</li>
-<li>Future docs + VHS demo when feature set stabilizes.</li>
+<li>Docs refresh follows feature stability.</li>
 </ul>
 <hr/>
 <h2>📚 Documentation Strategy (beacon mode)</h2>
 <ul>
 <li><strong>Doc plan</strong>: living strategy in <code>docs/doc_plan.poml</code> (audiences, pillars, owners, timelines). Keep it in sync with code and releases.</li>
 <li><strong>Spec links</strong>: <a href="https://microsoft.github.io/poml/latest/language/meta/">Meta</a> · <a href="https://microsoft.github.io/poml/latest/language/components/">Components</a> · <a href="https://microsoft.github.io/poml/latest/python/trace/">Trace</a> · <a href="https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/">Extended</a></li>
-<li><strong>Content set</strong>: <code>README.mdx</code> (landing), <code>README.poml</code> (structured), <code>PLAN.poml</code> / <code>meta.plan.poml</code> (execution), <code>go.quality.poml</code> (code bar), <code>docs/vhs/*.tape|.gif</code> (motion), more guides in <code>docs/*.poml</code>.</li>
-<li><strong>Quality bar</strong>: every feature ships with docs + runnable example or VHS; linkcheck/spellcheck + gofmt for snippets; coverage/spec % published.</li>
+<li><strong>Content set</strong>: <code>README.mdx</code> (landing), <code>README.poml</code> (structured), <code>PLAN.poml</code> / <code>meta.plan.poml</code> (execution), <code>go.quality.poml</code> (code bar), more guides in <code>docs/*.poml</code>.</li>
+<li><strong>Quality bar</strong>: every feature ships with docs + runnable example; linkcheck/spellcheck + gofmt for snippets; coverage/spec % published.</li>
 </ul>
 <p>ASCII doc flow:</p>
-<pre><code>Specs &amp; code ▶ tests/goldens ▶ docs (POML + README) ▶ demos (VHS) ▶ users/agents
+<pre><code>Specs &amp; code ▶ tests/goldens ▶ docs (POML + README) ▶ users/agents
 </code></pre>
 <hr/>
 <h2>📘 Documentation</h2>

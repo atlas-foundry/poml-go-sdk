@@ -47,6 +47,7 @@ func runMCP(args []string) {
 	traceOTLPHTTP := fs.String("trace-otlp-http", "", "OTLP/HTTP endpoint for tracing (e.g., localhost:4318)")
 	traceOTLPGRPC := fs.String("trace-otlp-grpc", "", "OTLP/gRPC endpoint for tracing (e.g., localhost:4317)")
 	traceInsecure := fs.Bool("trace-insecure", true, "allow insecure OTLP exporters")
+	traceSeed := fs.String("trace-seed", "", "optional deterministic trace seed (in-memory exporter)")
 	extendedStrict := fs.Bool("extended-strict", false, "enable strict POML Extended parsing/validation")
 	extendedLenient := fs.Bool("extended", false, "enable lenient POML Extended parsing (no extra validation)")
 	extractTags := fs.Bool("extract-embedded-tags", false, "attempt to lift inline <tag> fragments in mixed text (experimental)")
@@ -84,6 +85,8 @@ func runMCP(args []string) {
 		traceOpts.TracerProvider = mcp.OTLPHTTPTracerProvider(*traceOTLPHTTP, *traceInsecure)
 	case *traceOTLPGRPC != "":
 		traceOpts.TracerProvider = mcp.OTLPGRPCTracerProvider(*traceOTLPGRPC, *traceInsecure)
+	case strings.TrimSpace(*traceSeed) != "":
+		traceOpts.TracerProvider = mcp.InMemoryTracerProvider(strings.TrimSpace(*traceSeed))
 	}
 
 	parseOpts := poml.ParseOptions{PreserveWhitespace: true, Validate: false, Extended: poml.ExtendedOff}
