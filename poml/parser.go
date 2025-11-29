@@ -106,6 +106,7 @@ type Meta struct {
 	MinVersion string `xml:"minVersion,attr,omitempty"`
 	MaxVersion string `xml:"maxVersion,attr,omitempty"`
 	Components string `xml:"components,attr,omitempty"`
+	Stylesheet string `xml:"stylesheet,attr,omitempty"`
 }
 
 func isZeroMeta(m Meta) bool {
@@ -114,7 +115,8 @@ func isZeroMeta(m Meta) bool {
 		m.Owner == "" &&
 		m.MinVersion == "" &&
 		m.MaxVersion == "" &&
-		m.Components == ""
+		m.Components == "" &&
+		m.Stylesheet == ""
 }
 
 // Block holds free-form body content for task/role/style sections.

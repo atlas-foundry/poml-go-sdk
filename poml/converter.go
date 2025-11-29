@@ -289,6 +289,23 @@ func convertDict(doc Document, opts ConvertOptions) (dictOutput, error) {
 	if doc.hasSchema() {
 		out.Schema = parseJSONFallback(doc.Schema.Body)
 	}
+	if doc.Meta.MinVersion != "" || doc.Meta.MaxVersion != "" || doc.Meta.Components != "" || doc.Meta.Stylesheet != "" {
+		if out.Runtime == nil {
+			out.Runtime = map[string]any{}
+		}
+		if doc.Meta.MinVersion != "" {
+			out.Runtime["min_version"] = doc.Meta.MinVersion
+		}
+		if doc.Meta.MaxVersion != "" {
+			out.Runtime["max_version"] = doc.Meta.MaxVersion
+		}
+		if doc.Meta.Components != "" {
+			out.Runtime["components"] = doc.Meta.Components
+		}
+		if doc.Meta.Stylesheet != "" {
+			out.Runtime["stylesheet"] = doc.Meta.Stylesheet
+		}
+	}
 	if len(doc.ToolDefs) > 0 {
 		for _, td := range doc.ToolDefs {
 			out.Tools = append(out.Tools, buildFlatToolDefinition(td))
@@ -555,6 +572,18 @@ func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error
 				"strict": true,
 			},
 		}
+	}
+	if doc.Meta.MinVersion != "" {
+		result["min_version"] = doc.Meta.MinVersion
+	}
+	if doc.Meta.MaxVersion != "" {
+		result["max_version"] = doc.Meta.MaxVersion
+	}
+	if doc.Meta.Components != "" {
+		result["components"] = doc.Meta.Components
+	}
+	if doc.Meta.Stylesheet != "" {
+		result["stylesheet"] = doc.Meta.Stylesheet
 	}
 	if rt := collectRuntime(doc); rt != nil {
 		for k, v := range rt {
