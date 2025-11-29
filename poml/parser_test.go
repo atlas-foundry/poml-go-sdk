@@ -254,6 +254,24 @@ func TestValidateDuplicateCoreSections(t *testing.T) {
 	}
 }
 
+func TestValidateMissingCoreAttrs(t *testing.T) {
+	doc := Document{
+		Meta:  Meta{},
+		Role:  Block{Body: ""},
+		Tasks: []Block{{Body: ""}},
+		Inputs: []Input{
+			{Name: "", Required: true},
+		},
+		Documents: []DocRef{{Src: ""}},
+		Styles:    []Style{{Outputs: []Output{{Format: ""}}}},
+		ToolDefs:  []ToolDefinition{{Name: "", Body: ""}},
+		Messages:  []Message{{Role: "human", Body: ""}},
+	}
+	if err := doc.Validate(); err == nil {
+		t.Fatalf("expected validation errors for missing core attrs")
+	}
+}
+
 func TestParseExtendedUnknownAllowed(t *testing.T) {
 	src := `<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task><op name="alpha" foo="bar"/></poml>`
 	if _, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true, Extended: ExtendedOff}); err == nil {
