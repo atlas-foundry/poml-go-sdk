@@ -1,0 +1,43 @@
+<poml>
+  <meta>
+    <id>tracing_parity.plan.poml-go-sdk</id>
+    <version>0.1.0</version>
+    <owner>poml-go-sdk</owner>
+  </meta>
+  <role>Reach tracing parity with the Python SDK: structured spans, deterministic seeds, and regression fixtures.</role>
+
+  <task caption="Spec & design">
+    <list>
+      <item>Mirror https://microsoft.github.io/poml/latest/python/trace/ semantics: spans for parse/validate/convert, deterministic seeds, payload capture.</item>
+      <item>Define TraceOptions for converters (already present) and parser; document fields and defaults.</item>
+    </list>
+  </task>
+
+  <task caption="Implementation">
+    <list>
+      <item>Add structured spans for convert/validate/parse builders with attributes (meta.id/version, format, durations).</item>
+      <item>Propagate TraceOptions through converter registry and CLI flags (trace-http/grpc/stdout exist; add trace seeds if applicable).</item>
+    </list>
+  </task>
+
+  <task caption="Fixtures & tests">
+    <list>
+      <item>Add regression fixtures capturing spans for parse/validate/convert (similar to Python trace examples).</item>
+      <item>Determinism checks: same input/seed yields stable spans; malformed inputs produce error spans.</item>
+    </list>
+  </task>
+
+  <task caption="Docs & CLI">
+    <list>
+      <item>Update README.mdx/README.poml with tracing parity status, flags, and sample span output.</item>
+      <item>CLI: expose trace seed/attrs flags; document in help.</item>
+    </list>
+  </task>
+
+  <task caption="Acceptance">
+    <list>
+      <item>Spans emitted for parse/validate/convert match Python trace shape; deterministic with seeds.</item>
+      <item>CI includes tracing fixtures; docs explain usage.</item>
+    </list>
+  </task>
+</poml>

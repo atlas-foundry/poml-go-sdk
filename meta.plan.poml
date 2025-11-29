@@ -18,6 +18,12 @@
     </list>
   </task>
 
+  <task caption="Priority 3: Tracing parity">
+    <list>
+      <item>See <cp>tracing_parity.plan.poml</cp> for trace spans/seeds/fixtures toward Python parity.</item>
+    </list>
+  </task>
+
   <task caption="Backlog (after parity)">
     <list>
       <item>Benchmark parity vs other SDKs (benchmarks.plan.poml).</item>
