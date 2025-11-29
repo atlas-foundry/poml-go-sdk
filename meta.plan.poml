@@ -8,7 +8,7 @@
 
   <task caption="Priority 1: Extended POML parity">
     <list>
-      <item>See <cp>extended_parity.plan.poml</cp> for the full end-to-end breakdown.</item>
+      <item>See <cp>extended_parity.plan.poml</cp> for the full end-to-end breakdown (schema/enums → converters → goldens → docs).</item>
     </list>
   </task>
 

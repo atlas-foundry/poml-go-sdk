@@ -1,55 +1,55 @@
 <poml>
   <meta>
-    <id>extended_parity.plan.poml-go-sdk</id>
-    <version>0.2.0</version>
+    <id>extended_parity.plan</id>
+    <version>0.1.0</version>
     <owner>poml-go-sdk</owner>
   </meta>
-  <role>Complete Extended POML support per upstream proposal with tests/goldens and docs.</role>
+  <role>Achieve Extended proposal parity with opt-in gating and ExtendedOff compatibility.</role>
 
-  <task caption="Segmentation & parsing">
+  <task caption="Schema/enums (highest)">
     <list>
-      <item>Mixed content: DONE via synthetic `<poml mode="extended">` wrapper + text fallback. NEXT: optional smarter segmentation of tag fragments inside text while preserving whitespace/comments.</item>
-      <item>Text escape: DONE (`<text>` treated as literal, round-trips).</item>
-      <item>Metadata anywhere: DONE — first `<meta>` populates Document.Meta; all metas remain in Elements order.</item>
-      <item>Aliasing: DONE via `<extended-op>/<extended-figure>` toggled by `noextendedalias` build tag (enabled by default).</item>
+      <item>Finalize MIME/kind enums per proposal: images (png/jpeg/webp/svg/tiff/heic/avif), audio (flac/ogg/opus/aac/mp4), video (mp4/webm/quicktime/mpeg/matroska/avi/m4v/3gpp), data (json/xml/octet-stream). Extend allowlists to include proposal-specific media/data kinds; keep CLI/env/POML allowlist knobs.</item>
+      <item>Objects/data blocks: enforce syntax/data requirements and allowed kinds (json/xml/octet-stream) in strict mode.</item>
+      <item>Ops: enforce allowed kinds (builtin/custom/tool/function) with allowlist override; ensure args JSON, name required.</item>
+      <item>Figures/media: enforce alt/syntax/size; allow data/body with inferred syntax only when data URI provides it; width/height numeric.</item>
+      <item>Build ExtendedOff regression fixtures ensuring defaults reject Extended elements unless mode="extended" or flag.</item>
     </list>
   </task>
 
-  <task caption="Validation rules">
+  <task caption="Parsing/rendering">
     <list>
-      <item>Extended vs default: PARTIAL — text blocks gated; unknowns allowed ExtendedOn; strict mode enforces op/figure/object completeness, figure alt/syntax, and optional media size caps.</item>
-      <item>Strict Extended: PARTIAL — media size validation & required fields added; remaining TODO: richer attr/schema validation from proposal.</item>
+      <item>Add parser/render tests for remaining Extended elements (custom media/data blocks) and unknown-attr rejection toggle.</item>
+      <item>Extend lossless corpus with Extended-on and Extended-off cases covering new elements and mixed text.</item>
     </list>
   </task>
 
   <task caption="Converters">
     <list>
-      <item>Carry text blocks, ops/figures, unknowns through message_dict/dict/OpenAI/LangChain/scene formats in Extended mode (PARTIAL: text gated; ops/figures handled; mixed-content goldens for OpenAI/message_dict/LangChain added).</item>
-      <item>Ensure default (ExtendedOff) omits extended content safely (PARTIAL: text gated; ops/figures conditional).</item>
-      <item>TODO: add goldens for extended media.</item>
+      <item>Emit Extended data/media/ops across dict/OpenAI/LangChain; ensure ExtendedOff drops/flags appropriately.</item>
+      <item>Add converter goldens for ExtendedOn/Off for new tags (data/object/media variants) and op kinds.</item>
     </list>
   </task>
 
-  <task caption="Fixtures & goldens">
+  <task caption="Validation goldens">
     <list>
-      <item>PARTIAL: mixed-content, media/object, and text-escape fixtures + goldens added; TODO any remaining edge cases.</item>
-      <item>PARTIAL: goldens for Extended converts (OpenAI/message_dict/LangChain) added; round-trip parse→encode for media covered by tests.</item>
+      <item>Add strict invalid fixtures: bad mime/kind, missing syntax/alt, oversize media, bad width/height, bad op args JSON, unknown attrs when reject-unknown on.</item>
+      <item>Add lenient fixtures: Extended lenient accepts unknown attrs but still requires core mandatory fields.</item>
     </list>
   </task>
 
-  <task caption="Docs & CLI">
+  <task caption="Mixed text/segmentation">
     <list>
-      <item>TODO: document Extended opt-in (root mode="extended" or flags), supported tags, and limits.</item>
-      <item>TODO: note defaults (Extended off, unknowns gated); include examples for text escape and mixed files.</item>
+      <item>Expand segmentation tests for inline tags, escapes, and embedded-tag extraction to match proposal guidance.</item>
+      <item>Add goldens for text-escape + media inline cases.</item>
     </list>
   </task>
 
-  <task caption="Acceptance criteria">
+  <task caption="Docs/CLI">
     <list>
-      <item>All new fixtures pass go test ./poml/... and match goldens.</item>
-      <item>Extended mode can parse mixed text/POML files and `<text>` escapes without losing content.</item>
-      <item>Converters include extended nodes when enabled and exclude them when off, with goldens for mixed cases.</item>
-      <item>README/CLI flags clearly describe Extended behavior.</item>
+      <item>Document Extended enablement (mode=\"extended\", flags), allowlist knobs, and new enums/tags with examples.</item>
+      <item>Update roadmap status and README/build docs once the above land.</item>
     </list>
   </task>
+
+  <output-format>Keep each task tied to fixtures/tests; mark completion in this file.</output-format>
 </poml>

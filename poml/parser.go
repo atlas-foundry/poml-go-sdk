@@ -896,6 +896,12 @@ func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 	if opts.AllowedMIMETypes != nil {
 		allowedMIME = opts.AllowedMIMETypes
 	}
+	if opts.Extended == ExtendedOff {
+		if len(d.Ops) > 0 || len(d.Figures) > 0 || len(d.Objects) > 0 {
+			issues = append(issues, "extended elements present but extended validation disabled")
+			details = append(details, ValidationDetail{Element: ElementUnknown, Message: "extended elements require extended mode"})
+		}
+	}
 	for _, doc := range d.Documents {
 		if strings.TrimSpace(doc.Src) == "" {
 			issues = append(issues, "document src is required")
