@@ -328,20 +328,8 @@ func parseExtendedMixed(body []byte, opts ParseOptions) (Document, error) {
 	if strings.TrimSpace(string(body)) == "" {
 		return doc, fmt.Errorf("parse poml: empty document")
 	}
-	// Try to segment as an extended fragment by wrapping in a synthetic root.
-	synth := fmt.Sprintf("<poml mode=\"extended\">%s</poml>", string(body))
-	dec := xml.NewDecoder(strings.NewReader(synth))
-	// consume synthetic root
-	for {
-		tok, err := dec.Token()
-		if err != nil {
-			break
-		}
-		if se, ok := tok.(xml.StartElement); ok && se.Name.Local == "poml" {
-			break
-		}
-	}
-	if frag, err := decodePoml(dec, opts); err == nil {
+	// First attempt: synthetic root (strict XML path).
+	if frag, err := parseSyntheticRoot(body, opts); err == nil {
 		return frag, nil
 	}
 	// Fallback: preserve entire body as a text block.
@@ -349,6 +337,22 @@ func parseExtendedMixed(body []byte, opts ParseOptions) (Document, error) {
 	el := doc.newElement(ElementText, 0, "")
 	doc.Elements = append(doc.Elements, el)
 	return doc, nil
+}
+
+// parseSyntheticRoot wraps body in <poml mode="extended"> for a strict XML decode.
+func parseSyntheticRoot(body []byte, opts ParseOptions) (Document, error) {
+	synth := fmt.Sprintf("<poml mode=\"extended\">%s</poml>", string(body))
+	dec := xml.NewDecoder(strings.NewReader(synth))
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			return Document{}, err
+		}
+		if se, ok := tok.(xml.StartElement); ok && se.Name.Local == "poml" {
+			opts = applyRootExtendedMode(opts, se)
+			return decodePoml(dec, opts)
+		}
+	}
 }
 
 type ErrorType string
@@ -2060,18 +2064,18 @@ func (d *Document) Scene() Scene {
 			}
 		case ElementDocument:
 			if el.Index >= 0 && el.Index < len(d.Documents) {
-				scene.Meta = mergeMeta(scene.Meta, d.Documents[el.Index].Attrs)
+				scene.Meta = mergeMetaAttrs(scene.Meta, d.Documents[el.Index].Attrs)
 			}
 		case ElementRuntime:
 			if el.Index >= 0 && el.Index < len(d.Runtimes) {
-				scene.Meta = mergeMeta(scene.Meta, d.Runtimes[el.Index].Attrs)
+				scene.Meta = mergeMetaAttrs(scene.Meta, d.Runtimes[el.Index].Attrs)
 			}
 		}
 	}
 	return scene
 }
 
-func mergeMeta(meta map[string]any, attrs []xml.Attr) map[string]any {
+func mergeMetaAttrs(meta map[string]any, attrs []xml.Attr) map[string]any {
 	if len(attrs) == 0 {
 		return meta
 	}
@@ -2230,10 +2234,6 @@ func (d Document) payloadFor(el Element) ElementPayload {
 		if el.Index >= 0 && el.Index < len(d.OutFormats) {
 			return ElementPayload{OutputFormat: &d.OutFormats[el.Index]}
 		}
-	case ElementText:
-		if el.Index >= 0 && el.Index < len(d.Texts) {
-			return ElementPayload{Raw: d.Texts[el.Index].Body}
-		}
 	case ElementObject:
 		if el.Index >= 0 && el.Index < len(d.Objects) {
 			return ElementPayload{Object: &d.Objects[el.Index]}
@@ -2285,6 +2285,10 @@ func (d Document) payloadFor(el Element) ElementPayload {
 	case ElementFigure:
 		if el.Index >= 0 && el.Index < len(d.Figures) {
 			return ElementPayload{Figure: &d.Figures[el.Index]}
+		}
+	case ElementText:
+		if el.Index >= 0 && el.Index < len(d.Texts) {
+			return ElementPayload{Raw: d.Texts[el.Index].Body}
 		}
 	case ElementUnknown:
 		return ElementPayload{Raw: el.RawXML}
