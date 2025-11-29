@@ -1,0 +1,6 @@
+<poml mode="extended">
+  <meta><id>extended.data</id><version>1</version><owner>sdk</owner></meta>
+  <role>r</role><task>t</task>
+  <data syntax="application/json">{"k": "v"}</data>
+  <data syntax="application/xml"><root>v</root></data>
+</poml>

@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "{\"k\": \"v\"}"
+    },
+    {
+      "role": "user",
+      "content": "<root>v</root>"
+    }
+  ]
+}

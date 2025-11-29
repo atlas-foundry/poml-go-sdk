@@ -826,6 +826,17 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 				"type": "human",
 				"data": map[string]any{"content": content},
 			})
+		case ElementUnknown:
+			if opts.Extended == ExtendedOff {
+				continue
+			}
+			if strings.EqualFold(el.Name, "data") {
+				body := strings.TrimSpace(doc.elementBody(el))
+				messages = append(messages, map[string]any{
+					"type": "human",
+					"data": map[string]any{"content": body},
+				})
+			}
 		case ElementToolRequest:
 			tr := doc.ToolReqs[el.Index]
 			call := map[string]any{

@@ -1,0 +1,16 @@
+{
+  "messages": [
+    {
+      "type": "human",
+      "data": {
+        "content": "{\"k\": \"v\"}"
+      }
+    },
+    {
+      "type": "human",
+      "data": {
+        "content": "<root>v</root>"
+      }
+    }
+  ]
+}

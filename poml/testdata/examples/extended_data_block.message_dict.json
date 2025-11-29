@@ -1,0 +1,18 @@
+[
+  {
+    "speaker": "human",
+    "content": {
+      "type": "data",
+      "syntax": "application/json",
+      "body": "{\"k\": \"v\"}"
+    }
+  },
+  {
+    "speaker": "human",
+    "content": {
+      "type": "data",
+      "syntax": "application/xml",
+      "body": "<root>v</root>"
+    }
+  }
+]
