@@ -1,0 +1,43 @@
+<poml>
+  <meta>
+    <id>core_fidelity.plan.poml-go-sdk</id>
+    <version>0.1.0</version>
+    <owner>poml-go-sdk</owner>
+  </meta>
+  <role>Finish Core POML parity (meta/components) with strict validation, lossless guarantees, and converter coverage.</role>
+
+  <task caption="Spec gap audit">
+    <list>
+      <item>Diff against upstream Meta/Components docs; list any missing tags/attrs or behavioral mismatches.</item>
+      <item>Document findings in README.poml/README.mdx parity section.</item>
+    </list>
+  </task>
+
+  <task caption="Validation completeness">
+    <list>
+      <item>Ensure required fields per core tags (meta/role/task/input/document/style/runtime/tool*, messages, schema) emit detailed ValidationDetails for missing/invalid values.</item>
+      <item>Add tests/goldens for malformed core cases (duplicate meta/role/persona, missing required attrs, malformed tool-call wiring).</item>
+    </list>
+  </task>
+
+  <task caption="Lossless round-trips">
+    <list>
+      <item>Add lossless fixtures/goldens for core permutations (messages + tool-calls + schema + runtime + media) and assert whitespace/order preservation.</item>
+      <item>Extend lossless tests to cover these fixtures and fail on diffs.</item>
+    </list>
+  </task>
+
+  <task caption="Converters parity">
+    <list>
+      <item>Verify all core fields (tools/runtime/schema/media/messages) flow through message_dict/dict/OpenAI/LangChain; add missing goldens if any fields drop.</item>
+      <item>Ensure ExtendedOff conversions drop extended-only nodes but keep core intact.</item>
+    </list>
+  </task>
+
+  <task caption="Docs & CI guardrails">
+    <list>
+      <item>Update README.mdx/README.poml to reflect 100% core coverage and strict vs lenient guidance.</item>
+      <item>Add/refresh CI checks or tests to catch core regressions (malformed cases, attr omissions).</item>
+    </list>
+  </task>
+</poml>
