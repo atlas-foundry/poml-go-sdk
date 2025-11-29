@@ -50,7 +50,7 @@ Open-source Go library for **Prompt Orchestration Markup Language (POML)** with 
 **Highlights**
 - Lossless POML parse/validate/encode with whitespace and unknown-tag preservation.
 - Converters: message_dict, dict, OpenAI Chat, LangChain, scene/scenejson; deterministic options for goldens and CI.
-- Extended mode: opt-in mixed text + POML (`mode="extended"`), `<op>/<figure>/<text>` blocks, unknown passthrough; strict validation enforces names/JSON args/alt/mime/size/attrs; aliases via build tags; optional embedded-tag extraction flag; formatting tags handled as structured segments; MIME/op-kind allowlists configurable via flags/env/POML (defaults cover png/jpeg/webp/svg/tiff/heic/avif + flac/ogg/opus/aac/mp4 + mp4/webm/quicktime/mpeg/matroska/avi/m4v/3gpp).
+- Extended mode: opt-in mixed text + POML (`mode="extended"`), `<op>/<figure>/<text>/<data>` blocks, unknown passthrough; strict validation enforces names/JSON args/alt/mime/size/attrs; aliases via build tags; optional embedded-tag extraction flag; formatting tags handled as structured segments; MIME/op-kind allowlists configurable via flags/env/POML (defaults cover png/jpeg/webp/svg/tiff/heic/avif + flac/ogg/opus/aac/mp4 + mp4/webm/quicktime/mpeg/matroska/avi/m4v/3gpp + json/xml/octet-stream for data/objects).
 - Diagram/scene round-trips with attrs/extras; `base_document` seeding keeps meta/role/tasks when rehydrating POML.
 - CLI: `poml mcp` serves AST/validation/convert endpoints with optional tracing (stdout/OTLP/seeded in-memory), `--trace-seed` for deterministic spans (goldens via `poml.NewTraceRecorder`), `/traces` dumps recorded spans when seeded, and configurable allowlists via flags/env/POML config; formatting/meta attrs surfaced in converters.
 
@@ -171,7 +171,7 @@ Extended mode lets you mix plain text and POML via `<poml mode="extended"> ...`.
 
 - 1️⃣ Core fidelity polish (Δ→ 98%): Meta/Components covered (formatting tags as structured segments, meta min/max/components/stylesheet surfaced), lossless round-trips stable, tool wiring validated. Remaining edge cases tracked in `meta.plan.poml`.
 - 2️⃣ Tracing parity (Δ→ 60%): OTEL exporters + deterministic `--trace-seed` landed; span attributes mirror parse/validate/convert; seeded trace goldens ship for parse/validate/convert. Pending: CLI helpers to dump spans on demand and more scenario fixtures.
-- 3️⃣ Extended runway (Δ→ 78%): Extended tags (`<op>/<figure>/<text>`), strict validation (names/JSON args/alt/mime/size/attrs), richer allowlists + aliases/build-tags, embedded-tag extraction flag, mixed/media/text-escape goldens. Remaining: proposal deltas (custom data/media blocks, stricter enums) — see plan below.
+- 3️⃣ Extended runway (Δ→ 82%): Extended tags (`<op>/<figure>/<text>/<data>`), strict validation (names/JSON args/alt/mime/size/attrs), richer allowlists + aliases/build-tags, embedded-tag extraction flag, mixed/media/text-escape/data goldens. Remaining: proposal deltas (custom media/data nuances, stricter enums) — see plan below.
 - 4️⃣ Ecosystem bridges (Δ→ 60%): OpenAI/LangChain converters solid; CLI ergonomics improved (config/allowlists). Experimental LangGraph helpers live in `internal/langgraph` — optional, not required for core flow.
 
 ### Extended completion plan (proposal-aligned)
