@@ -1,45 +1,46 @@
 <poml>
   <meta>
     <id>extended_parity.plan.poml-go-sdk</id>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <owner>poml-go-sdk</owner>
   </meta>
   <role>Complete Extended POML support per upstream proposal with tests/goldens and docs.</role>
 
   <task caption="Segmentation & parsing">
     <list>
-      <item>Mixed content: segment TEXT + POML in files without a root by detecting known tags and preserving interleaved text blocks.</item>
-      <item>Text escape: ensure `<text>...</text>` treats inner content as literal (no tag interpretation) and round-trips with whitespace.</item>
-      <item>Metadata anywhere: accept `<meta>` outside top, normalize into Document.Meta while preserving order/comments.</item>
-      <item>Aliasing: load component aliases from upstream definitions if available; otherwise maintain current short tags.</item>
+      <item>Mixed content: DONE via synthetic `<poml mode="extended">` wrapper + text fallback. NEXT: optional smarter segmentation of tag fragments inside text while preserving whitespace/comments.</item>
+      <item>Text escape: DONE (`<text>` treated as literal, round-trips).</item>
+      <item>Metadata anywhere: TODO — allow `<meta>` outside top; normalize into Document.Meta while preserving order/comments.</item>
+      <item>Aliasing: TODO — load component aliases from upstream definitions if available; otherwise keep current short tags.</item>
     </list>
   </task>
 
   <task caption="Validation rules">
     <list>
-      <item>Extended vs default: unknowns/text blocks allowed only when Extended is on; clear error details otherwise.</item>
-      <item>Strict Extended: enforce required meta/role/task, validate extended media sizes/attrs, and surface line/column where possible.</item>
+      <item>Extended vs default: PARTIAL — text blocks gated; unknowns allowed ExtendedOn. TODO: clearer errors for extended-only tags/media.</item>
+      <item>Strict Extended: TODO — enforce required meta/role/task; validate extended media sizes/attrs; surface element/field in details.</item>
     </list>
   </task>
 
   <task caption="Converters">
     <list>
-      <item>Carry text blocks, ops/figures, unknowns through message_dict/dict/OpenAI/LangChain/scene formats in Extended mode.</item>
-      <item>Ensure default (ExtendedOff) omits extended content safely.</item>
+      <item>Carry text blocks, ops/figures, unknowns through message_dict/dict/OpenAI/LangChain/scene formats in Extended mode (PARTIAL: text gated; ops/figures handled).</item>
+      <item>Ensure default (ExtendedOff) omits extended content safely (PARTIAL: text gated; ops/figures conditional).</item>
+      <item>TODO: add goldens for mixed-content conversions and extended media.</item>
     </list>
   </task>
 
   <task caption="Fixtures & goldens">
     <list>
-      <item>Add mixed-content fixtures (text + tags), text-escape fixtures, and extended media/object fixtures.</item>
-      <item>Goldens for Extended converts (OpenAI/LangChain/message_dict) and round-trip parse→encode.</item>
+      <item>TODO: add mixed-content fixtures (text + tags), text-escape fixtures, extended media/object fixtures.</item>
+      <item>TODO: goldens for Extended converts (OpenAI/LangChain/message_dict) and round-trip parse→encode.</item>
     </list>
   </task>
 
   <task caption="Docs & CLI">
     <list>
-      <item>Document Extended opt-in (root mode=\"extended\" or flags), supported tags, and limits.</item>
-      <item>Note defaults: Extended off, unknowns gated; include examples for text escape and mixed files.</item>
+      <item>TODO: document Extended opt-in (root mode="extended" or flags), supported tags, and limits.</item>
+      <item>TODO: note defaults (Extended off, unknowns gated); include examples for text escape and mixed files.</item>
     </list>
   </task>
 
@@ -47,7 +48,7 @@
     <list>
       <item>All new fixtures pass go test ./poml/... and match goldens.</item>
       <item>Extended mode can parse mixed text/POML files and `<text>` escapes without losing content.</item>
-      <item>Converters include extended nodes when enabled and exclude them when off.</item>
+      <item>Converters include extended nodes when enabled and exclude them when off, with goldens for mixed cases.</item>
       <item>README/CLI flags clearly describe Extended behavior.</item>
     </list>
   </task>
