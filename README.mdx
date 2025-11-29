@@ -169,9 +169,9 @@ Extended mode lets you mix plain text and POML via `<poml mode="extended"> ...`.
 
 ## 🗺️ Roadmap (high level)
 
-- 1️⃣ Core fidelity polish (Δ→ 95%): core Meta/Components largely covered; lossless round-trips stable; remaining edge cases and strict Extended goldens under active work.
+- 1️⃣ Core fidelity polish (Δ→ 100%): Meta/Components covered (formatting tags as structured segments, meta min/max/components/stylesheet surfaced), lossless round-trips stable, tool wiring validated. Ongoing: keep goldens in sync with upstream.
 - 2️⃣ Tracing parity (Δ→ 30%): tracing hooks planned; Go-side spans/fixtures pending.
-- 3️⃣ Extended runway (Δ→ 70%): Extended tags (`<op>/<figure>/<text>`), strict validation (names/JSON args/alt/mime/size/attrs), allowlists + aliases/build-tags, embedded-tag extraction flag, mixed/media/text-escape goldens. Remaining: proposal-specific attr enums/goldens if upstream adds more.
+- 3️⃣ Extended runway (Δ→ 70%): Extended tags (`<op>/<figure>/<text>`), strict validation (names/JSON args/alt/mime/size/attrs), allowlists + aliases/build-tags, embedded-tag extraction flag, mixed/media/text-escape goldens. Remaining: upstream proposal deltas only.
 - 4️⃣ Ecosystem bridges (Δ→ 60%): OpenAI/LangChain converters solid; CLI ergonomics improved (config/allowlists); `.tape` bridge still backlog.
 
 ## ✅ High-priority TODOs
