@@ -1,0 +1,55 @@
+{
+  "messages": [
+    {
+      "type": "human",
+      "data": {
+        "content": "Intro text before op."
+      }
+    },
+    {
+      "type": "human",
+      "data": {
+        "content": "literal &lt;role&gt; tags"
+      }
+    },
+    {
+      "type": "human",
+      "data": {
+        "content": [
+          {
+            "type": "op",
+            "name": "call_tool",
+            "body": "do work",
+            "attrs": {},
+            "tag": "op",
+            "kind": "builtin",
+            "args": {
+              "foo": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "human",
+      "data": {
+        "content": "Trailer text."
+      }
+    },
+    {
+      "type": "human",
+      "data": {
+        "content": [
+          {
+            "type": "figure",
+            "source_type": "base64",
+            "mime_type": "image/png",
+            "data": "Zw==",
+            "alt": "shape",
+            "tag": "figure"
+          }
+        ]
+      }
+    }
+  ]
+}

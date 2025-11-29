@@ -1,0 +1,12 @@
+<poml mode="extended">
+  <meta>
+    <id>extended.textescape</id>
+    <version>1.0.0</version>
+    <owner>sdk</owner>
+  </meta>
+  <role>escape demo</role>
+  <task>keep literal text</task>
+  Leading text.
+  <text>escaped &lt;role&gt; and <![CDATA[<task>raw</task>]]></text>
+  Trailing text.
+</poml>

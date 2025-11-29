@@ -1,0 +1,7 @@
+<poml>
+  <meta><id>validation.config</id><version>1</version><owner>sdk</owner></meta>
+  <role>config</role>
+  <task>validation allowlist</task>
+  <object name="allowed-mime">["image/tiff","audio/flac"]</object>
+  <object name="allowed-op-kinds">["custom-kind","macro"]</object>
+</poml>

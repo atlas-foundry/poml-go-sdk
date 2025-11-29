@@ -10,30 +10,30 @@
     <list>
       <item>Mixed content: DONE via synthetic `<poml mode="extended">` wrapper + text fallback. NEXT: optional smarter segmentation of tag fragments inside text while preserving whitespace/comments.</item>
       <item>Text escape: DONE (`<text>` treated as literal, round-trips).</item>
-      <item>Metadata anywhere: TODO — allow `<meta>` outside top; normalize into Document.Meta while preserving order/comments.</item>
-      <item>Aliasing: TODO — load component aliases from upstream definitions if available; otherwise keep current short tags.</item>
+      <item>Metadata anywhere: DONE — first `<meta>` populates Document.Meta; all metas remain in Elements order.</item>
+      <item>Aliasing: DONE via `<extended-op>/<extended-figure>` toggled by `noextendedalias` build tag (enabled by default).</item>
     </list>
   </task>
 
   <task caption="Validation rules">
     <list>
-      <item>Extended vs default: PARTIAL — text blocks gated; unknowns allowed ExtendedOn. TODO: clearer errors for extended-only tags/media.</item>
-      <item>Strict Extended: TODO — enforce required meta/role/task; validate extended media sizes/attrs; surface element/field in details.</item>
+      <item>Extended vs default: PARTIAL — text blocks gated; unknowns allowed ExtendedOn; strict mode enforces op/figure/object completeness, figure alt/syntax, and optional media size caps.</item>
+      <item>Strict Extended: PARTIAL — media size validation & required fields added; remaining TODO: richer attr/schema validation from proposal.</item>
     </list>
   </task>
 
   <task caption="Converters">
     <list>
-      <item>Carry text blocks, ops/figures, unknowns through message_dict/dict/OpenAI/LangChain/scene formats in Extended mode (PARTIAL: text gated; ops/figures handled).</item>
+      <item>Carry text blocks, ops/figures, unknowns through message_dict/dict/OpenAI/LangChain/scene formats in Extended mode (PARTIAL: text gated; ops/figures handled; mixed-content goldens for OpenAI/message_dict/LangChain added).</item>
       <item>Ensure default (ExtendedOff) omits extended content safely (PARTIAL: text gated; ops/figures conditional).</item>
-      <item>TODO: add goldens for mixed-content conversions and extended media.</item>
+      <item>TODO: add goldens for extended media.</item>
     </list>
   </task>
 
   <task caption="Fixtures & goldens">
     <list>
-      <item>TODO: add mixed-content fixtures (text + tags), text-escape fixtures, extended media/object fixtures.</item>
-      <item>TODO: goldens for Extended converts (OpenAI/LangChain/message_dict) and round-trip parse→encode.</item>
+      <item>PARTIAL: mixed-content, media/object, and text-escape fixtures + goldens added; TODO any remaining edge cases.</item>
+      <item>PARTIAL: goldens for Extended converts (OpenAI/message_dict/LangChain) added; round-trip parse→encode for media covered by tests.</item>
     </list>
   </task>
 

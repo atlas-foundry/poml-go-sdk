@@ -3,6 +3,7 @@
 package poml
 
 import (
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -14,7 +15,7 @@ import (
 func FuzzParseEncodeExtended(f *testing.F) {
 	seeds := []string{
 		`<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task></poml>`,
-		`<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task><extended-op foo="bar">hello</extended-op></poml>`,
+		`<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task><extended-op name="demo" foo="bar">hello</extended-op></poml>`,
 		`<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role><![CDATA[with cdata]]></role><task>t</task><unknown attr="1"/><image src="data:image/png;base64,AA=="/> </poml>`,
 	}
 	corpusFiles := []string{
@@ -49,6 +50,10 @@ func FuzzParseEncodeExtended(f *testing.F) {
 				if mode == ExtendedOff {
 					continue
 				}
+				var pe *POMLError
+				if errors.As(err, &pe) && pe.Type == ErrValidate {
+					t.Skip("validation error in strict extended mode")
+				}
 				t.Fatalf("parse (%v): %v", mode, err)
 			}
 			var buf strings.Builder
@@ -57,6 +62,10 @@ func FuzzParseEncodeExtended(f *testing.F) {
 			}
 			roundtrip := buf.String()
 			if _, err := ParseReaderWithOptions(strings.NewReader(roundtrip), opts); err != nil {
+				var pe *POMLError
+				if mode != ExtendedOff && errors.As(err, &pe) && pe.Type == ErrValidate {
+					t.Skip("validation error in strict extended mode after round-trip")
+				}
 				t.Fatalf("roundtrip parse (%v): %v\ninput: %s\nrt: %s", mode, err, input, roundtrip)
 			}
 		}

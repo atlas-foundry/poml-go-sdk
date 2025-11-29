@@ -2,6 +2,8 @@ package poml
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -195,6 +197,40 @@ func TestConvertTextBlocksIgnoredWhenExtendedOff(t *testing.T) {
 	for _, m := range msgs {
 		if s, ok := m.Content.(string); ok && strings.Contains(s, "inline text") {
 			t.Fatalf("expected text block ignored when ExtendedOff, got %+v", msgs)
+		}
+	}
+}
+
+func TestExtendedMediaRoundTrip(t *testing.T) {
+	path := filepath.Join("testdata", "examples", "parity_extended_media.poml")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	parseOpts := ParseOptions{PreserveWhitespace: true, Validate: false, Extended: ExtendedLenient}
+	doc, err := ParseReaderWithOptions(strings.NewReader(string(raw)), parseOpts)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	var buf strings.Builder
+	if err := doc.EncodeWithOptions(&buf, EncodeOptions{IncludeHeader: false, PreserveOrder: true, PreserveWS: true}); err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	doc2, err := ParseReaderWithOptions(strings.NewReader(buf.String()), parseOpts)
+	if err != nil {
+		t.Fatalf("parse2: %v", err)
+	}
+	if len(doc2.Figures) != len(doc.Figures) || len(doc2.Objects) != len(doc.Objects) {
+		t.Fatalf("counts changed after round-trip: figs %d->%d objs %d->%d", len(doc.Figures), len(doc2.Figures), len(doc.Objects), len(doc2.Objects))
+	}
+	for i := range doc.Figures {
+		if doc.Figures[i].Src != doc2.Figures[i].Src || strings.TrimSpace(doc.Figures[i].Body) != strings.TrimSpace(doc2.Figures[i].Body) {
+			t.Fatalf("figure %d changed after round-trip: before=%+v after=%+v", i, doc.Figures[i], doc2.Figures[i])
+		}
+	}
+	for i := range doc.Objects {
+		if strings.TrimSpace(doc.Objects[i].Body) != strings.TrimSpace(doc2.Objects[i].Body) || doc.Objects[i].Syntax != doc2.Objects[i].Syntax {
+			t.Fatalf("object %d changed after round-trip: before=%+v after=%+v", i, doc.Objects[i], doc2.Objects[i])
 		}
 	}
 }

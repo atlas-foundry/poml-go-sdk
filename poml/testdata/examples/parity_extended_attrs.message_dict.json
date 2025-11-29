@@ -1,0 +1,39 @@
+[
+  {
+    "speaker": "human",
+    "content": {
+      "type": "op",
+      "name": "keep",
+      "kind": "custom",
+      "args": {
+        "x": 1
+      },
+      "body": "body",
+      "attrs": {},
+      "tag": "op",
+      "source": "extended"
+    }
+  },
+  {
+    "speaker": "human",
+    "content": {
+      "type": "image/png",
+      "mime": "image/png",
+      "mime_type": "image/png",
+      "alt": "a",
+      "base64": "Zw==",
+      "source": "base64",
+      "syntax": "image/png",
+      "data": "Zw=="
+    }
+  },
+  {
+    "speaker": "human",
+    "content": {
+      "type": "object",
+      "data": "{}",
+      "syntax": "application/json",
+      "body": ""
+    }
+  }
+]

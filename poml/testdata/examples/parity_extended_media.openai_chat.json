@@ -1,0 +1,42 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "mixed text stays literal"
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "vector"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4="
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "inline"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,cmF3LWJ5dGVz"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "{\"foo\": 1}"
+    }
+  ]
+}

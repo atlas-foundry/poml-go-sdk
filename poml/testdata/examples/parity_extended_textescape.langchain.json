@@ -1,0 +1,22 @@
+{
+  "messages": [
+    {
+      "type": "human",
+      "data": {
+        "content": "Leading text."
+      }
+    },
+    {
+      "type": "human",
+      "data": {
+        "content": "escaped &lt;role&gt; and <![CDATA[<task>raw</task>]]>"
+      }
+    },
+    {
+      "type": "human",
+      "data": {
+        "content": "Trailing text."
+      }
+    }
+  ]
+}

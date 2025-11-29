@@ -297,13 +297,14 @@ type ParseOptions struct {
 	Validate bool
 	// Extended toggles parsing of POML Extended constructs. Off by default (parsed as unknown/raw).
 	Extended ExtendedMode
+	// ExtractEmbeddedTags attempts to lift XML-like tags that appear inside text nodes into Elements
+	// while preserving original whitespace/comments. Experimental; off by default.
+	ExtractEmbeddedTags bool
 }
 
 var defaultParseOptions = ParseOptions{PreserveWhitespace: true, Extended: ExtendedOff}
 var strictParseOptions = ParseOptions{PreserveWhitespace: true, Validate: true, Extended: ExtendedOff}
 var fastParseOptions = ParseOptions{PreserveWhitespace: false, Extended: ExtendedOff}
-
-const allowExtendedAliases = true
 
 // applyRootExtendedMode toggles Extended parsing based on root attributes when not explicitly set.
 func applyRootExtendedMode(opts ParseOptions, root xml.StartElement) ParseOptions {
@@ -341,7 +342,11 @@ func parseExtendedMixed(body []byte, opts ParseOptions) (Document, error) {
 
 // parseSyntheticRoot wraps body in <poml mode="extended"> for a strict XML decode.
 func parseSyntheticRoot(body []byte, opts ParseOptions) (Document, error) {
-	synth := fmt.Sprintf("<poml mode=\"extended\">%s</poml>", string(body))
+	content := string(body)
+	if opts.ExtractEmbeddedTags {
+		content = liftEmbeddedTags(content)
+	}
+	synth := fmt.Sprintf("<poml mode=\"extended\">%s</poml>", content)
 	dec := xml.NewDecoder(strings.NewReader(synth))
 	for {
 		tok, err := dec.Token()
@@ -725,12 +730,22 @@ func (d Document) Validate() error {
 
 // ValidateOptions allows toggling validation behavior, including extended support.
 type ValidateOptions struct {
-	Extended ExtendedMode
+	Extended         ExtendedMode
+	MaxMediaBytes    int64               // optional media/figure size cap for validation; <=0 disables limit, zero uses default
+	AllowedMIMETypes map[string]struct{} // optional override/extension of MIME allowlist; nil uses defaults
+	AllowedOpKinds   []string            // optional allowed op kinds; nil uses defaults
+	// When ExtendedStrict is enabled, unknown attributes on extended nodes can optionally be flagged.
+	// Defaults to true for strict mode unless explicitly set.
+	RejectUnknownAttrs *bool
 }
 
 func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 	var issues []string
 	var details []ValidationDetail
+	if opts.Extended == ExtendedStrict && opts.RejectUnknownAttrs == nil {
+		t := true
+		opts.RejectUnknownAttrs = &t
+	}
 	metaCount, roleCount, personaCount, taskCount := 0, 0, 0, len(d.Tasks)
 	if len(d.Elements) > 0 {
 		metaCount, roleCount, personaCount, taskCount = 0, 0, 0, 0
@@ -746,8 +761,14 @@ func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 				taskCount++
 			case ElementUnknown:
 				if opts.Extended == ExtendedOff {
-					issues = append(issues, fmt.Sprintf("unknown element <%s>", el.Name))
-					details = append(details, ValidationDetail{Element: ElementUnknown, Message: "unknown element " + el.Name})
+					switch strings.ToLower(el.Name) {
+					case "op", "operation", "figure", "extended-op", "extended-figure":
+						issues = append(issues, fmt.Sprintf("extended element <%s> not allowed when Extended is off", el.Name))
+						details = append(details, ValidationDetail{Element: ElementUnknown, Message: "extended element " + el.Name})
+					default:
+						issues = append(issues, fmt.Sprintf("unknown element <%s>", el.Name))
+						details = append(details, ValidationDetail{Element: ElementUnknown, Message: "unknown element " + el.Name})
+					}
 				}
 			case ElementText:
 				if opts.Extended == ExtendedOff {
@@ -825,10 +846,109 @@ func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 		}
 		inputIndex++
 	}
+	mediaLimit := opts.MaxMediaBytes
+	if mediaLimit == 0 {
+		mediaLimit = defaultMaxMediaBytes
+	}
+	allowedKinds := AllowedOpKinds
+	if opts.AllowedOpKinds != nil {
+		allowedKinds = opts.AllowedOpKinds
+	}
+	allowedMIME := allowedMediaMIMEs
+	if opts.AllowedMIMETypes != nil {
+		allowedMIME = opts.AllowedMIMETypes
+	}
 	for _, doc := range d.Documents {
 		if strings.TrimSpace(doc.Src) == "" {
 			issues = append(issues, "document src is required")
 			details = append(details, ValidationDetail{Element: ElementDocument, Field: "src", Message: "missing src"})
+		}
+	}
+	if opts.Extended == ExtendedStrict {
+		for i, op := range d.Ops {
+			if strings.TrimSpace(op.Name) == "" {
+				issues = append(issues, fmt.Sprintf("extended op %d missing name", i))
+				details = append(details, ValidationDetail{Element: ElementOp, Field: "name", Message: "missing op name"})
+			}
+			if op.Kind != "" && !allowOpKind(op.Kind, allowedKinds) {
+				issues = append(issues, fmt.Sprintf("extended op %d has invalid kind %q", i, op.Kind))
+				details = append(details, ValidationDetail{Element: ElementOp, Field: "kind", Message: "invalid kind"})
+			}
+			if strings.TrimSpace(op.Args) != "" {
+				if _, ok := parseLooseJSONValue(op.Args); !ok {
+					issues = append(issues, fmt.Sprintf("extended op %d args must be JSON", i))
+					details = append(details, ValidationDetail{Element: ElementOp, Field: "args", Message: "invalid args json"})
+				}
+			}
+			if opts.RejectUnknownAttrs != nil && *opts.RejectUnknownAttrs {
+				for _, a := range op.Attrs {
+					if !isAllowedAttr(a.Name.Local, []string{"name", "kind", "args", "id"}) {
+						issues = append(issues, fmt.Sprintf("extended op %d has unknown attr %q", i, a.Name.Local))
+						details = append(details, ValidationDetail{Element: ElementOp, Field: a.Name.Local, Message: "unknown attribute"})
+					}
+				}
+			}
+		}
+		for i, fig := range d.Figures {
+			if strings.TrimSpace(fig.Src) == "" && strings.TrimSpace(fig.Body) == "" {
+				issues = append(issues, fmt.Sprintf("figure %d must include src or body", i))
+				details = append(details, ValidationDetail{Element: ElementFigure, Field: "src/body", Message: "missing src or body"})
+			}
+			if strings.TrimSpace(fig.Syntax) == "" {
+				// Allow omitted syntax only when it can be inferred from the src data URI; otherwise require explicit syntax.
+				if _, ok := estimateMediaBytes(fig.Src, ""); !ok || guessMime(fig.Src) == "" {
+					issues = append(issues, fmt.Sprintf("figure %d missing syntax", i))
+					details = append(details, ValidationDetail{Element: ElementFigure, Field: "syntax", Message: "missing syntax"})
+				}
+			} else if !allowMIMEWithList(fig.Syntax, allowedMIME) {
+				issues = append(issues, fmt.Sprintf("figure %d has invalid syntax %q", i, fig.Syntax))
+				details = append(details, ValidationDetail{Element: ElementFigure, Field: "syntax", Message: "invalid syntax/mime"})
+			}
+			if strings.TrimSpace(fig.Alt) == "" {
+				issues = append(issues, fmt.Sprintf("figure %d missing alt", i))
+				details = append(details, ValidationDetail{Element: ElementFigure, Field: "alt", Message: "missing alt"})
+			}
+			if mediaLimit > 0 {
+				if size, ok := estimateMediaBytes(fig.Src, fig.Body); ok && size > mediaLimit {
+					issues = append(issues, fmt.Sprintf("figure %d exceeds max media bytes (%d > %d)", i, size, mediaLimit))
+					details = append(details, ValidationDetail{Element: ElementFigure, Field: "src/body", Message: "media too large"})
+				}
+			}
+			if opts.RejectUnknownAttrs != nil && *opts.RejectUnknownAttrs {
+				for _, a := range fig.Attrs {
+					if !isAllowedAttr(a.Name.Local, []string{"src", "alt", "syntax", "width", "height"}) {
+						issues = append(issues, fmt.Sprintf("figure %d has unknown attr %q", i, a.Name.Local))
+						details = append(details, ValidationDetail{Element: ElementFigure, Field: a.Name.Local, Message: "unknown attribute"})
+					}
+					if a.Name.Local == "width" || a.Name.Local == "height" {
+						if !isPositiveNumber(strings.TrimSpace(a.Value)) {
+							issues = append(issues, fmt.Sprintf("figure %d has invalid %s", i, a.Name.Local))
+							details = append(details, ValidationDetail{Element: ElementFigure, Field: a.Name.Local, Message: "invalid numeric value"})
+						}
+					}
+				}
+			}
+		}
+		for i, obj := range d.Objects {
+			if strings.TrimSpace(obj.Body) == "" && strings.TrimSpace(obj.Data) == "" {
+				issues = append(issues, fmt.Sprintf("object %d missing data/body", i))
+				details = append(details, ValidationDetail{Element: ElementObject, Field: "data/body", Message: "missing data/body"})
+			}
+			if strings.TrimSpace(obj.Syntax) == "" {
+				issues = append(issues, fmt.Sprintf("object %d missing syntax", i))
+				details = append(details, ValidationDetail{Element: ElementObject, Field: "syntax", Message: "missing syntax"})
+			} else if !allowMIMEWithList(obj.Syntax, allowedMIME) {
+				issues = append(issues, fmt.Sprintf("object %d has invalid syntax %q", i, obj.Syntax))
+				details = append(details, ValidationDetail{Element: ElementObject, Field: "syntax", Message: "invalid syntax/mime"})
+			}
+			if opts.RejectUnknownAttrs != nil && *opts.RejectUnknownAttrs {
+				for _, a := range obj.Attrs {
+					if !isAllowedAttr(a.Name.Local, []string{"syntax", "data"}) {
+						issues = append(issues, fmt.Sprintf("object %d has unknown attr %q", i, a.Name.Local))
+						details = append(details, ValidationDetail{Element: ElementObject, Field: a.Name.Local, Message: "unknown attribute"})
+					}
+				}
+			}
 		}
 	}
 	for _, st := range d.Styles {
@@ -992,15 +1112,20 @@ func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 // ValidateWithTrace wraps Validate with an OpenTelemetry span. When traceOpts is zero-valued,
 // it behaves like Validate.
 func (d Document) ValidateWithTrace(ctx context.Context, traceOpts TraceOptions) error {
+	return d.ValidateWithTraceOptions(ctx, traceOpts, ValidateOptions{Extended: ExtendedOff})
+}
+
+// ValidateWithTraceOptions allows validation options and tracing together.
+func (d Document) ValidateWithTraceOptions(ctx context.Context, traceOpts TraceOptions, opts ValidateOptions) error {
 	if traceOpts.skip() {
-		return d.Validate()
+		return d.ValidateWithOptions(opts)
 	}
 	_, span := traceOpts.start(ctx, "poml.validate",
 		attribute.String("poml.meta.id", strings.TrimSpace(d.Meta.ID)),
 		attribute.String("poml.meta.version", strings.TrimSpace(d.Meta.Version)),
 	)
 	defer span.End()
-	err := d.Validate()
+	err := d.ValidateWithOptions(opts)
 	if err != nil {
 		span.RecordError(err)
 	}
@@ -1380,7 +1505,7 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 		}
 		tb := TextBlock{Body: body}
 		doc.Texts = append(doc.Texts, tb)
-		el := doc.newElement(ElementText, len(doc.Texts)-1, "")
+		el := doc.newElement(ElementText, len(doc.Texts)-1, "text-segment")
 		if opts.PreserveWhitespace {
 			el.Leading = ""
 			el.Trailing = ""
@@ -1703,7 +1828,7 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 					return doc, wrapXMLError(err, "<text>")
 				}
 				doc.Texts = append(doc.Texts, TextBlock{Body: inner.Body})
-				el := doc.newElement(ElementText, len(doc.Texts)-1, "")
+				el := doc.newElement(ElementText, len(doc.Texts)-1, "text")
 				if preserveWS {
 					el.Leading = leading
 				}
@@ -1725,7 +1850,7 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 						doc.Elements = append(doc.Elements, el)
 						handled = true
 					case "extended-op":
-						if allowExtendedAliases {
+						if extendedAliasesEnabled() {
 							var op ExtendedOp
 							if err := dec.DecodeElement(&op, &t); err != nil {
 								return doc, wrapXMLError(err, fmt.Sprintf("<%s>", t.Name.Local))
@@ -1751,7 +1876,7 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 						doc.Elements = append(doc.Elements, el)
 						handled = true
 					case "extended-figure":
-						if allowExtendedAliases {
+						if extendedAliasesEnabled() {
 							var fig ExtendedFigure
 							if err := dec.DecodeElement(&fig, &t); err != nil {
 								return doc, wrapXMLError(err, fmt.Sprintf("<%s>", t.Name.Local))
@@ -1965,8 +2090,26 @@ func encodeElement(enc *xml.Encoder, out io.Writer, doc Document, el Element, op
 		}
 		err = enc.EncodeElement(doc.OutFormats[el.Index], xml.StartElement{Name: xml.Name{Local: "output-format"}})
 	case ElementText:
-		if err = enc.Flush(); err == nil {
-			_, err = io.WriteString(out, doc.Texts[el.Index].Body)
+		if el.Index < 0 || el.Index >= len(doc.Texts) {
+			return fmt.Errorf("encode text: index %d out of range", el.Index)
+		}
+		body := doc.Texts[el.Index].Body
+		if err = enc.Flush(); err != nil {
+			return err
+		}
+		if el.Name == "text" {
+			if err := enc.EncodeToken(xml.StartElement{Name: xml.Name{Local: "text"}}); err != nil {
+				return err
+			}
+			if err := enc.Flush(); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, body); err != nil {
+				return err
+			}
+			err = enc.EncodeToken(xml.EndElement{Name: xml.Name{Local: "text"}})
+		} else {
+			_, err = io.WriteString(out, body)
 		}
 	case ElementRuntime:
 		if el.Index < 0 || el.Index >= len(doc.Runtimes) {

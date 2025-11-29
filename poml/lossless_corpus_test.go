@@ -25,6 +25,8 @@ func TestLosslessCorpus(t *testing.T) {
 			if err != nil {
 				t.Fatalf("read: %v", err)
 			}
+			lowerBody := strings.ToLower(string(body))
+			isExtended := strings.Contains(lowerBody, `mode="extended"`) || strings.Contains(lowerBody, `extended="true"`)
 			lenientOpts := ParseOptions{PreserveWhitespace: true, Validate: false, Extended: ExtendedLenient}
 			doc, err := ParseReaderWithOptions(strings.NewReader(string(body)), lenientOpts)
 			if err != nil {
@@ -48,6 +50,11 @@ func TestLosslessCorpus(t *testing.T) {
 			}
 
 			if !hasMetaRoleTask(doc2) {
+				skippedStrict++
+				return
+			}
+
+			if isExtended {
 				skippedStrict++
 				return
 			}

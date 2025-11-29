@@ -1,0 +1,47 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Intro text before op."
+    },
+    {
+      "role": "user",
+      "content": "literal &lt;role&gt; tags"
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "[op:call_tool] do work",
+          "metadata": {
+            "kind": "builtin",
+            "args": {
+              "foo": 1
+            },
+            "tag": "op"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Trailer text."
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "shape"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,Zw=="
+          }
+        }
+      ]
+    }
+  ]
+}

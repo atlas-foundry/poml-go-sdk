@@ -1,0 +1,14 @@
+[
+  {
+    "speaker": "human",
+    "content": "Leading text."
+  },
+  {
+    "speaker": "human",
+    "content": "escaped &lt;role&gt; and <![CDATA[<task>raw</task>]]>"
+  },
+  {
+    "speaker": "human",
+    "content": "Trailing text."
+  }
+]

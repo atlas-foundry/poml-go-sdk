@@ -1,0 +1,16 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Leading text."
+    },
+    {
+      "role": "user",
+      "content": "escaped &lt;role&gt; and <![CDATA[<task>raw</task>]]>"
+    },
+    {
+      "role": "user",
+      "content": "Trailing text."
+    }
+  ]
+}

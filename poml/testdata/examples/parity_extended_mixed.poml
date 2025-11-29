@@ -1,0 +1,14 @@
+<poml mode="extended">
+  <meta>
+    <id>extended.mixed</id>
+    <version>1.0.0</version>
+    <owner>sdk</owner>
+  </meta>
+  <role>demo</role>
+  <task>exercise extended elements</task>
+  Intro text before op.
+  <text>literal &lt;role&gt; tags</text>
+  <op name="call_tool" kind="builtin" args='{"foo":1}'>do work</op>
+  Trailer text.
+  <figure src="data:image/png;base64,Zw==" alt="shape" syntax="image/png"/>
+</poml>

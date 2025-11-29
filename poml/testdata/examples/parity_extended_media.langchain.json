@@ -1,0 +1,46 @@
+{
+  "messages": [
+    {
+      "type": "human",
+      "data": {
+        "content": "mixed text stays literal"
+      }
+    },
+    {
+      "type": "human",
+      "data": {
+        "content": [
+          {
+            "type": "figure",
+            "source_type": "base64",
+            "mime_type": "image/svg+xml",
+            "data": "PHN2Zz48L3N2Zz4=",
+            "alt": "vector",
+            "tag": "figure"
+          }
+        ]
+      }
+    },
+    {
+      "type": "human",
+      "data": {
+        "content": [
+          {
+            "type": "figure",
+            "source_type": "base64",
+            "mime_type": "image/png",
+            "data": "cmF3LWJ5dGVz",
+            "alt": "inline",
+            "tag": "figure"
+          }
+        ]
+      }
+    },
+    {
+      "type": "human",
+      "data": {
+        "content": "{\"foo\": 1}"
+      }
+    }
+  ]
+}

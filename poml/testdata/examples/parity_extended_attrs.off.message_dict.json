@@ -1,0 +1,11 @@
+[
+  {
+    "speaker": "human",
+    "content": {
+      "type": "object",
+      "data": "{}",
+      "syntax": "application/json",
+      "body": ""
+    }
+  }
+]

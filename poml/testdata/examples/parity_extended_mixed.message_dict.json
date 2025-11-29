@@ -1,0 +1,42 @@
+[
+  {
+    "speaker": "human",
+    "content": "Intro text before op."
+  },
+  {
+    "speaker": "human",
+    "content": "literal &lt;role&gt; tags"
+  },
+  {
+    "speaker": "human",
+    "content": {
+      "type": "op",
+      "name": "call_tool",
+      "kind": "builtin",
+      "args": {
+        "foo": 1
+      },
+      "body": "do work",
+      "attrs": {},
+      "tag": "op",
+      "source": "extended"
+    }
+  },
+  {
+    "speaker": "human",
+    "content": "Trailer text."
+  },
+  {
+    "speaker": "human",
+    "content": {
+      "type": "image/png",
+      "mime": "image/png",
+      "mime_type": "image/png",
+      "alt": "shape",
+      "base64": "Zw==",
+      "source": "base64",
+      "syntax": "image/png",
+      "data": "Zw=="
+    }
+  }
+]

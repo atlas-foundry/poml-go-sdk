@@ -1,0 +1,7 @@
+<poml mode="extended">
+  <meta><id>extended.attrs</id><version>1</version><owner>sdk</owner></meta>
+  <role>r</role><task>t</task>
+  <op name="keep" kind="custom" args='{"x":1}'>body</op>
+  <figure src="data:image/png;base64,Zw==" alt="a" syntax="image/png" width="10" height="20"/>
+  <object syntax="application/json" data="{}"/>
+</poml>

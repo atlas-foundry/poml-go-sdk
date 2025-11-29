@@ -49,6 +49,13 @@ func runMCP(args []string) {
 	traceInsecure := fs.Bool("trace-insecure", true, "allow insecure OTLP exporters")
 	extendedStrict := fs.Bool("extended-strict", false, "enable strict POML Extended parsing/validation")
 	extendedLenient := fs.Bool("extended", false, "enable lenient POML Extended parsing (no extra validation)")
+	extractTags := fs.Bool("extract-embedded-tags", false, "attempt to lift inline <tag> fragments in mixed text (experimental)")
+	mimeAllow := fs.String("allowed-mime", "", "comma-separated MIME types to allow for figures/objects (extends defaults)")
+	mimeAllowFile := fs.String("allowed-mime-file", "", "path to file with newline-separated MIME types to extend defaults")
+	mimeAllowEnv := fs.String("allowed-mime-env", "POML_ALLOWED_MIME", "env var with comma-separated MIME types (extends defaults)")
+	opKinds := fs.String("allowed-op-kinds", "", "comma-separated op kinds to allow (extends defaults: builtin,custom,tool,function)")
+	opKindsEnv := fs.String("allowed-op-kinds-env", "POML_ALLOWED_OP_KINDS", "env var with comma-separated op kinds")
+	configPOML := fs.String("config-poml", "", "optional POML file containing <object name=\"allowed-mime\">[...]</object> or <object name=\"allowed-op-kinds\">[...]</object>")
 	if err := fs.Parse(args); err != nil {
 		log.Fatalf("parse flags: %v", err)
 	}
@@ -80,11 +87,87 @@ func runMCP(args []string) {
 	}
 
 	parseOpts := poml.ParseOptions{PreserveWhitespace: true, Validate: false, Extended: poml.ExtendedOff}
+	validateOpts := poml.ValidateOptions{Extended: poml.ExtendedOff}
 	if *extendedStrict {
 		parseOpts.Extended = poml.ExtendedStrict
 		parseOpts.Validate = true
+		validateOpts.Extended = poml.ExtendedStrict
 	} else if *extendedLenient {
 		parseOpts.Extended = poml.ExtendedLenient
+		validateOpts.Extended = poml.ExtendedLenient
+	}
+	parseOpts.ExtractEmbeddedTags = *extractTags
+	allow := poml.DefaultAllowedMIMEs()
+	if strings.TrimSpace(*configPOML) != "" {
+		cfg, err := poml.ParseFile(*configPOML)
+		if err != nil {
+			log.Fatalf("parse config poml: %v", err)
+		}
+		if m := extractListFromConfig(cfg, "allowed-mime"); len(m) > 0 {
+			for _, t := range m {
+				allow[strings.ToLower(strings.TrimSpace(t))] = struct{}{}
+			}
+		}
+		if ks := extractListFromConfig(cfg, "allowed-op-kinds"); len(ks) > 0 {
+			validateOpts.AllowedOpKinds = append(validateOpts.AllowedOpKinds, poml.AllowedOpKinds...)
+			validateOpts.AllowedOpKinds = append(validateOpts.AllowedOpKinds, ks...)
+		}
+	}
+	if strings.TrimSpace(*mimeAllow) != "" {
+		for _, t := range strings.Split(*mimeAllow, ",") {
+			t = strings.TrimSpace(t)
+			if t == "" {
+				continue
+			}
+			allow[strings.ToLower(t)] = struct{}{}
+		}
+	}
+	if strings.TrimSpace(*mimeAllowFile) != "" {
+		raw, err := readFile(*mimeAllowFile)
+		if err != nil {
+			log.Fatalf("read allowed-mime-file: %v", err)
+		}
+		for _, line := range strings.Split(string(raw), "\n") {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+			allow[strings.ToLower(line)] = struct{}{}
+		}
+	}
+	if env := strings.TrimSpace(os.Getenv(*mimeAllowEnv)); env != "" {
+		for _, t := range strings.Split(env, ",") {
+			t = strings.TrimSpace(t)
+			if t == "" {
+				continue
+			}
+			allow[strings.ToLower(t)] = struct{}{}
+		}
+	}
+	if len(allow) != len(poml.DefaultAllowedMIMEs()) {
+		validateOpts.AllowedMIMETypes = allow
+	}
+	if strings.TrimSpace(*opKinds) != "" {
+		var allowKinds []string
+		allowKinds = append(allowKinds, poml.AllowedOpKinds...)
+		for _, k := range strings.Split(*opKinds, ",") {
+			k = strings.TrimSpace(k)
+			if k != "" {
+				allowKinds = append(allowKinds, k)
+			}
+		}
+		validateOpts.AllowedOpKinds = allowKinds
+	}
+	if env := strings.TrimSpace(os.Getenv(*opKindsEnv)); env != "" {
+		if len(validateOpts.AllowedOpKinds) == 0 {
+			validateOpts.AllowedOpKinds = append(validateOpts.AllowedOpKinds, poml.AllowedOpKinds...)
+		}
+		for _, k := range strings.Split(env, ",") {
+			k = strings.TrimSpace(k)
+			if k != "" {
+				validateOpts.AllowedOpKinds = append(validateOpts.AllowedOpKinds, k)
+			}
+		}
 	}
 
 	doc, err := poml.ParseReaderWithOptions(strings.NewReader(string(body)), parseOpts)
@@ -92,7 +175,7 @@ func runMCP(args []string) {
 		log.Fatalf("parse POML: %v", err)
 	}
 	if parseOpts.Validate {
-		if err := doc.ValidateWithTrace(context.Background(), traceOpts); err != nil {
+		if err := doc.ValidateWithTraceOptions(context.Background(), traceOpts, validateOpts); err != nil {
 			log.Fatalf("validate POML: %v", err)
 		}
 	}

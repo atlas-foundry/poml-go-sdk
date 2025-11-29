@@ -1,0 +1,15 @@
+<poml mode="extended">
+  <meta>
+    <id>extended.media</id>
+    <version>1.0.0</version>
+    <owner>sdk</owner>
+  </meta>
+  <role>media demo</role>
+  <task>exercise extended figures/media</task>
+  <text>mixed text stays literal</text>
+  <figure src="data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="vector" syntax="image/svg+xml"/>
+  <figure syntax="image/png" alt="inline">raw-bytes</figure>
+  <object syntax="application/json">
+    {"foo": 1}
+  </object>
+</poml>

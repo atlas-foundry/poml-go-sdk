@@ -1,0 +1,39 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "[op:keep] body",
+          "metadata": {
+            "kind": "custom",
+            "args": {
+              "x": 1
+            },
+            "tag": "op"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "a"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,Zw=="
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "{}"
+    }
+  ]
+}

@@ -50,9 +50,9 @@ Open-source Go library for **Prompt Orchestration Markup Language (POML)** with 
 **Highlights**
 - Lossless POML parse/validate/encode with whitespace and unknown-tag preservation.
 - Converters: message_dict, dict, OpenAI Chat, LangChain, scene/scenejson; deterministic options for goldens and CI.
-- Extended mode: opt-in mixed text + POML, `<op>`/`<figure>`, `<text>` blocks, unknown passthrough; root opt-in via `mode="extended"` or CLI flags.
+- Extended mode: opt-in mixed text + POML (`mode="extended"`), `<op>/<figure>/<text>` blocks, unknown passthrough; strict validation enforces names/JSON args/alt/mime/size; aliases via build tags; optional embedded-tag extraction flag.
 - Diagram/scene round-trips with attrs/extras; `base_document` seeding keeps meta/role/tasks when rehydrating POML.
-- CLI: `poml mcp` serves AST/validation/convert endpoints with optional tracing (stdout/OTLP).
+- CLI: `poml mcp` serves AST/validation/convert endpoints with optional tracing (stdout/OTLP) and configurable allowlists via flags/env/POML config.
 
 **Docs & plans (POML-first)**
 - Structured README: `README.poml`
@@ -158,7 +158,7 @@ Quick demos (text walk-throughs):
 [hello.poml] --> (parse/validate) --> [poml.Document] --> (convert) --> [OpenAI JSON] --> LLM
 ```
 
-Extended mode lets you mix plain text and POML (`<poml mode="extended"> ...`). Keep it off unless you need mixed content.
+Extended mode lets you mix plain text and POML via `<poml mode="extended"> ...`. Keep it off unless you need mixed content.
 
 - **Core spec (meta + components)**: Implemented with strict parsing/validation and round-trip rendering. See the canonical docs: [Meta](https://microsoft.github.io/poml/latest/language/meta/) and [Components](https://microsoft.github.io/poml/latest/language/components/). Rough coverage: ~95% of the published core; any gaps are tracked in `README.poml`.
 - **Contributing expectations**: We mirror the upstream guidance for structure and clarity ([Contributing](https://microsoft.github.io/poml/latest/contributing/)). PRs should preserve the POML-first docs policy.
@@ -229,9 +229,46 @@ go run ./cmd/poml mcp --file hello.poml --addr :7777
 ```
 
 Extended parsing/conversion switches:
-- Root opt-in: set `<poml mode="extended">` to enable Extended parsing/validation for a document. Otherwise Extended stays off unless you pass the CLI flags below.
+- Root opt-in: set `<poml mode="extended">` on the root to enable Extended parsing/validation for that document. This is the canonical upstream signal (no `extended="true"` fallback).
 - Runtime flags: `--extended` enables lenient Extended mode; `--extended-strict` enables strict Extended mode (parsing + validation).
 - Extended text: in Extended mode we capture raw text blocks (including `<text>...</text>` wrappers) and surface them through converters; root-less text files also parse as text blocks.
+- Validation knobs: `ValidateWithOptions(ValidateOptions{Extended: poml.ExtendedStrict, MaxMediaBytes: 5<<20})` lets you cap decoded media/figure bytes; set `MaxMediaBytes <= 0` to disable the cap. Strict mode also requires op names and figure/object syntax/src/body.
+- Aliases: `<extended-op>/<extended-figure>` are accepted by default; build with `-tags noextendedalias` to forbid the aliases and require `<op>/<figure>`.
+- Validation gotchas: Strict Extended errors if figures lack `alt` or syntax (unless derivable from a data URI), ops lack `name` or have non-JSON `args`, or objects lack `syntax`/data. Media size checks run when `MaxMediaBytes` is set (default uses converter limit); MIME types are allowlisted by default and can be extended via `ValidateOptions.AllowedMIMETypes`.
+- Validation knobs (strict defaults, configurable):
+  - MIME allowlist: defaults to common image/audio/video/object types; extend via `ValidateOptions.AllowedMIMETypes` or CLI `--allowed-mime image/tiff,audio/flac`.
+  - Op kinds: defaults to `builtin|custom|tool|function`; override with `ValidateOptions.AllowedOpKinds` or CLI `--allowed-op-kinds foo,bar` (env `POML_ALLOWED_OP_KINDS`).
+  - Media size: cap with `MaxMediaBytes`; set to 0 to disable.
+- Allowlist sources: CLI also accepts `--allowed-mime-file` (newline list) and env var `POML_ALLOWED_MIME` (comma list) to extend the defaults without recompiling.
+- Config via POML: use `--config-poml poml/testdata/examples/validation_config.poml` to pull allowlists from `<object name="allowed-mime">[...]</object>` and `<object name="allowed-op-kinds">[...]</object>`.
+  Example config (`validation_config.poml`):
+  ```xml
+  <poml>
+    <meta><id>validation.config</id><version>1</version><owner>sdk</owner></meta>
+    <object name="allowed-mime">["image/tiff","audio/flac"]</object>
+    <object name="allowed-op-kinds">["custom-kind","macro"]</object>
+  </poml>
+  ```
+  Run: `poml mcp --file demo.poml --extended-strict --config-poml poml/testdata/examples/validation_config.poml`
+  - Segmentation (experimental): enable `ParseOptions.ExtractEmbeddedTags` or CLI `--extract-embedded-tags` to lift inline tag fragments from mixed text while preserving whitespace; off by default.
+- Example (mixed content): 
+  ```xml
+  <poml mode="extended">
+    <meta><id>mix</id><version>1</version><owner>you</owner></meta>
+    <role>demo</role><task>show extended</task>
+    before text
+    <text>literal &lt;role&gt; tags</text>
+    <op name="call_tool" kind="custom">do it</op>
+    after text
+    <figure src="data:image/png;base64,Zw==" alt="tiny" syntax="image/png"/>
+  </poml>
+  ```
+  ```go
+  doc, _ := poml.ParseString(pomlBody) // auto-detects mode="extended"
+  _ = doc.ValidateWithOptions(poml.ValidateOptions{Extended: poml.ExtendedStrict})
+  out, _ := poml.Convert(doc, poml.FormatOpenAIChat, poml.ConvertOptions{Extended: poml.ExtendedStrict})
+  // out["messages"] now includes the text segments, op marker, and figure as data URLs
+  ```
 - Diagram/scene round-trips: use `base_document` when converting diagrams back to POML to seed meta/role/tasks; pass `deterministic` (or `scene_export` opts) to keep exports stable for goldens.
 
 Endpoints:

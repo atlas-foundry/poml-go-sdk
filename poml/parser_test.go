@@ -229,15 +229,21 @@ func TestParseStrictHelpers(t *testing.T) {
 }
 
 func TestParseExtendedUnknownAllowed(t *testing.T) {
-	src := `<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task><op foo="bar"/></poml>`
+	src := `<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task><op name="alpha" foo="bar"/></poml>`
 	if _, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true, Extended: ExtendedOff}); err == nil {
 		t.Fatalf("expected unknown element error when ExtendedOff")
 	}
 	if _, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true, Extended: ExtendedLenient}); err != nil {
 		t.Fatalf("expected extended lenient to pass, got %v", err)
 	}
-	if _, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true, Extended: ExtendedStrict}); err != nil {
-		t.Fatalf("expected extended strict to pass (placeholder until schema), got %v", err)
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: false, Extended: ExtendedStrict})
+	if err != nil {
+		t.Fatalf("expected extended strict parse to succeed: %v", err)
+	}
+	// Strict validation rejects unknown attrs by default; allow override.
+	f := false
+	if err := doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedStrict, RejectUnknownAttrs: &f}); err != nil {
+		t.Fatalf("expected extended strict to pass when unknown attrs allowed, got %v", err)
 	}
 }
 
@@ -779,6 +785,202 @@ func TestValidateToolEvents(t *testing.T) {
 				t.Fatalf("unexpected validation error: %v", err)
 			}
 		})
+	}
+}
+
+func TestValidateRejectsExtendedWhenOff(t *testing.T) {
+	src := `<poml>
+  <meta><id>x</id><version>1</version><owner>me</owner></meta>
+  <role>role</role>
+  <task>t</task>
+  <op name="alpha"/>
+  <extended-figure title="fig"/>
+</poml>`
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: false, Extended: ExtendedOff})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	if err := doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedOff}); err == nil {
+		t.Fatalf("expected validation errors for extended elements when Extended is off")
+	} else {
+		msg := err.Error()
+		if !strings.Contains(msg, "<op>") || !strings.Contains(msg, "<extended-figure>") {
+			t.Fatalf("expected errors to mention extended elements, got: %v", msg)
+		}
+	}
+
+	if err := doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedLenient}); err != nil {
+		t.Fatalf("extended lenient should allow extended nodes, got %v", err)
+	}
+}
+
+func TestValidateExtendedStrictRules(t *testing.T) {
+	src := `<poml mode="extended">
+  <meta><id>x</id><version>1</version><owner>me</owner></meta>
+  <role>r</role><task>t</task>
+  <op kind="invalid-kind" extra="y">missing name</op>
+  <figure alt="" syntax="bad" foo="bar" width="0"></figure>
+  <object syntax="not/mime?" extra="z"></object>
+</poml>`
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: false, Extended: ExtendedStrict})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if err := doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedStrict, MaxMediaBytes: 1}); err == nil {
+		t.Fatalf("expected strict extended validation errors")
+	} else {
+		msg := err.Error()
+		required := []string{
+			"extended op 0 missing name",
+			"extended op 0 has invalid kind",
+			"figure 0 must include src or body",
+			"figure 0 has invalid syntax",
+			"figure 0 missing alt",
+			"figure 0 has unknown attr",
+			"object[0] requires data or body",
+			"object 0 missing data/body",
+			"object 0 has invalid syntax",
+			"object 0 has unknown attr",
+		}
+		for _, want := range required {
+			if !strings.Contains(msg, want) {
+				t.Fatalf("missing strict error details (%s): %v", want, msg)
+			}
+		}
+		if !strings.Contains(msg, "poml validation failed") {
+			t.Fatalf("missing strict error details: %v", msg)
+		}
+	}
+}
+
+func TestValidateExtendedMediaTooLargeGolden(t *testing.T) {
+	doc, err := ParseFile("testdata/examples/extended_media_oversize.poml")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	err = doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedStrict, MaxMediaBytes: 1})
+	if err == nil {
+		t.Fatalf("expected media size validation error")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "exceeds max media bytes") || !strings.Contains(msg, "3 > 1") {
+		t.Fatalf("missing media size details: %v", msg)
+	}
+}
+
+func TestValidateExtendedMediaMissingSyntaxGolden(t *testing.T) {
+	doc, err := ParseFile("testdata/examples/extended_media_missing_syntax.poml")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	err = doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedStrict, MaxMediaBytes: 10})
+	if err == nil {
+		t.Fatalf("expected syntax validation error")
+	}
+	got := strings.TrimSpace(err.Error())
+	want := strings.TrimSpace(readFile(t, "testdata/golden/extended_media_missing_syntax.txt"))
+	if got != want {
+		t.Fatalf("media syntax validation mismatch\nwant: %s\ngot:  %s", want, got)
+	}
+}
+
+func TestValidateExtendedMediaInvalidSize(t *testing.T) {
+	doc, err := ParseFile("testdata/examples/extended_media_invalid_size.poml")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	err = doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedStrict})
+	if err == nil {
+		t.Fatalf("expected size validation error")
+	}
+	got := strings.TrimSpace(err.Error())
+	want := strings.TrimSpace(readFile(t, "testdata/golden/extended_media_invalid_size.txt"))
+	if got != want {
+		t.Fatalf("media size validation mismatch\nwant: %s\ngot:  %s", want, got)
+	}
+}
+
+func TestValidateExtendedInvalidMimeGolden(t *testing.T) {
+	doc, err := ParseFile("testdata/examples/extended_media_invalid_mime.poml")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	err = doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedStrict})
+	if err == nil {
+		t.Fatalf("expected invalid mime validation error")
+	}
+	got := strings.TrimSpace(err.Error())
+	want := strings.TrimSpace(readFile(t, "testdata/golden/extended_media_invalid_mime.txt"))
+	if got != want {
+		t.Fatalf("media mime validation mismatch\nwant: %s\ngot:  %s", want, got)
+	}
+}
+
+func TestValidateExtendedOpArgsJSON(t *testing.T) {
+	src := `<poml mode="extended">
+  <meta><id>x</id><version>1</version><owner>o</owner></meta>
+  <role>r</role><task>t</task>
+  <op name="demo" args="not json">body</op>
+</poml>`
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: false, Extended: ExtendedStrict})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if err := doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedStrict}); err == nil {
+		t.Fatalf("expected args validation error")
+	} else if !strings.Contains(err.Error(), "args must be JSON") {
+		t.Fatalf("missing args json error: %v", err)
+	}
+}
+
+func TestValidateExtendedCustomMimeAllowlist(t *testing.T) {
+	doc, err := ParseFile("testdata/examples/extended_media_invalid_mime.poml")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	allow := DefaultAllowedMIMEs()
+	allow["application/x-unknown"] = struct{}{}
+	err = doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedStrict, AllowedMIMETypes: allow})
+	if err == nil || strings.Contains(err.Error(), "figure 0 has invalid syntax") {
+		t.Fatalf("expected object mime to fail only: %v", err)
+	}
+}
+
+func TestValidateExtendedCustomOpKinds(t *testing.T) {
+	src := `<poml mode="extended">
+  <meta><id>x</id><version>1</version><owner>o</owner></meta>
+  <role>r</role><task>t</task>
+  <op name="demo" kind="custom-kind">ok</op>
+</poml>`
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: false, Extended: ExtendedStrict})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	allow := []string{"custom-kind"}
+	if err := doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedStrict, AllowedOpKinds: allow}); err != nil {
+		t.Fatalf("expected custom kind allowed: %v", err)
+	}
+	if err := doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedStrict}); err == nil {
+		t.Fatalf("expected invalid kind error without override")
+	}
+}
+
+func TestParseEmbeddedTagExtraction(t *testing.T) {
+	body := `before <task>inner</task> after`
+	doc, err := ParseReaderWithOptions(strings.NewReader(body), ParseOptions{PreserveWhitespace: true, Validate: false, Extended: ExtendedStrict, ExtractEmbeddedTags: true})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(doc.Tasks) != 1 || strings.TrimSpace(doc.Tasks[0].Body) != "inner" {
+		t.Fatalf("expected embedded task captured, got %v", doc.Tasks)
+	}
+	if got := strings.TrimSpace(doc.Texts[0].Body); !strings.Contains(got, "before") {
+		t.Fatalf("expected leading text preserved, got %q", got)
+	}
+	// ensure trailing text is preserved
+	if got := strings.TrimSpace(doc.Texts[len(doc.Texts)-1].Body); !strings.Contains(got, "after") {
+		t.Fatalf("expected trailing text preserved, got %q", got)
 	}
 }
 

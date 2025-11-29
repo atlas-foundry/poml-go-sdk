@@ -1,0 +1,6 @@
+<poml mode="extended">
+  <meta><id>invalid.mime</id><version>1</version><owner>sdk</owner></meta>
+  <role>r</role><task>t</task>
+  <figure src="data:application/x-unknown;base64,AAAA" alt="bad" syntax="application/x-unknown"/>
+  <object syntax="foo/bar/baz">oops</object>
+</poml>
