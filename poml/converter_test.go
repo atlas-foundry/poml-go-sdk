@@ -537,3 +537,44 @@ func TestImageDefaultSizeLimit(t *testing.T) {
 		t.Fatalf("expected unlimited max to allow large file: %v", err)
 	}
 }
+
+func TestConvertCarriesCoreFields(t *testing.T) {
+	doc := Document{
+		Meta: Meta{ID: "core.full", Version: "1", Owner: "me"},
+		Role: Block{Body: "r"},
+		Tasks: []Block{
+			{Body: "t"},
+		},
+		Messages:  []Message{{Role: "human", Body: "hi"}},
+		ToolDefs:  []ToolDefinition{{Name: "calc", Body: `{"type":"object"}`}},
+		ToolReqs:  []ToolRequest{{ID: "call_1", Name: "calc", Parameters: `{"x":1}`}},
+		ToolResps: []ToolResponse{{ID: "call_1", Name: "calc", Body: "2"}},
+		Schema:    OutputSchema{Body: `{"type":"object"}`},
+		Runtimes:  []Runtime{{Attrs: []xml.Attr{{Name: xml.Name{Local: "temperature"}, Value: "0.1"}}}},
+	}
+	if err := doc.Validate(); err != nil {
+		t.Fatalf("validate: %v", err)
+	}
+	dictAny, err := Convert(doc, FormatDict, ConvertOptions{})
+	if err != nil {
+		t.Fatalf("dict convert: %v", err)
+	}
+	dictOut := dictAny.(dictOutput)
+	if dictOut.Schema == nil || len(dictOut.Tools) != 1 || dictOut.Runtime == nil {
+		t.Fatalf("core fields missing in dict: schema=%v tools=%v runtime=%v", dictOut.Schema, dictOut.Tools, dictOut.Runtime)
+	}
+	openAny, err := Convert(doc, FormatOpenAIChat, ConvertOptions{})
+	if err != nil {
+		t.Fatalf("openai convert: %v", err)
+	}
+	open := openAny.(map[string]any)
+	if _, ok := open["response_format"]; !ok {
+		t.Fatalf("response_format missing")
+	}
+	if _, ok := open["temperature"]; !ok {
+		t.Fatalf("runtime missing in openai")
+	}
+	if tools, ok := open["tools"].([]any); !ok || len(tools) != 1 {
+		t.Fatalf("tools missing in openai: %v", open["tools"])
+	}
+}

@@ -16,6 +16,7 @@ func TestLosslessCorpus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("glob examples: %v", err)
 	}
+	exampleFiles = append(exampleFiles, filepath.Join("testdata", "examples", "core_full.poml"))
 
 	for _, path := range exampleFiles {
 		path := path

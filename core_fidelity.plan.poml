@@ -15,21 +15,21 @@
 
   <task caption="Validation completeness">
     <list>
-      <item>Ensure required fields per core tags (meta/role/task/input/document/style/runtime/tool*, messages, schema) emit detailed ValidationDetails for missing/invalid values.</item>
-      <item>Add tests/goldens for malformed core cases (duplicate meta/role/persona, missing required attrs, malformed tool-call wiring).</item>
+      <item>Ensure required fields per core tags (meta/role/task/input/document/style/runtime/tool*, messages, schema) emit detailed ValidationDetails for missing/invalid values. (PROGRESS: duplicate meta/role/persona and missing core attrs covered in tests.)</item>
+      <item>Add tests/goldens for malformed core cases (duplicate meta/role/persona, missing required attrs, malformed tool-call wiring). (PROGRESS: dup/missing added; malformed tool-call wiring TBD.)</item>
     </list>
   </task>
 
   <task caption="Lossless round-trips">
     <list>
-      <item>Add lossless fixtures/goldens for core permutations (messages + tool-calls + schema + runtime + media) and assert whitespace/order preservation.</item>
-      <item>Extend lossless tests to cover these fixtures and fail on diffs.</item>
+      <item>Add lossless fixtures/goldens for core permutations (messages + tool-calls + schema + runtime + media) and assert whitespace/order preservation. (PROGRESS: core_full fixture added.)</item>
+      <item>Extend lossless tests to cover these fixtures and fail on diffs. (PROGRESS: core_full added to lossless corpus.)</item>
     </list>
   </task>
 
   <task caption="Converters parity">
     <list>
-      <item>Verify all core fields (tools/runtime/schema/media/messages) flow through message_dict/dict/OpenAI/LangChain; add missing goldens if any fields drop.</item>
+      <item>Verify all core fields (tools/runtime/schema/media/messages) flow through message_dict/dict/OpenAI/LangChain; add missing goldens if any fields drop. (PROGRESS: core_full golden for message_dict/openai_chat added; converter test asserts schema/runtime/tools presence.)</item>
       <item>Ensure ExtendedOff conversions drop extended-only nodes but keep core intact.</item>
     </list>
   </task>

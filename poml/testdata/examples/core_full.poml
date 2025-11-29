@@ -1,0 +1,13 @@
+<poml>
+  <meta><id>core.full</id><version>1.0.0</version><owner>sdk</owner></meta>
+  <role>role</role>
+  <task>task</task>
+  <human-msg>hi</human-msg>
+  <assistant-msg>ok</assistant-msg>
+  <tool-definition name="calc">{"type":"object"}</tool-definition>
+  <tool-request id="call_1" name="calc" parameters='{"x":1}'/>
+  <tool-response id="call_1" name="calc">2</tool-response>
+  <output-schema>{"type":"object"}</output-schema>
+  <runtime temperature="0.1" max-tokens="5"/>
+  <img src="data:image/png;base64,Zw==" alt="a" syntax="image/png"/>
+</poml>

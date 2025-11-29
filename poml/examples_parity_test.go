@@ -221,6 +221,35 @@ func TestConverterParityExtendedTextEscape(t *testing.T) {
 	}
 }
 
+func TestConverterParityCoreFull(t *testing.T) {
+	fixture := filepath.Join("testdata", "examples", "core_full.poml")
+	doc, err := ParseFile(fixture)
+	if err != nil {
+		t.Fatalf("parse fixture: %v", err)
+	}
+	if err := doc.Validate(); err != nil {
+		t.Fatalf("validate fixture: %v", err)
+	}
+	cases := []struct {
+		name     string
+		format   Format
+		expected string
+	}{
+		{"message_dict", FormatMessageDict, filepath.Join("testdata", "examples", "core_full.message_dict.json")},
+		{"openai_chat", FormatOpenAIChat, filepath.Join("testdata", "examples", "core_full.openai_chat.json")},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := Convert(doc, tc.format, ConvertOptions{})
+			if err != nil {
+				t.Fatalf("convert %s: %v", tc.name, err)
+			}
+			assertJSONEqual(t, out, tc.expected)
+		})
+	}
+}
+
 func TestConverterParityExtendedAttrs(t *testing.T) {
 	fixture := filepath.Join("testdata", "examples", "parity_extended_attrs.poml")
 	doc, err := ParseFile(fixture)
