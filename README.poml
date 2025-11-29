@@ -13,7 +13,7 @@
     <list>
       <item>Parser/encoder for POML (strict XML, CDATA-safe, preserves unknown elements/attrs, optional whitespace/comments).</item>
       <item>AST helpers: ordered Elements with stable IDs/parent hooks, Walk/Mutate APIs, builders, validation (meta/role/task), encode options (order/whitespace/header/indent/compact).</item>
-      <item>Parsers for string/file/reader; role/task/input accessors.</item>
+      <item>Parsers for string/file/reader; role/task/input accessors; experimental embedded-tag extraction flag.</item>
       <item>Tests: round-trip, malformed input, large docs, builder/mutation coverage.</item>
     </list>
   </hint>
@@ -56,9 +56,10 @@
       <item>Walk: doc.Walk(...) with ElementPayload for ordered traversal.</item>
       <item>Mutate: doc.Mutate(...) with ReplaceBody/Remove/Insert helpers.</item>
       <item>Encode: doc.Encode or EncodeWithOptions (indent/header/order/whitespace/compact).</item>
-      <item>Validate: doc.Validate or Parse*Strict to enforce required sections.</item>
+      <item>Validate: doc.Validate or Parse*Strict to enforce required sections; Extended: ValidateWithOptions(ExtendedStrict, MaxMediaBytes, AllowedMIMETypes, AllowedOpKinds, RejectUnknownAttrs).</item>
       <item>Convert: Convert(doc, FormatOpenAIChat, ConvertOptions{BaseDir: "/assets", MaxImageBytes: 1<<20, MaxMediaBytes: 1<<20}) with path containment (symlink-aware), default 10MB caps for image/audio/video (override/disable via MaxImageBytes/MaxMediaBytes), AllowAbsImagePaths toggle; emits hint/example/cp/object and audio/video content as user context.</item>
-      <item>Fixtures: multimedia parity at poml/testdata/examples/207_multimedia.poml with golden outputs in parity_multimedia.*.json.</item>
+      <item>Extended knobs: MIME/op-kind allowlists (flags/env/config POML), build-tagged aliases (<extended-op>/<extended-figure>), embedded-tag extraction CLI flag, goldens for mixed/media/text-escape/attrs and ExtendedOff drop behavior.</item>
+      <item>Fixtures: multimedia parity at poml/testdata/examples/207_multimedia.poml; extended fixtures at poml/testdata/examples/parity_extended_* and validation goldens under poml/testdata/golden/extended_media_*.</item>
     </list>
   </hint>
 
