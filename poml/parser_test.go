@@ -341,6 +341,26 @@ func TestParseExtendedRootlessSegmentation(t *testing.T) {
 	}
 }
 
+func TestParseMetaAnywherePicksFirst(t *testing.T) {
+	src := `<poml><role>r</role><meta><id>a</id><version>1</version><owner>o</owner></meta><task>t</task><meta><id>b</id><version>2</version><owner>o2</owner></meta></poml>`
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: false})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if doc.Meta.ID != "a" || doc.Meta.Version != "1" || doc.Meta.Owner != "o" {
+		t.Fatalf("expected first meta to populate Document.Meta, got %+v", doc.Meta)
+	}
+	var metaCount int
+	for _, el := range doc.Elements {
+		if el.Type == ElementMeta {
+			metaCount++
+		}
+	}
+	if metaCount != 2 {
+		t.Fatalf("expected both meta elements preserved in order, got %d", metaCount)
+	}
+}
+
 func TestParseOptionsValidateWithInvalidDiagramAndUnknownTags(t *testing.T) {
 	src := `<poml>
   <diagram id="bad">

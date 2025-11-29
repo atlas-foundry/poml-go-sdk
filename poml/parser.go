@@ -1423,7 +1423,9 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 				if err := dec.DecodeElement(&m, &t); err != nil {
 					return doc, wrapXMLError(err, "<meta>")
 				}
-				doc.Meta = m
+				if (doc.Meta == Meta{}) {
+					doc.Meta = m
+				}
 				el := doc.newElement(ElementMeta, -1, "")
 				if preserveWS {
 					el.Leading = leading
