@@ -845,9 +845,7 @@ func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 		issues = append(issues, "meta.owner is required")
 		details = append(details, ValidationDetail{Element: ElementMeta, Field: "owner", Message: "missing owner"})
 	}
-	if strings.TrimSpace(d.Meta.MinVersion) != "" && strings.TrimSpace(d.Meta.MaxVersion) != "" {
-		// no ordering check, but capture presence
-	}
+	// no ordering check for min/max version; presence handled in converters
 	nameSeen := make(map[string]struct{})
 	inputIndex := 0
 	for _, in := range d.Inputs {
