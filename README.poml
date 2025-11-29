@@ -25,6 +25,7 @@
       <item>✅ Walk/Mutate with stable element IDs and lookup helpers.</item>
       <item>✅ Encode options for header/indent/order/compact/whitespace.</item>
       <item>✅ Parse options toggle whitespace; lossless and malformed cases covered; Extended strict validation with allowlists.</item>
+      <item>🟡 Inline formatting tags (<h>/<section>/<span>/<list>/etc.) from Components spec are treated as unknown (not yet normalized); doc tooling pending.</item>
       <item>🟡 CI/docs: coverage thresholds and README parity snippets pending.</item>
       <item>🟡 Growing: multimedia across converters (audio/video supported), Pydantic format mirrors dict, tracing/prompt builders pending.</item>
     </list>
