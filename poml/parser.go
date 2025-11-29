@@ -797,7 +797,7 @@ func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 			case ElementUnknown:
 				if opts.Extended == ExtendedOff {
 					switch strings.ToLower(el.Name) {
-					case "op", "operation", "figure", "extended-op", "extended-figure":
+					case "op", "operation", "figure", "extended-op", "extended-figure", "data":
 						issues = append(issues, fmt.Sprintf("extended element <%s> not allowed when Extended is off", el.Name))
 						details = append(details, ValidationDetail{Element: ElementUnknown, Message: "extended element " + el.Name})
 					case "p", "section", "span", "list", "item", "h", "i", "b", "u", "strike", "s", "br", "stylesheet":
@@ -906,6 +906,26 @@ func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 		if strings.TrimSpace(doc.Src) == "" {
 			issues = append(issues, "document src is required")
 			details = append(details, ValidationDetail{Element: ElementDocument, Field: "src", Message: "missing src"})
+		}
+	}
+	if opts.Extended == ExtendedStrict {
+		for _, el := range d.Elements {
+			if el.Type == ElementUnknown && strings.EqualFold(el.Name, "data") {
+				raw := strings.TrimSpace(el.RawXML)
+				syntax := extractAttrValue(raw, "syntax")
+				if syntax == "" {
+					issues = append(issues, "data element missing syntax")
+					details = append(details, ValidationDetail{Element: ElementUnknown, Field: "syntax", Message: "missing syntax on data"})
+				} else if !allowMIMEWithList(syntax, allowedMIME) {
+					issues = append(issues, fmt.Sprintf("data element has invalid syntax %q", syntax))
+					details = append(details, ValidationDetail{Element: ElementUnknown, Field: "syntax", Message: "invalid syntax/mime on data"})
+				}
+				body := strings.TrimSpace(d.elementBody(el))
+				if body == "" {
+					issues = append(issues, "data element missing body")
+					details = append(details, ValidationDetail{Element: ElementUnknown, Field: "body", Message: "missing data body"})
+				}
+			}
 		}
 	}
 	if opts.Extended == ExtendedStrict {
@@ -1183,6 +1203,19 @@ func labelOrIndex(id string, idx int) string {
 		return id
 	}
 	return fmt.Sprintf("#%d", idx)
+}
+
+func extractAttrValue(raw string, name string) string {
+	pat := name + "=\""
+	idx := strings.Index(raw, pat)
+	if idx == -1 {
+		return ""
+	}
+	rest := raw[idx+len(pat):]
+	if end := strings.Index(rest, "\""); end != -1 {
+		return rest[:end]
+	}
+	return ""
 }
 
 func validateToolReference(kind string, idx int, id string, name string, toolNames map[string]struct{}, toolReqs map[string]string, element ElementType, issues *[]string, details *[]ValidationDetail) {

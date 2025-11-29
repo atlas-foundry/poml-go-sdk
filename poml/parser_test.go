@@ -993,6 +993,38 @@ func TestValidateExtendedOpInvalidKindGolden(t *testing.T) {
 	}
 }
 
+func TestValidateExtendedDataInvalidSyntaxGolden(t *testing.T) {
+	doc, err := ParseFile("testdata/examples/extended_data_invalid_syntax.poml")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	err = doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedStrict})
+	if err == nil {
+		t.Fatalf("expected invalid data syntax error")
+	}
+	got := strings.TrimSpace(err.Error())
+	want := strings.TrimSpace(readFile(t, "testdata/golden/extended_data_invalid_syntax.txt"))
+	if got != want {
+		t.Fatalf("data syntax validation mismatch\nwant: %s\ngot:  %s", want, got)
+	}
+}
+
+func TestValidateExtendedDataMissingSyntaxGolden(t *testing.T) {
+	doc, err := ParseFile("testdata/examples/extended_data_missing_syntax.poml")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	err = doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedStrict})
+	if err == nil {
+		t.Fatalf("expected missing data syntax error")
+	}
+	got := strings.TrimSpace(err.Error())
+	want := strings.TrimSpace(readFile(t, "testdata/golden/extended_data_missing_syntax.txt"))
+	if got != want {
+		t.Fatalf("data syntax validation mismatch\nwant: %s\ngot:  %s", want, got)
+	}
+}
+
 func TestValidateExtendedOpArgsJSON(t *testing.T) {
 	src := `<poml mode="extended">
   <meta><id>x</id><version>1</version><owner>o</owner></meta>

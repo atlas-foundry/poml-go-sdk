@@ -1,0 +1,5 @@
+<poml mode="extended">
+  <meta><id>extended.data.invalid.syntax</id><version>1</version><owner>sdk</owner></meta>
+  <role>r</role><task>t</task>
+  <data syntax="foo/bar">oops</data>
+</poml>
