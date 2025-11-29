@@ -1,0 +1,75 @@
+[
+  {
+    "name": "poml.parse",
+    "trace_id": "ae70eecc8a097754df7dd17ca0563c8f",
+    "span_id": "b84969495fca14fc",
+    "attributes": [
+      {
+        "key": "poml.meta.id",
+        "value": "a"
+      },
+      {
+        "key": "poml.meta.owner",
+        "value": "o"
+      },
+      {
+        "key": "poml.meta.version",
+        "value": "1"
+      },
+      {
+        "key": "poml.mode",
+        "value": "default"
+      },
+      {
+        "key": "poml.source",
+        "value": "string"
+      }
+    ]
+  },
+  {
+    "name": "poml.validate",
+    "trace_id": "c9fd56266a69c8c630ea47fcf2149bad",
+    "span_id": "cf3072a29d980ff8",
+    "attributes": [
+      {
+        "key": "poml.extended",
+        "value": 0
+      },
+      {
+        "key": "poml.meta.id",
+        "value": "a"
+      },
+      {
+        "key": "poml.meta.owner",
+        "value": "o"
+      },
+      {
+        "key": "poml.meta.version",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "name": "poml.convert",
+    "trace_id": "8809484ff6663a9a6dfd5483c2621918",
+    "span_id": "754921b06b83e47b",
+    "attributes": [
+      {
+        "key": "poml.format",
+        "value": "openai_chat"
+      },
+      {
+        "key": "poml.meta.id",
+        "value": "a"
+      },
+      {
+        "key": "poml.meta.owner",
+        "value": "o"
+      },
+      {
+        "key": "poml.meta.version",
+        "value": "1"
+      }
+    ]
+  }
+]

@@ -53,3 +53,18 @@ func TestGuessMediaMimeExtended(t *testing.T) {
 		}
 	}
 }
+
+func TestDefaultAllowedMIMEsCoversExtendedProposal(t *testing.T) {
+	allow := DefaultAllowedMIMEs()
+	required := []string{
+		"image/png", "image/jpeg", "image/svg+xml", "image/webp", "image/tiff", "image/heic", "image/avif",
+		"audio/mpeg", "audio/ogg", "audio/ogg; codecs=opus", "audio/flac", "audio/mp4", "audio/aac",
+		"video/mp4", "video/webm", "video/quicktime", "video/mpeg", "video/x-matroska",
+		"application/json", "application/xml", "application/octet-stream",
+	}
+	for _, m := range required {
+		if _, ok := allow[m]; !ok {
+			t.Fatalf("expected %s in default allowlist", m)
+		}
+	}
+}
