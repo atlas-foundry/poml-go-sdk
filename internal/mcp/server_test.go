@@ -21,7 +21,7 @@ func TestInspect(t *testing.T) {
 		t.Fatalf("validate: %v", err)
 	}
 
-	srv := New(doc, "", nil)
+	srv := New(doc, "", nil, nil)
 	req := httptest.NewRequest(http.MethodGet, "/inspect", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
@@ -50,7 +50,7 @@ func TestAST(t *testing.T) {
 		t.Fatalf("parse: %v", err)
 	}
 
-	srv := New(doc, "", nil)
+	srv := New(doc, "", nil, nil)
 	req := httptest.NewRequest(http.MethodGet, "/ast", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
@@ -71,7 +71,7 @@ func TestValidateEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	srv := New(doc, "", nil)
+	srv := New(doc, "", nil, nil)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/validate", nil)
 	srv.Handler().ServeHTTP(rec, req)
@@ -92,7 +92,7 @@ func TestConvertEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	srv := New(doc, "", nil)
+	srv := New(doc, "", nil, nil)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/convert?format=dict", nil)
 	srv.Handler().ServeHTTP(rec, req)
@@ -113,7 +113,7 @@ func TestSearchEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	srv := New(doc, "", nil)
+	srv := New(doc, "", nil, nil)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/search?tag=task", nil)
 	srv.Handler().ServeHTTP(rec, req)
@@ -137,7 +137,7 @@ func TestSearchEndpoint(t *testing.T) {
 
 func TestHealth(t *testing.T) {
 	doc := poml.Document{}
-	srv := New(doc, "", nil)
+	srv := New(doc, "", nil, nil)
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
@@ -154,7 +154,7 @@ func TestToolsEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	srv := New(doc, "", nil)
+	srv := New(doc, "", nil, nil)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/tools", nil)
 	srv.Handler().ServeHTTP(rec, req)
@@ -175,7 +175,7 @@ func TestDiagramEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	srv := New(doc, "", nil)
+	srv := New(doc, "", nil, nil)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/diagram", nil)
 	srv.Handler().ServeHTTP(rec, req)
@@ -196,7 +196,7 @@ func TestRoundtripEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	srv := New(doc, "", nil)
+	srv := New(doc, "", nil, nil)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/roundtrip", nil)
 	srv.Handler().ServeHTTP(rec, req)
@@ -217,7 +217,7 @@ func TestWebSocketInitialAndUpdate(t *testing.T) {
 		Meta:  poml.Meta{ID: "a", Version: "1", Owner: "o"},
 		Role:  poml.Block{Body: "r"},
 		Tasks: []poml.Block{{Body: "t"}},
-	}, "", nil)
+	}, "", nil, nil)
 	ts := httptest.NewServer(srv.Handler())
 	defer ts.Close()
 
@@ -256,7 +256,7 @@ func TestWebSocketInitialAndUpdate(t *testing.T) {
 }
 
 func TestDiffEndpoint(t *testing.T) {
-	srv := New(poml.Document{}, "", nil)
+	srv := New(poml.Document{}, "", nil, nil)
 	body := `{"a":"<poml><meta><id>a</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task></poml>","b":"<poml><meta><id>b</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task></poml>"}`
 	req := httptest.NewRequest(http.MethodPost, "/diff", strings.NewReader(body))
 	rec := httptest.NewRecorder()
@@ -278,7 +278,7 @@ func TestPatchEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	srv := New(doc, "", nil)
+	srv := New(doc, "", nil, nil)
 	body := `{"tag":"human_msg","index":0,"body":"updated"}`
 	req := httptest.NewRequest(http.MethodPost, "/patch", strings.NewReader(body))
 	rec := httptest.NewRecorder()
@@ -295,8 +295,40 @@ func TestPatchEndpoint(t *testing.T) {
 	}
 }
 
+func TestTracesEndpoint(t *testing.T) {
+	recorder := poml.NewTraceRecorder("mcp-trace")
+	srv := New(poml.Document{
+		Meta:  poml.Meta{ID: "a", Version: "1", Owner: "o"},
+		Role:  poml.Block{Body: "r"},
+		Tasks: []poml.Block{{Body: "t"}},
+	}, "", recorder.Provider, &recorder)
+
+	// generate a span via convert
+	req := httptest.NewRequest(http.MethodGet, "/convert?format=dict", nil)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("convert status = %d", rec.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/traces", nil)
+	rec = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("traces status = %d", rec.Code)
+	}
+	var resp map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode traces: %v", err)
+	}
+	spans, ok := resp["spans"].([]any)
+	if !ok || len(spans) == 0 {
+		t.Fatalf("expected spans array, got %v", resp["spans"])
+	}
+}
+
 func TestWatchDisabled(t *testing.T) {
-	srv := New(poml.Document{}, "", nil)
+	srv := New(poml.Document{}, "", nil, nil)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/watch", nil)
 	srv.Handler().ServeHTTP(rec, req)
@@ -306,7 +338,7 @@ func TestWatchDisabled(t *testing.T) {
 }
 
 func TestReloadNoSourcePath(t *testing.T) {
-	srv := New(poml.Document{}, "", nil)
+	srv := New(poml.Document{}, "", nil, nil)
 	if _, err := srv.reload(); err == nil {
 		t.Fatalf("expected reload error with no source path")
 	}

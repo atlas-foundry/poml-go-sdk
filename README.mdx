@@ -52,7 +52,7 @@ Open-source Go library for **Prompt Orchestration Markup Language (POML)** with 
 - Converters: message_dict, dict, OpenAI Chat, LangChain, scene/scenejson; deterministic options for goldens and CI.
 - Extended mode: opt-in mixed text + POML (`mode="extended"`), `<op>/<figure>/<text>` blocks, unknown passthrough; strict validation enforces names/JSON args/alt/mime/size/attrs; aliases via build tags; optional embedded-tag extraction flag; formatting tags handled as structured segments; MIME/op-kind allowlists configurable via flags/env/POML (defaults cover png/jpeg/webp/svg/tiff/heic/avif + flac/ogg/opus/aac/mp4 + mp4/webm/quicktime/mpeg/matroska/avi/m4v/3gpp).
 - Diagram/scene round-trips with attrs/extras; `base_document` seeding keeps meta/role/tasks when rehydrating POML.
-- CLI: `poml mcp` serves AST/validation/convert endpoints with optional tracing (stdout/OTLP/seeded in-memory), `--trace-seed` for deterministic spans (goldens via `poml.NewTraceRecorder`), and configurable allowlists via flags/env/POML config; formatting/meta attrs surfaced in converters.
+- CLI: `poml mcp` serves AST/validation/convert endpoints with optional tracing (stdout/OTLP/seeded in-memory), `--trace-seed` for deterministic spans (goldens via `poml.NewTraceRecorder`), `/traces` dumps recorded spans when seeded, and configurable allowlists via flags/env/POML config; formatting/meta attrs surfaced in converters.
 
 **Docs & plans (POML-first)**
 - Structured README: `README.poml`
@@ -294,6 +294,7 @@ Endpoints:
 * `/watch` — SSE stream that pushes summaries when the source file changes (enabled when `--file` is provided)
 * `/ws` — WebSocket endpoint that streams summaries (initial + on change) when `--file` is provided; supports heartbeat and optional auth via `POML_MCP_TOKEN`
 * `/metrics` — request counts per endpoint (auth-respects `POML_MCP_TOKEN`)
+* `/traces` — deterministic span dump (enable with `--trace-seed`, or by wiring your own `poml.NewTraceRecorder`)
 * Tracing exporters: `--trace-stdout` (local dev), `--trace-otlp-http` or `--trace-otlp-grpc` (with `--trace-insecure` toggle)
 
 Roadmap highlights (see `meta.plan.poml`):

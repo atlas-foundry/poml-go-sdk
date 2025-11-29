@@ -26,6 +26,7 @@ type Server struct {
 	mux        *http.ServeMux
 	once       sync.Once
 	tracer     trace.Tracer
+	recorder   *poml.TraceRecorder
 	sourcePath string
 	mu         sync.RWMutex
 	watcher    *fsnotify.Watcher
@@ -44,7 +45,8 @@ type inspectSummary struct {
 }
 
 // New creates a server for the given document. sourcePath enables watch/reload when set.
-func New(doc poml.Document, sourcePath string, tp trace.TracerProvider) *Server {
+// recorder enables deterministic span dumps at /traces (nil leaves the endpoint disabled).
+func New(doc poml.Document, sourcePath string, tp trace.TracerProvider, recorder *poml.TraceRecorder) *Server {
 	if tp == nil {
 		tp = noop.NewTracerProvider()
 	}
@@ -52,6 +54,7 @@ func New(doc poml.Document, sourcePath string, tp trace.TracerProvider) *Server 
 		doc:        doc,
 		mux:        http.NewServeMux(),
 		tracer:     tp.Tracer("github.com/atlas-foundry/poml-go-sdk/mcp"),
+		recorder:   recorder,
 		sourcePath: sourcePath,
 		wsClients:  make(map[*websocket.Conn]struct{}),
 		authToken:  os.Getenv("POML_MCP_TOKEN"),
@@ -70,6 +73,7 @@ func New(doc poml.Document, sourcePath string, tp trace.TracerProvider) *Server 
 	s.mux.HandleFunc("/watch", s.watch)
 	s.mux.HandleFunc("/ws", s.ws)
 	s.mux.HandleFunc("/metrics", s.metrics)
+	s.mux.HandleFunc("/traces", s.traces)
 	if sourcePath != "" {
 		if w, err := fsnotify.NewWatcher(); err == nil {
 			_ = w.Add(sourcePath)
@@ -635,6 +639,18 @@ func (s *Server) metrics(w http.ResponseWriter, r *http.Request) {
 		return true
 	})
 	writeJSON(w, map[string]any{"requests": out})
+}
+
+func (s *Server) traces(w http.ResponseWriter, r *http.Request) {
+	if !s.authorize(w, r) {
+		return
+	}
+	s.count("/traces")
+	if s.recorder == nil {
+		http.Error(w, "trace recorder not configured (use --trace-seed for deterministic spans)", http.StatusNotFound)
+		return
+	}
+	writeJSON(w, map[string]any{"spans": s.recorder.Dump()})
 }
 
 func (s *Server) authorize(w http.ResponseWriter, r *http.Request) bool {

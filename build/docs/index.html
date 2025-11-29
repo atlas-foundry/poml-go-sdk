@@ -164,6 +164,7 @@ fmt.Printf(&quot;%+v\n&quot;, out)
 <li><code>/watch</code> — SSE stream that pushes summaries when the source file changes (enabled when <code>--file</code> is provided)</li>
 <li><code>/ws</code> — WebSocket endpoint that streams summaries (initial + on change) when <code>--file</code> is provided; supports heartbeat and optional auth via <code>POML_MCP_TOKEN</code></li>
 <li><code>/metrics</code> — request counts per endpoint (auth-respects <code>POML_MCP_TOKEN</code>)</li>
+<li><code>/traces</code> — deterministic span dump (enable with <code>--trace-seed</code> or your own <code>poml.NewTraceRecorder</code>)</li>
 <li>Tracing exporters: <code>--trace-stdout</code> (local dev), <code>--trace-otlp-http</code> or <code>--trace-otlp-grpc</code> (with <code>--trace-insecure</code> toggle), <code>--trace-seed</code> for deterministic in-memory spans</li>
 </ul>
 <p>Roadmap highlights (see <code>meta.plan.poml</code>):</p>

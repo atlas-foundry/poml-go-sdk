@@ -78,6 +78,7 @@ func runMCP(args []string) {
 	}
 
 	var traceOpts poml.TraceOptions
+	var recorder *poml.TraceRecorder
 	switch {
 	case *traceStdout:
 		traceOpts.TracerProvider = mcp.StdoutTracerProvider()
@@ -86,7 +87,9 @@ func runMCP(args []string) {
 	case *traceOTLPGRPC != "":
 		traceOpts.TracerProvider = mcp.OTLPGRPCTracerProvider(*traceOTLPGRPC, *traceInsecure)
 	case strings.TrimSpace(*traceSeed) != "":
-		traceOpts.TracerProvider = mcp.InMemoryTracerProvider(strings.TrimSpace(*traceSeed))
+		rc := poml.NewTraceRecorder(strings.TrimSpace(*traceSeed))
+		recorder = &rc
+		traceOpts.TracerProvider = recorder.Provider
 	}
 
 	parseOpts := poml.ParseOptions{PreserveWhitespace: true, Validate: false, Extended: poml.ExtendedOff}
@@ -183,7 +186,7 @@ func runMCP(args []string) {
 		}
 	}
 
-	srv := mcp.New(doc, *file, traceOpts.TracerProvider)
+	srv := mcp.New(doc, *file, traceOpts.TracerProvider, recorder)
 	log.Printf("poml mcp serving on %s", *addr)
 	if err := listenAndServe(*addr, srv.Handler()); err != nil {
 		log.Fatalf("server error: %v", err)
