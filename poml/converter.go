@@ -236,6 +236,9 @@ func convertMessageDict(doc Document, opts ConvertOptions) ([]messageDict, error
 			}
 			msgs = append(msgs, messageDict{Speaker: "human", Content: part})
 		case ElementText:
+			if opts.Extended == ExtendedOff {
+				continue
+			}
 			body := strings.TrimSpace(doc.elementBody(el))
 			if body != "" {
 				msgs = append(msgs, messageDict{Speaker: "human", Content: body})
@@ -459,6 +462,9 @@ func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error
 				})
 			}
 		case ElementText:
+			if opts.Extended == ExtendedOff {
+				continue
+			}
 			body := strings.TrimSpace(doc.elementBody(el))
 			if body != "" {
 				messages = append(messages, map[string]any{
@@ -660,6 +666,9 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 				})
 			}
 		case ElementText:
+			if opts.Extended == ExtendedOff {
+				continue
+			}
 			body := strings.TrimSpace(doc.elementBody(el))
 			if body != "" {
 				messages = append(messages, map[string]any{

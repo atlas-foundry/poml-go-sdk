@@ -177,3 +177,24 @@ func TestConvertExtendedTextEscapeLiteral(t *testing.T) {
 		t.Fatalf("expected literal text content in messages: %+v", msgs)
 	}
 }
+
+func TestConvertTextBlocksIgnoredWhenExtendedOff(t *testing.T) {
+	src := `<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><text>inline text</text><task>t</task></poml>`
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: false})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	outAny, err := Convert(doc, FormatMessageDict, ConvertOptions{Extended: ExtendedOff})
+	if err != nil {
+		t.Fatalf("convert: %v", err)
+	}
+	msgs, ok := outAny.([]messageDict)
+	if !ok {
+		t.Fatalf("unexpected type %T", outAny)
+	}
+	for _, m := range msgs {
+		if s, ok := m.Content.(string); ok && strings.Contains(s, "inline text") {
+			t.Fatalf("expected text block ignored when ExtendedOff, got %+v", msgs)
+		}
+	}
+}
