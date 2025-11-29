@@ -1,0 +1,5 @@
+<poml>
+  <meta><id>ext.off.figure</id><version>1</version><owner>sdk</owner></meta>
+  <role>r</role><task>t</task>
+  <figure syntax="image/png" alt="a" src="data:image/png;base64,Zw=="/>
+</poml>

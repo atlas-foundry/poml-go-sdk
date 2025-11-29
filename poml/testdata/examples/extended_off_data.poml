@@ -1,0 +1,5 @@
+<poml>
+  <meta><id>ext.off.data</id><version>1</version><owner>sdk</owner></meta>
+  <role>r</role><task>t</task>
+  <data syntax="application/json">{"k":"v"}</data>
+</poml>

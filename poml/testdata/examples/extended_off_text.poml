@@ -1,0 +1,5 @@
+<poml>
+  <meta><id>ext.off.text</id><version>1</version><owner>sdk</owner></meta>
+  <role>r</role><task>t</task>
+  <text>inline text</text>
+</poml>

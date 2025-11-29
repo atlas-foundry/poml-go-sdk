@@ -1014,6 +1014,28 @@ func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 				}
 			}
 		}
+		if opts.RejectUnknownAttrs != nil && *opts.RejectUnknownAttrs {
+			for _, el := range d.Elements {
+				if el.Type == ElementOp || el.Type == ElementFigure || el.Type == ElementObject || (el.Type == ElementUnknown && strings.EqualFold(el.Name, "data")) {
+					attrs := attrsForElement(d, el)
+					for _, a := range attrs {
+						allowed := map[ElementType][]string{
+							ElementOp:     {"name", "kind", "args", "id"},
+							ElementFigure: {"src", "alt", "syntax", "width", "height"},
+							ElementObject: {"syntax", "data"},
+						}
+						list := allowed[el.Type]
+						if el.Type == ElementUnknown && strings.EqualFold(el.Name, "data") {
+							list = []string{"syntax"}
+						}
+						if !isAllowedAttr(a.Name.Local, list) {
+							issues = append(issues, fmt.Sprintf("%s has unknown attr %q", el.Name, a.Name.Local))
+							details = append(details, ValidationDetail{Element: el.Type, Field: a.Name.Local, Message: "unknown attribute"})
+						}
+					}
+				}
+			}
+		}
 	}
 	for _, st := range d.Styles {
 		for _, out := range st.Outputs {
@@ -1203,6 +1225,46 @@ func labelOrIndex(id string, idx int) string {
 		return id
 	}
 	return fmt.Sprintf("#%d", idx)
+}
+
+// attrsForElement returns known attrs for extended elements or best-effort for unknown/raw nodes.
+func attrsForElement(doc Document, el Element) []xml.Attr {
+	switch el.Type {
+	case ElementOp:
+		if el.Index >= 0 && el.Index < len(doc.Ops) {
+			return doc.Ops[el.Index].Attrs
+		}
+	case ElementFigure:
+		if el.Index >= 0 && el.Index < len(doc.Figures) {
+			return doc.Figures[el.Index].Attrs
+		}
+	case ElementObject:
+		if el.Index >= 0 && el.Index < len(doc.Objects) {
+			return doc.Objects[el.Index].Attrs
+		}
+	case ElementText:
+		return nil
+	case ElementUnknown:
+		return parseAttrsFromRaw(el.RawXML)
+	}
+	return nil
+}
+
+// parseAttrsFromRaw returns the attributes from the start element of raw XML (best-effort).
+func parseAttrsFromRaw(raw string) []xml.Attr {
+	dec := xml.NewDecoder(strings.NewReader(raw))
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil
+			}
+			return nil
+		}
+		if se, ok := tok.(xml.StartElement); ok {
+			return se.Attr
+		}
+	}
 }
 
 func extractAttrValue(raw string, name string) string {

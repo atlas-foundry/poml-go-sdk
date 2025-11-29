@@ -1,0 +1,1 @@
+validation failed: poml validation failed: extended element <op> not allowed when Extended is off; extended element <figure> not allowed when Extended is off; extended element <object> not allowed when Extended is off; extended element <data> not allowed when Extended is off; text blocks require extended mode

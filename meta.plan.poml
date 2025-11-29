@@ -9,6 +9,7 @@
   <task caption="Priority 1: Extended POML parity">
     <list>
       <item>See <cp>extended_parity.plan.poml</cp> for the full end-to-end breakdown (schema/enums → converters → goldens → docs).</item>
+      <item>Spec compliance tracker: <cp>spec_compliance.plan.poml</cp> (Core + Extended gap sweep, fixtures, and matrix).</item>
     </list>
   </task>
 

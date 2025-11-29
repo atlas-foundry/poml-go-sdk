@@ -1025,6 +1025,41 @@ func TestValidateExtendedDataMissingSyntaxGolden(t *testing.T) {
 	}
 }
 
+func TestValidateExtendedOffFixtures(t *testing.T) {
+	fixtures := []string{
+		"testdata/examples/extended_off_op.poml",
+		"testdata/examples/extended_off_figure.poml",
+		"testdata/examples/extended_off_object.poml",
+		"testdata/examples/extended_off_data.poml",
+		"testdata/examples/extended_off_text.poml",
+	}
+	var combined []string
+	for _, path := range fixtures {
+		doc, err := ParseFile(path)
+		if err != nil {
+			t.Fatalf("parse %s: %v", path, err)
+		}
+		err = doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedOff})
+		if err == nil {
+			t.Fatalf("expected validation failure for %s", path)
+		}
+		combined = append(combined, err.Error())
+	}
+	got := strings.Join(combined, "; ")
+	mustContain := []string{
+		"extended element <op> not allowed",
+		"extended element <figure> not allowed",
+		"extended element <data> not allowed",
+		"text content outside POML is only allowed in extended mode",
+		"extended elements present",
+	}
+	for _, want := range mustContain {
+		if !strings.Contains(got, want) {
+			t.Fatalf("missing expected extended-off error %q in %s", want, got)
+		}
+	}
+}
+
 func TestValidateExtendedOpArgsJSON(t *testing.T) {
 	src := `<poml mode="extended">
   <meta><id>x</id><version>1</version><owner>o</owner></meta>

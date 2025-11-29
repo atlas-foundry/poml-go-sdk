@@ -28,7 +28,7 @@ func TestLosslessCorpus(t *testing.T) {
 			}
 			lowerBody := strings.ToLower(string(body))
 			isExtended := strings.Contains(lowerBody, `mode="extended"`) || strings.Contains(lowerBody, `extended="true"`)
-			if strings.Contains(lowerBody, "<op") || strings.Contains(lowerBody, "<figure") || strings.Contains(lowerBody, "<object") || strings.Contains(lowerBody, "<extended-op") || strings.Contains(lowerBody, "<extended-figure") {
+			if strings.Contains(lowerBody, "<op") || strings.Contains(lowerBody, "<figure") || strings.Contains(lowerBody, "<object") || strings.Contains(lowerBody, "<extended-op") || strings.Contains(lowerBody, "<extended-figure") || strings.Contains(lowerBody, "<data") || strings.Contains(lowerBody, "<text") {
 				isExtended = true
 			}
 			lenientOpts := ParseOptions{PreserveWhitespace: true, Validate: false, Extended: ExtendedLenient}
