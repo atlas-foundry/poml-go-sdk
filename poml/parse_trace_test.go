@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace/noop"
 )
 
@@ -42,5 +44,29 @@ func TestParseFileVariants(t *testing.T) {
 func TestParseStringWithTrace(t *testing.T) {
 	if _, err := ParseStringWithTrace(context.Background(), minimalPOML, TraceOptions{TracerProvider: noop.NewTracerProvider()}); err != nil {
 		t.Fatalf("ParseStringWithTrace: %v", err)
+	}
+}
+
+func TestParseWithTraceEmitsMetaAttributes(t *testing.T) {
+	exp := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithBatcher(exp))
+	doc, err := ParseStringWithTrace(context.Background(), minimalPOML, TraceOptions{TracerProvider: tp})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	_ = doc
+	tp.ForceFlush(context.Background())
+	spans := exp.GetSpans()
+	if len(spans) == 0 {
+		t.Fatalf("expected spans to be recorded")
+	}
+	found := false
+	for _, kv := range spans[0].Attributes {
+		if kv.Key == "poml.meta.id" && kv.Value.AsString() == "a" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("meta id attribute not found in parse span: %+v", spans[0].Attributes)
 	}
 }

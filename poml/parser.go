@@ -494,6 +494,13 @@ func ParseStringWithTrace(ctx context.Context, body string, traceOpts TraceOptio
 	_, span := traceOpts.start(ctx, "poml.parse", attribute.String("poml.source", "string"), attribute.String("poml.mode", "default"))
 	defer span.End()
 	doc, err := ParseString(body)
+	if err == nil {
+		span.SetAttributes(
+			attribute.String("poml.meta.id", strings.TrimSpace(doc.Meta.ID)),
+			attribute.String("poml.meta.version", strings.TrimSpace(doc.Meta.Version)),
+			attribute.String("poml.meta.owner", strings.TrimSpace(doc.Meta.Owner)),
+		)
+	}
 	if err != nil {
 		span.RecordError(err)
 	}
@@ -508,6 +515,13 @@ func ParseFileWithTrace(ctx context.Context, path string, traceOpts TraceOptions
 	_, span := traceOpts.start(ctx, "poml.parse", attribute.String("poml.source", "file"), attribute.String("poml.mode", "default"), attribute.String("poml.path", path))
 	defer span.End()
 	doc, err := ParseFile(path)
+	if err == nil {
+		span.SetAttributes(
+			attribute.String("poml.meta.id", strings.TrimSpace(doc.Meta.ID)),
+			attribute.String("poml.meta.version", strings.TrimSpace(doc.Meta.Version)),
+			attribute.String("poml.meta.owner", strings.TrimSpace(doc.Meta.Owner)),
+		)
+	}
 	if err != nil {
 		span.RecordError(err)
 	}
@@ -522,6 +536,13 @@ func ParseReaderWithTrace(ctx context.Context, r io.Reader, traceOpts TraceOptio
 	_, span := traceOpts.start(ctx, "poml.parse", attribute.String("poml.source", "reader"), attribute.String("poml.mode", "default"))
 	defer span.End()
 	doc, err := ParseReader(r)
+	if err == nil {
+		span.SetAttributes(
+			attribute.String("poml.meta.id", strings.TrimSpace(doc.Meta.ID)),
+			attribute.String("poml.meta.version", strings.TrimSpace(doc.Meta.Version)),
+			attribute.String("poml.meta.owner", strings.TrimSpace(doc.Meta.Owner)),
+		)
+	}
 	if err != nil {
 		span.RecordError(err)
 	}
@@ -1140,6 +1161,8 @@ func (d Document) ValidateWithTraceOptions(ctx context.Context, traceOpts TraceO
 	_, span := traceOpts.start(ctx, "poml.validate",
 		attribute.String("poml.meta.id", strings.TrimSpace(d.Meta.ID)),
 		attribute.String("poml.meta.version", strings.TrimSpace(d.Meta.Version)),
+		attribute.String("poml.meta.owner", strings.TrimSpace(d.Meta.Owner)),
+		attribute.Int("poml.extended", int(opts.Extended)),
 	)
 	defer span.End()
 	err := d.ValidateWithOptions(opts)
