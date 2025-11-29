@@ -228,6 +228,32 @@ func TestParseStrictHelpers(t *testing.T) {
 	}
 }
 
+func TestValidateDuplicateCoreSections(t *testing.T) {
+	src := `<poml>
+  <meta><id>a</id><version>1</version><owner>x</owner></meta>
+  <meta><id>b</id><version>1</version><owner>y</owner></meta>
+  <role>r1</role>
+  <role>r2</role>
+  <persona>p1</persona>
+  <persona>p2</persona>
+  <task>t</task>
+</poml>`
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: false})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if err := doc.Validate(); err == nil {
+		t.Fatalf("expected duplicate validation errors")
+	} else {
+		msg := err.Error()
+		for _, want := range []string{"only one meta section", "only one role section", "only one persona section"} {
+			if !strings.Contains(msg, want) {
+				t.Fatalf("missing duplicate error %q in %v", want, msg)
+			}
+		}
+	}
+}
+
 func TestParseExtendedUnknownAllowed(t *testing.T) {
 	src := `<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><task>t</task><op name="alpha" foo="bar"/></poml>`
 	if _, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true, Extended: ExtendedOff}); err == nil {
