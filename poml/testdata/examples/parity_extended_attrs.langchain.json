@@ -1,0 +1,50 @@
+{
+  "messages": [
+    {
+      "type": "human",
+      "data": {
+        "content": [
+          {
+            "type": "op",
+            "tag": "op",
+            "name": "keep",
+            "kind": "custom",
+            "args": {
+              "x": 1
+            },
+            "body": "body"
+          }
+        ]
+      }
+    },
+    {
+      "type": "human",
+      "data": {
+        "content": [
+          {
+            "type": "figure",
+            "source_type": "base64",
+            "mime_type": "image/png",
+            "data": "Zw==",
+            "alt": "a",
+            "tag": "figure",
+            "width": "10",
+            "height": "20"
+          }
+        ]
+      }
+    },
+    {
+      "type": "human",
+      "data": {
+        "content": "{}"
+      }
+    },
+    {
+      "type": "human",
+      "data": {
+        "content": "<root>data</root>"
+      }
+    }
+  ]
+}

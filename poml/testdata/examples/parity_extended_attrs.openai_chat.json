@@ -34,6 +34,10 @@
     {
       "role": "user",
       "content": "{}"
+    },
+    {
+      "role": "user",
+      "content": "<root>data</root>"
     }
   ]
 }

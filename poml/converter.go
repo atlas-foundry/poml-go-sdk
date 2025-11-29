@@ -385,6 +385,9 @@ func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error
 				})
 			}
 		case ElementObject:
+			if opts.Extended == ExtendedOff {
+				continue
+			}
 			obj := doc.Objects[el.Index]
 			content := strings.TrimSpace(obj.Body)
 			if content == "" {
@@ -811,6 +814,9 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 				},
 			})
 		case ElementObject:
+			if opts.Extended == ExtendedOff {
+				continue
+			}
 			obj := doc.Objects[el.Index]
 			content := strings.TrimSpace(obj.Body)
 			if content == "" {

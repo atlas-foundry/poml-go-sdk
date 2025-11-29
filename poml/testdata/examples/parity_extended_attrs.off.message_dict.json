@@ -7,5 +7,14 @@
       "syntax": "application/json",
       "body": ""
     }
+  },
+  {
+    "speaker": "human",
+    "content": {
+      "type": "object",
+      "data": "",
+      "syntax": "application/xml",
+      "body": "<root>data</root>"
+    }
   }
 ]
