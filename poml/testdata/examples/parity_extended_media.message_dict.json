@@ -32,10 +32,45 @@
   {
     "speaker": "human",
     "content": {
+      "type": "image/tiff",
+      "mime": "image/tiff",
+      "mime_type": "image/tiff",
+      "alt": "tiff-fig",
+      "base64": "Zw==",
+      "source": "base64",
+      "syntax": "image/tiff",
+      "data": "Zw=="
+    }
+  },
+  {
+    "speaker": "human",
+    "content": {
+      "type": "video/quicktime",
+      "mime": "video/quicktime",
+      "mime_type": "video/quicktime",
+      "alt": "quick-clip",
+      "base64": "Zw==",
+      "source": "base64",
+      "syntax": "video/quicktime",
+      "data": "Zw=="
+    }
+  },
+  {
+    "speaker": "human",
+    "content": {
       "type": "object",
       "data": "",
       "syntax": "application/json",
       "body": "{\"foo\": 1}"
+    }
+  },
+  {
+    "speaker": "human",
+    "content": {
+      "type": "object",
+      "data": "data:audio/flac;base64,Zw==",
+      "syntax": "audio/flac",
+      "body": ""
     }
   }
 ]

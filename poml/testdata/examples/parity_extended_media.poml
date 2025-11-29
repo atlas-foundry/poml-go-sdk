@@ -9,7 +9,10 @@
   <text>mixed text stays literal</text>
   <figure src="data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" alt="vector" syntax="image/svg+xml"/>
   <figure syntax="image/png" alt="inline">raw-bytes</figure>
+  <figure src="data:image/tiff;base64,Zw==" alt="tiff-fig" syntax="image/tiff"/>
+  <figure src="data:video/quicktime;base64,Zw==" alt="quick-clip" syntax="video/quicktime"/>
   <object syntax="application/json">
     {"foo": 1}
   </object>
+  <object syntax="audio/flac" data="data:audio/flac;base64,Zw=="></object>
 </poml>

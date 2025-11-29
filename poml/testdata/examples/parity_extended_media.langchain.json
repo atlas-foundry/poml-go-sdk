@@ -39,7 +39,43 @@
     {
       "type": "human",
       "data": {
+        "content": [
+          {
+            "type": "figure",
+            "source_type": "base64",
+            "mime_type": "image/tiff",
+            "data": "Zw==",
+            "alt": "tiff-fig",
+            "tag": "figure"
+          }
+        ]
+      }
+    },
+    {
+      "type": "human",
+      "data": {
+        "content": [
+          {
+            "type": "figure",
+            "source_type": "base64",
+            "mime_type": "video/quicktime",
+            "data": "Zw==",
+            "alt": "quick-clip",
+            "tag": "figure"
+          }
+        ]
+      }
+    },
+    {
+      "type": "human",
+      "data": {
         "content": "{\"foo\": 1}"
+      }
+    },
+    {
+      "type": "human",
+      "data": {
+        "content": "data:audio/flac;base64,Zw=="
       }
     }
   ]

@@ -36,7 +36,41 @@
     },
     {
       "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "tiff-fig"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/tiff;base64,Zw=="
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "quick-clip"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:video/quicktime;base64,Zw=="
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
       "content": "{\"foo\": 1}"
+    },
+    {
+      "role": "user",
+      "content": "data:audio/flac;base64,Zw=="
     }
   ]
 }
