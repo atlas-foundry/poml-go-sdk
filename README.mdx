@@ -169,10 +169,10 @@ Extended mode lets you mix plain text and POML via `<poml mode="extended"> ...`.
 
 ## 🗺️ Roadmap (high level)
 
-- 1️⃣ Core fidelity polish (Δ→ 100%): close remaining edge cases from the [Meta](https://microsoft.github.io/poml/latest/language/meta/) / [Components](https://microsoft.github.io/poml/latest/language/components/) specs; lock lossless round-trips for extended tags.
-- 2️⃣ Tracing parity (Δ→ 100%): implement Go-side tracing inspired by [Python trace](https://microsoft.github.io/poml/latest/python/trace/) with structured spans, deterministic seeds, and regression fixtures.
-- 3️⃣ Extended runway (Δ→ 30%): prototype safe subsets from the [POML Extended](https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/) proposal (custom ops, richer media), gated behind opt-in converters. Current subset: `<op>` and `<figure>` (aliases optional) plus base64-safe media handling. Build modes below govern how/when Extended is enabled.
-- 4️⃣ Ecosystem bridges (Δ→ 60%): deepen bindings (LangChain, OpenAI tools, CLI ergonomics) plus a POML ↔ `.tape` bridge for VHS stories.
+- 1️⃣ Core fidelity polish (Δ→ 95%): core Meta/Components largely covered; lossless round-trips stable; remaining edge cases and strict Extended goldens under active work.
+- 2️⃣ Tracing parity (Δ→ 30%): tracing hooks planned; Go-side spans/fixtures pending.
+- 3️⃣ Extended runway (Δ→ 70%): Extended tags (`<op>/<figure>/<text>`), strict validation (names/JSON args/alt/mime/size/attrs), allowlists + aliases/build-tags, embedded-tag extraction flag, mixed/media/text-escape goldens. Remaining: proposal-specific attr enums/goldens if upstream adds more.
+- 4️⃣ Ecosystem bridges (Δ→ 60%): OpenAI/LangChain converters solid; CLI ergonomics improved (config/allowlists); `.tape` bridge still backlog.
 
 ## ✅ High-priority TODOs
 
