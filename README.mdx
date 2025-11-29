@@ -180,7 +180,7 @@ Extended mode lets you mix plain text and POML via `<poml mode="extended"> ...`.
 - [ ] Ship trace support in Go mirroring Python’s `trace/` semantics, with golden test fixtures and CLI flag parity.
 - [ ] Add converter round-trip goldens for extended tags (hint/example/object/data) and publish % coverage alongside CI.
 - [ ] Harden path safety: extend BaseDir/MaxMediaBytes tests with symlink and UNC path fixtures.
-- [ ] Add richer demos across converters and docs/VHS for end-to-end journeys.
+- [ ] Add richer demos across converters and docs for end-to-end journeys.
 - [ ] Expand Extended subset beyond `<extended-op>/<extended-figure>` (e.g., richer media/data tags) behind opt-in flags.
 
 ### Onboarding at a glance (ASCII map)
@@ -293,7 +293,7 @@ Roadmap highlights (see `meta.plan.poml`):
 * Search endpoints (tag/attr/text), validation error details, conversions on demand.
 * Tool/diagram introspection, media safety signals, round-trip checks.
 * OTEL tracing/metrics (toggle with `--trace-stdout`), watch/reload + push, patch/diff APIs, auth toggle.
-* Future docs + VHS demo when feature set stabilizes.
+* Future docs + demos when feature set stabilizes.
 
 ---
 
@@ -302,11 +302,11 @@ Roadmap highlights (see `meta.plan.poml`):
 - **Doc plan**: living strategy in `docs/doc_plan.poml` (audiences, pillars, owners, timelines). Keep it in sync with code and releases.
 - **Spec links**: [Meta](https://microsoft.github.io/poml/latest/language/meta/) · [Components](https://microsoft.github.io/poml/latest/language/components/) · [Trace](https://microsoft.github.io/poml/latest/python/trace/) · [Extended](https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/)
 - **Content set**: `README.mdx` (landing), `README.poml` (structured), `PLAN.poml` / `meta.plan.poml` (execution), `go.quality.poml` (code bar), `docs/vhs/*.tape|.gif` (motion), more guides in `docs/*.poml`.
-- **Quality bar**: every feature ships with docs + runnable example or VHS; linkcheck/spellcheck + gofmt for snippets; coverage/spec % published.
+- **Quality bar**: every feature ships with docs + runnable example; linkcheck/spellcheck + gofmt for snippets; coverage/spec % published.
 
 ASCII doc flow:
 ```
-Specs & code ▶ tests/goldens ▶ docs (POML + README) ▶ demos (VHS) ▶ users/agents
+Specs & code ▶ tests/goldens ▶ docs (POML + README) ▶ demos ▶ users/agents
 ```
 
 ---

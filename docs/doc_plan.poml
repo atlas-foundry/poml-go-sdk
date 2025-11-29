@@ -18,9 +18,9 @@
     <list>
       <item>Clarity: one fast start, one deep dive, one API map.</item>
       <item>Paritȳ: mirror Microsoft POML docs (meta/components/trace/extended) with explicit % coverage.</item>
-      <item>Proof: runnable examples (CLI, builder, converters, tracing) with goldens and VHS demos.</item>
+      <item>Proof: runnable examples (CLI, builder, converters, tracing) with goldens.</item>
       <item>Safety: document BaseDir/media caps, tool-call validation, and tracing hygiene.</item>
-      <item>MCP: document `poml mcp` endpoints (health/inspect/ast now; search/diff/patch/watch planned) and provide a VHS demo once stable.</item>
+      <item>MCP: document `poml mcp` endpoints (health/inspect/ast now; search/diff/patch/watch planned).</item>
     </list>
   </task>
 
@@ -30,14 +30,13 @@
       <item>README.poml: full structured reference, stays in lockstep with README.mdx.</item>
       <item>Guides (POML): quickstart, builder, converters, tracing, safety FAQ (owner: docs/maintainers, reviewers: infra).</item>
       <item>API map: exported Go symbols summarized in POML with links to pkg.go.dev (owner: eng lead).</item>
-      <item>VHS demos: CLI + builder + forthcoming trace demo (owner: devrel).</item>
       <item>Tests/goldens: converter round-trips, media safety fixtures (owner: QA/eng).</item>
     </list>
   </task>
 
   <task caption="Roadmap (docs track)">
     <list>
-      <item>Week 1: refresh quickstart + safety FAQ; embed VHS GIFs; publish coverage % table.</item>
+      <item>Week 1: refresh quickstart + safety FAQ; publish coverage % table.</item>
       <item>Week 2: ship tracing doc (aligned to Python trace spec), add trace example + golden.</item>
       <item>Week 3: extended proposal notes (what’s supported/blocked), opt-in converter flags.</item>
       <item>Week 4: API map + pkg.go.dev cross-links; add changelog guidance for doc-affecting changes.</item>
@@ -49,7 +48,7 @@
       <item>Docs updated in the same PR as feature changes (no drift).</item>
       <item>Every code path referenced by at least one runnable example or test.</item>
       <item>Coverage badge + spec % table kept current; failures break CI.</item>
-      <item>Lint: spellcheck + linkcheck on docs; gofmt for snippets; VHS tapes rebuildable.</item>
+      <item>Lint: spellcheck + linkcheck on docs; gofmt for snippets.</item>
     </list>
   </task>
 
@@ -59,7 +58,7 @@
       <item>Structured: README.poml</item>
       <item>Plans: PLAN.poml, meta.plan.poml</item>
       <item>Quality: go.quality.poml</item>
-      <item>Guides: docs/* (POML), docs/vhs/*.tape + *.gif</item>
+      <item>Guides: docs/* (POML)</item>
       <item>Specs: https://microsoft.github.io/poml/latest/language/meta/ , https://microsoft.github.io/poml/latest/language/components/ , https://microsoft.github.io/poml/latest/python/trace/ , https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/</item>
     </list>
   </task>
