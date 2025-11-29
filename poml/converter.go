@@ -145,6 +145,14 @@ type messageDict struct {
 	Content any    `json:"content"`
 }
 
+func formatContentPart(name string, body string) map[string]any {
+	return map[string]any{
+		"type":    "format",
+		"tag":     name,
+		"content": strings.TrimSpace(body),
+	}
+}
+
 func convertMessageDict(doc Document, opts ConvertOptions) ([]messageDict, error) {
 	var msgs []messageDict
 	for _, el := range doc.resolveOrder() {
@@ -162,10 +170,15 @@ func convertMessageDict(doc Document, opts ConvertOptions) ([]messageDict, error
 		case ElementToolResponse:
 			payload := doc.ToolResps[el.Index]
 			msgs = append(msgs, messageDict{Speaker: "tool", Content: strings.TrimSpace(payload.Body)})
-		case ElementHint, ElementExample, ElementContentPart:
+		case ElementHint, ElementExample:
 			body := strings.TrimSpace(doc.elementBody(el))
 			if body != "" {
 				msgs = append(msgs, messageDict{Speaker: "human", Content: body})
+			}
+		case ElementContentPart:
+			body := strings.TrimSpace(doc.elementBody(el))
+			if body != "" {
+				msgs = append(msgs, messageDict{Speaker: "human", Content: formatContentPart(el.Name, body)})
 			}
 		case ElementPersona:
 			body := strings.TrimSpace(doc.Persona.Body)

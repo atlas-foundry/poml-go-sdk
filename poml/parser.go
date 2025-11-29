@@ -100,9 +100,21 @@ type Document struct {
 
 // Meta captures the id/version/owner fields under <meta>.
 type Meta struct {
-	ID      string `xml:"id"`
-	Version string `xml:"version"`
-	Owner   string `xml:"owner"`
+	ID         string `xml:"id"`
+	Version    string `xml:"version"`
+	Owner      string `xml:"owner"`
+	MinVersion string `xml:"minVersion,attr,omitempty"`
+	MaxVersion string `xml:"maxVersion,attr,omitempty"`
+	Components string `xml:"components,attr,omitempty"`
+}
+
+func isZeroMeta(m Meta) bool {
+	return m.ID == "" &&
+		m.Version == "" &&
+		m.Owner == "" &&
+		m.MinVersion == "" &&
+		m.MaxVersion == "" &&
+		m.Components == ""
 }
 
 // Block holds free-form body content for task/role/style sections.
@@ -765,6 +777,8 @@ func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 					case "op", "operation", "figure", "extended-op", "extended-figure":
 						issues = append(issues, fmt.Sprintf("extended element <%s> not allowed when Extended is off", el.Name))
 						details = append(details, ValidationDetail{Element: ElementUnknown, Message: "extended element " + el.Name})
+					case "p", "section", "span", "list", "item", "h", "i", "b", "u", "strike", "s", "br", "stylesheet":
+						// allow formatting/stylesheet tags as pass-through
 					default:
 						issues = append(issues, fmt.Sprintf("unknown element <%s>", el.Name))
 						details = append(details, ValidationDetail{Element: ElementUnknown, Message: "unknown element " + el.Name})
@@ -783,7 +797,7 @@ func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 			}
 		}
 	}
-	if metaCount == 0 && (d.Meta != Meta{}) {
+	if metaCount == 0 && !isZeroMeta(d.Meta) {
 		metaCount = 1
 	}
 	if roleCount == 0 && strings.TrimSpace(d.Role.Body) != "" {
@@ -828,6 +842,9 @@ func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 	if strings.TrimSpace(d.Meta.Owner) == "" {
 		issues = append(issues, "meta.owner is required")
 		details = append(details, ValidationDetail{Element: ElementMeta, Field: "owner", Message: "missing owner"})
+	}
+	if strings.TrimSpace(d.Meta.MinVersion) != "" && strings.TrimSpace(d.Meta.MaxVersion) != "" {
+		// no ordering check, but capture presence
 	}
 	nameSeen := make(map[string]struct{})
 	inputIndex := 0
@@ -1548,7 +1565,7 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 				if err := dec.DecodeElement(&m, &t); err != nil {
 					return doc, wrapXMLError(err, "<meta>")
 				}
-				if (doc.Meta == Meta{}) {
+				if isZeroMeta(doc.Meta) {
 					doc.Meta = m
 				}
 				el := doc.newElement(ElementMeta, -1, "")
@@ -1640,6 +1657,25 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 				}
 				doc.Examples = append(doc.Examples, ex)
 				el := doc.newElement(ElementExample, len(doc.Examples)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "examples":
+				// container wrapper; consume children
+				if err := dec.DecodeElement(new(struct{}), &t); err != nil {
+					return doc, wrapXMLError(err, "<examples>")
+				}
+			case "p", "section", "span", "h", "i", "b", "u", "strike", "s", "list", "item", "br":
+				var cp ContentPart
+				if err := dec.DecodeElement(&cp, &t); err != nil {
+					return doc, wrapXMLError(err, fmt.Sprintf("<%s>", t.Name.Local))
+				}
+				if t.Name.Local == "br" && strings.TrimSpace(cp.Body) == "" {
+					break
+				}
+				doc.ContentParts = append(doc.ContentParts, cp)
+				el := doc.newElement(ElementContentPart, len(doc.ContentParts)-1, t.Name.Local)
 				if preserveWS {
 					el.Leading = leading
 				}
@@ -2236,7 +2272,7 @@ func mergeMetaAttrs(meta map[string]any, attrs []xml.Attr) map[string]any {
 // defaultElements builds a canonical ordering of known fields.
 func (d *Document) defaultElements() []Element {
 	var out []Element
-	if (d.Meta != Meta{}) {
+	if !isZeroMeta(d.Meta) {
 		out = append(out, d.newElement(ElementMeta, -1, ""))
 	}
 	if d.Role.Body != "" {

@@ -1,0 +1,19 @@
+<poml>
+  <meta><id>fmt</id><version>1</version><owner>sdk</owner></meta>
+  <role>role</role>
+  <task>task</task>
+  <p>paragraph</p>
+  <section>section text</section>
+  <span>span text</span>
+  <list>
+    <item>one</item>
+    <item>two</item>
+  </list>
+  <h>header</h>
+  <i>italic</i>
+  <b>bold</b>
+  <u>underline</u>
+  <s>strike</s>
+  <br/>
+  <stylesheet>body { color: red; }</stylesheet>
+</poml>

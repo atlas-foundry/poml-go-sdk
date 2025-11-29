@@ -1010,6 +1010,47 @@ func TestValidateExtendedCustomOpKinds(t *testing.T) {
 	}
 }
 
+func TestValidateMalformedToolCallWiring(t *testing.T) {
+	makeDoc := func() Document {
+		return Document{
+			Meta:    Meta{ID: "tool.wiring", Version: "1", Owner: "me"},
+			Role:    Block{Body: "r"},
+			Persona: Block{Body: "p"},
+			Tasks:   []Block{{Body: "t"}},
+		}
+	}
+	t.Run("tool-response missing request", func(t *testing.T) {
+		doc := makeDoc()
+		doc.ToolResps = []ToolResponse{{ID: "call_1", Name: "calc", Body: "ok"}}
+		if err := doc.Validate(); err == nil {
+			t.Fatalf("expected missing tool-request validation error")
+		}
+	})
+	t.Run("tool-result missing request", func(t *testing.T) {
+		doc := makeDoc()
+		doc.ToolResults = []ToolResult{{ID: "call_1", Name: "calc", Body: "data"}}
+		if err := doc.Validate(); err == nil {
+			t.Fatalf("expected missing tool-request validation error")
+		}
+	})
+	t.Run("tool-error missing request", func(t *testing.T) {
+		doc := makeDoc()
+		doc.ToolErrors = []ToolError{{ID: "call_1", Name: "calc", Body: "err"}}
+		if err := doc.Validate(); err == nil {
+			t.Fatalf("expected missing tool-request validation error")
+		}
+	})
+	t.Run("tool-response wrong name", func(t *testing.T) {
+		doc := makeDoc()
+		doc.ToolDefs = []ToolDefinition{{Name: "calc", Body: "{}"}}
+		doc.ToolReqs = []ToolRequest{{ID: "call_1", Name: "calc", Parameters: "{}"}}
+		doc.ToolResps = []ToolResponse{{ID: "call_1", Name: "other", Body: "ok"}}
+		if err := doc.Validate(); err == nil {
+			t.Fatalf("expected mismatched tool name error")
+		}
+	})
+}
+
 func TestParseEmbeddedTagExtraction(t *testing.T) {
 	body := `before <task>inner</task> after`
 	doc, err := ParseReaderWithOptions(strings.NewReader(body), ParseOptions{PreserveWhitespace: true, Validate: false, Extended: ExtendedStrict, ExtractEmbeddedTags: true})
@@ -1025,6 +1066,25 @@ func TestParseEmbeddedTagExtraction(t *testing.T) {
 	// ensure trailing text is preserved
 	if got := strings.TrimSpace(doc.Texts[len(doc.Texts)-1].Body); !strings.Contains(got, "after") {
 		t.Fatalf("expected trailing text preserved, got %q", got)
+	}
+}
+
+func TestFormattingTagsAllowedAndPreserved(t *testing.T) {
+	doc, err := ParseFile(filepath.Join("testdata", "examples", "components_formatting.poml"))
+	if err != nil {
+		t.Fatalf("parse formatting fixture: %v", err)
+	}
+	if err := doc.Validate(); err != nil {
+		t.Fatalf("validate formatting fixture: %v", err)
+	}
+	seen := 0
+	for _, el := range doc.Elements {
+		if el.Type == ElementContentPart && el.Name != "" {
+			seen++
+		}
+	}
+	if seen == 0 {
+		t.Fatalf("expected formatting tags mapped to content parts")
 	}
 }
 
