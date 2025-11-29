@@ -961,6 +961,38 @@ func TestValidateExtendedInvalidMimeGolden(t *testing.T) {
 	}
 }
 
+func TestValidateExtendedObjectInvalidSyntaxGolden(t *testing.T) {
+	doc, err := ParseFile("testdata/examples/extended_object_invalid_syntax.poml")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	err = doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedStrict})
+	if err == nil {
+		t.Fatalf("expected invalid object syntax error")
+	}
+	got := strings.TrimSpace(err.Error())
+	want := strings.TrimSpace(readFile(t, "testdata/golden/extended_object_invalid_syntax.txt"))
+	if got != want {
+		t.Fatalf("object syntax validation mismatch\nwant: %s\ngot:  %s", want, got)
+	}
+}
+
+func TestValidateExtendedOpInvalidKindGolden(t *testing.T) {
+	doc, err := ParseFile("testdata/examples/extended_op_invalid_kind.poml")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	err = doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedStrict})
+	if err == nil {
+		t.Fatalf("expected invalid op kind error")
+	}
+	got := strings.TrimSpace(err.Error())
+	want := strings.TrimSpace(readFile(t, "testdata/golden/extended_op_invalid_kind.txt"))
+	if got != want {
+		t.Fatalf("op kind validation mismatch\nwant: %s\ngot:  %s", want, got)
+	}
+}
+
 func TestValidateExtendedOpArgsJSON(t *testing.T) {
 	src := `<poml mode="extended">
   <meta><id>x</id><version>1</version><owner>o</owner></meta>

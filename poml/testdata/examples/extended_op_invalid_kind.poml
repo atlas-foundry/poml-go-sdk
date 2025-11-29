@@ -1,0 +1,5 @@
+<poml mode="extended">
+  <meta><id>ext.op.invalid</id><version>1</version><owner>sdk</owner></meta>
+  <role>r</role><task>t</task>
+  <op name="demo" kind="bogus">body</op>
+</poml>
