@@ -116,6 +116,8 @@ func ConvertWithTrace(ctx context.Context, doc Document, format Format, opts Con
 	_, span := opts.Trace.start(ctx, "poml.convert",
 		attribute.String("poml.format", string(format)),
 		attribute.String("poml.meta.id", strings.TrimSpace(doc.Meta.ID)),
+		attribute.String("poml.meta.version", strings.TrimSpace(doc.Meta.Version)),
+		attribute.String("poml.meta.owner", strings.TrimSpace(doc.Meta.Owner)),
 	)
 	defer span.End()
 	out, err := Convert(doc, format, opts)
