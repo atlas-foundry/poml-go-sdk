@@ -172,7 +172,7 @@ Extended mode lets you mix plain text and POML via `<poml mode="extended"> ...`.
 - 1️⃣ Core fidelity polish (Δ→ 100%): Meta/Components covered (formatting tags as structured segments, meta min/max/components/stylesheet surfaced), lossless round-trips stable, tool wiring validated. Ongoing: keep goldens in sync with upstream.
 - 2️⃣ Tracing parity (Δ→ 30%): tracing hooks planned; Go-side spans/fixtures pending.
 - 3️⃣ Extended runway (Δ→ 70%): Extended tags (`<op>/<figure>/<text>`), strict validation (names/JSON args/alt/mime/size/attrs), allowlists + aliases/build-tags, embedded-tag extraction flag, mixed/media/text-escape goldens. Remaining: upstream proposal deltas only.
-- 4️⃣ Ecosystem bridges (Δ→ 60%): OpenAI/LangChain converters solid; CLI ergonomics improved (config/allowlists); `.tape` bridge still backlog.
+- 4️⃣ Ecosystem bridges (Δ→ 60%): OpenAI/LangChain converters solid; CLI ergonomics improved (config/allowlists).
 
 ## ✅ High-priority TODOs
 
@@ -180,7 +180,7 @@ Extended mode lets you mix plain text and POML via `<poml mode="extended"> ...`.
 - [ ] Ship trace support in Go mirroring Python’s `trace/` semantics, with golden test fixtures and CLI flag parity.
 - [ ] Add converter round-trip goldens for extended tags (hint/example/object/data) and publish % coverage alongside CI.
 - [ ] Harden path safety: extend BaseDir/MaxMediaBytes tests with symlink and UNC path fixtures.
-- [ ] Publish the `.tape` converter and wire sample journeys into docs/VHS for end-to-end demos.
+- [ ] Add richer demos across converters and docs/VHS for end-to-end journeys.
 - [ ] Expand Extended subset beyond `<extended-op>/<extended-figure>` (e.g., richer media/data tags) behind opt-in flags.
 
 ### Onboarding at a glance (ASCII map)
