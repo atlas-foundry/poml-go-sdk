@@ -7,6 +7,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"os"
 	"path/filepath"
@@ -158,6 +159,20 @@ func formatContentPart(name string, body string) map[string]any {
 	}
 }
 
+// extractAttr attempts to grab a simple attribute from raw XML (best-effort for unknown tags).
+func extractAttr(raw string, name string) string {
+	pat := name + "=\""
+	idx := strings.Index(raw, pat)
+	if idx == -1 {
+		return ""
+	}
+	rest := raw[idx+len(pat):]
+	if end := strings.Index(rest, "\""); end != -1 {
+		return rest[:end]
+	}
+	return ""
+}
+
 func convertMessageDict(doc Document, opts ConvertOptions) ([]messageDict, error) {
 	var msgs []messageDict
 	for _, el := range doc.resolveOrder() {
@@ -263,14 +278,26 @@ func convertMessageDict(doc Document, opts ConvertOptions) ([]messageDict, error
 			}
 		case ElementUnknown:
 			if opts.Extended != ExtendedOff {
-				msgs = append(msgs, messageDict{
-					Speaker: "human",
-					Content: map[string]any{
-						"type": "unknown",
-						"name": el.Name,
-						"raw":  strings.TrimSpace(el.RawXML),
-					},
-				})
+				if strings.EqualFold(el.Name, "data") {
+					body := strings.TrimSpace(doc.elementBody(el))
+					msgs = append(msgs, messageDict{
+						Speaker: "human",
+						Content: map[string]any{
+							"type":   "data",
+							"syntax": extractAttr(el.RawXML, "syntax"),
+							"body":   body,
+						},
+					})
+				} else {
+					msgs = append(msgs, messageDict{
+						Speaker: "human",
+						Content: map[string]any{
+							"type": "unknown",
+							"name": el.Name,
+							"raw":  strings.TrimSpace(el.RawXML),
+						},
+					})
+				}
 			}
 		}
 	}
@@ -487,17 +514,25 @@ func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error
 			})
 		case ElementUnknown:
 			if opts.Extended != ExtendedOff {
-				raw := strings.TrimSpace(el.RawXML)
-				if raw == "" {
-					raw = el.Name
+				if strings.EqualFold(el.Name, "data") {
+					body := strings.TrimSpace(doc.elementBody(el))
+					messages = append(messages, map[string]any{
+						"role":    "user",
+						"content": body,
+					})
+				} else {
+					raw := strings.TrimSpace(el.RawXML)
+					if raw == "" {
+						raw = el.Name
+					}
+					messages = append(messages, map[string]any{
+						"role": "user",
+						"content": []any{map[string]any{
+							"type": "text",
+							"text": fmt.Sprintf("[unknown:%s] %s", el.Name, raw),
+						}},
+					})
 				}
-				messages = append(messages, map[string]any{
-					"role": "user",
-					"content": []any{map[string]any{
-						"type": "text",
-						"text": fmt.Sprintf("[unknown:%s] %s", el.Name, raw),
-					}},
-				})
 			}
 		case ElementText:
 			if opts.Extended == ExtendedOff {
@@ -826,17 +861,6 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 				"type": "human",
 				"data": map[string]any{"content": content},
 			})
-		case ElementUnknown:
-			if opts.Extended == ExtendedOff {
-				continue
-			}
-			if strings.EqualFold(el.Name, "data") {
-				body := strings.TrimSpace(doc.elementBody(el))
-				messages = append(messages, map[string]any{
-					"type": "human",
-					"data": map[string]any{"content": body},
-				})
-			}
 		case ElementToolRequest:
 			tr := doc.ToolReqs[el.Index]
 			call := map[string]any{
@@ -893,21 +917,31 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 			})
 		case ElementUnknown:
 			if opts.Extended != ExtendedOff {
-				raw := strings.TrimSpace(el.RawXML)
-				if raw == "" {
-					raw = el.Name
-				}
-				messages = append(messages, map[string]any{
-					"type": "human",
-					"data": map[string]any{
-						"content": []any{
-							map[string]any{
-								"type": "text",
-								"text": fmt.Sprintf("[unknown:%s] %s", el.Name, raw),
+				if strings.EqualFold(el.Name, "data") {
+					body := strings.TrimSpace(doc.elementBody(el))
+					messages = append(messages, map[string]any{
+						"type": "human",
+						"data": map[string]any{
+							"content": body,
+						},
+					})
+				} else {
+					raw := strings.TrimSpace(el.RawXML)
+					if raw == "" {
+						raw = el.Name
+					}
+					messages = append(messages, map[string]any{
+						"type": "human",
+						"data": map[string]any{
+							"content": []any{
+								map[string]any{
+									"type": "text",
+									"text": fmt.Sprintf("[unknown:%s] %s", el.Name, raw),
+								},
 							},
 						},
-					},
-				})
+					})
+				}
 			}
 		}
 	}
@@ -1336,6 +1370,16 @@ func (d Document) elementBody(el Element) string {
 	case ElementFigure:
 		if el.Index >= 0 && el.Index < len(d.Figures) {
 			return d.Figures[el.Index].Body
+		}
+	case ElementUnknown:
+		if strings.TrimSpace(el.RawXML) != "" {
+			raw := el.RawXML
+			if i := strings.Index(raw, ">"); i != -1 {
+				if j := strings.LastIndex(raw, "<"); j != -1 && j > i {
+					body := raw[i+1 : j]
+					return html.UnescapeString(stripCDATA(body))
+				}
+			}
 		}
 	}
 	return ""
