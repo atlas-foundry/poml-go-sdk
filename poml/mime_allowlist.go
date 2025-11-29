@@ -4,11 +4,6 @@ import "strings"
 
 var allowedMediaMIMEs = DefaultAllowedMIMEs()
 
-// allowMIME reports whether the syntax passes basic validation and optional allowlist.
-func allowMIME(s string) bool {
-	return allowMIMEWithList(s, allowedMediaMIMEs)
-}
-
 func allowMIMEWithList(s string, allow map[string]struct{}) bool {
 	if allow == nil {
 		allow = allowedMediaMIMEs
