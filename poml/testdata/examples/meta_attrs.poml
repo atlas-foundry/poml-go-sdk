@@ -1,0 +1,10 @@
+<poml>
+  <meta minVersion="0.9" maxVersion="2.0" components="core,formatting" stylesheet="body { color: blue; }">
+    <id>meta.attrs</id>
+    <version>1</version>
+    <owner>sdk</owner>
+  </meta>
+  <role>role</role>
+  <task>task</task>
+  <human-msg>hello</human-msg>
+</poml>

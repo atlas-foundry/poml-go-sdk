@@ -147,9 +147,12 @@ type messageDict struct {
 
 func formatContentPart(name string, body string) map[string]any {
 	return map[string]any{
-		"type":    "format",
-		"tag":     name,
-		"content": strings.TrimSpace(body),
+		"type":     "format",
+		"tag":      name,
+		"content":  strings.TrimSpace(body),
+		"raw":      body,
+		"syntax":   "poml",
+		"semantics": "inline",
 	}
 }
 

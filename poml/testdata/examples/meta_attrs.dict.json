@@ -1,0 +1,14 @@
+{
+  "messages": [
+    {
+      "speaker": "human",
+      "content": "hello"
+    }
+  ],
+  "runtime": {
+    "min_version": "0.9",
+    "max_version": "2.0",
+    "components": "core,formatting",
+    "stylesheet": "body { color: blue; }"
+  }
+}
