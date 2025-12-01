@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Fail fast on formatting issues to avoid cross-platform build surprises.
+if dirty="$(gofmt -l .)"; [[ -n "${dirty}" ]]; then
+  echo "gofmt check failed; run gofmt -w on these files:" >&2
+  echo "${dirty}" >&2
+  exit 1
+fi
+
+if ! command -v golangci-lint >/dev/null 2>&1; then
+  echo "golangci-lint not found; install it to run pre-push linting." >&2
+  exit 1
+fi
+
+echo "Running golangci-lint..."
+golangci-lint run ./...

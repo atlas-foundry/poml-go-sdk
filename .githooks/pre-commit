@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Block commits when formatting is off to keep macOS/Linux/Windows builds clean.
+dirty="$(gofmt -l .)"
+if [[ -n "${dirty}" ]]; then
+  echo "gofmt check failed; format these files before committing:" >&2
+  echo "${dirty}" >&2
+  exit 1
+fi
