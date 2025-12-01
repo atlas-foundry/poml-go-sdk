@@ -59,7 +59,9 @@ func TestConvertWithTraceCapturesMeta(t *testing.T) {
 	if _, err := ConvertWithTrace(context.Background(), doc, FormatMessageDict, opts); err != nil {
 		t.Fatalf("ConvertWithTrace: %v", err)
 	}
-	tp.ForceFlush(context.Background())
+	if err := tp.ForceFlush(context.Background()); err != nil {
+		t.Fatalf("force flush: %v", err)
+	}
 	spans := exp.GetSpans()
 	if len(spans) == 0 {
 		t.Fatalf("expected convert span recorded")

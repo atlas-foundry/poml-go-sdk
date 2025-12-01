@@ -55,7 +55,9 @@ func TestParseWithTraceEmitsMetaAttributes(t *testing.T) {
 		t.Fatalf("parse: %v", err)
 	}
 	_ = doc
-	tp.ForceFlush(context.Background())
+	if err := tp.ForceFlush(context.Background()); err != nil {
+		t.Fatalf("force flush: %v", err)
+	}
 	spans := exp.GetSpans()
 	if len(spans) == 0 {
 		t.Fatalf("expected spans to be recorded")
