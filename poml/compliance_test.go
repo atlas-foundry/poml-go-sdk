@@ -1,76 +1,97 @@
 package poml
 
 import (
-	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
-// Compliance smoke: ensure positive fixtures validate and convert under strict core/extended rules.
+// Compliance matrix with explicit allow/deny manifests to avoid false positives.
 func TestComplianceMatrix(t *testing.T) {
+	allow := map[string]ValidateOptions{
+		"207_multimedia.poml":             {Extended: ExtendedStrict},
+		"components_formatting.poml":      {Extended: ExtendedOff},
+		"core_full.poml":                  {Extended: ExtendedOff},
+		"extended_data_block.poml":        {Extended: ExtendedStrict},
+		"extended_formatting_mix.poml":    {Extended: ExtendedStrict},
+		"extended_media_oversize.poml":    {Extended: ExtendedStrict},
+		"formatting_inline.poml":          {Extended: ExtendedOff},
+		"meta_attrs.poml":                 {Extended: ExtendedOff},
+		"parity_basic.poml":               {Extended: ExtendedOff},
+		"parity_extended_attrs.poml":      {Extended: ExtendedStrict},
+		"parity_extended_media.poml":      {Extended: ExtendedStrict},
+		"parity_extended_mixed.poml":      {Extended: ExtendedStrict},
+		"parity_extended_textescape.poml": {Extended: ExtendedStrict},
+		"parity_persona.poml":             {Extended: ExtendedOff},
+		"ts_reference_basic.poml":         {Extended: ExtendedOff},
+	}
+
+	deny := map[string]ValidateOptions{
+		"101_explain_character.poml":             {Extended: ExtendedOff},
+		"102_render_xml.poml":                    {Extended: ExtendedOff},
+		"103_word_todos.poml":                    {Extended: ExtendedOff},
+		"104_financial_analysis.poml":            {Extended: ExtendedOff},
+		"105_write_blog_post.poml":               {Extended: ExtendedOff},
+		"106_research.poml":                      {Extended: ExtendedOff},
+		"107_read_report_pdf.poml":               {Extended: ExtendedOff},
+		"108_math_calculator.poml":               {Extended: ExtendedOff},
+		"109_math_verifier.poml":                 {Extended: ExtendedOff},
+		"110_code_review.poml":                   {Extended: ExtendedOff},
+		"201_orders_qa.poml":                     {Extended: ExtendedOff},
+		"202_arc_agi.poml":                       {Extended: ExtendedOff},
+		"203_expense_extract_document.poml":      {Extended: ExtendedOff},
+		"204_expense_extract_rules.poml":         {Extended: ExtendedOff},
+		"205_expense_check_compliance.poml":      {Extended: ExtendedOff},
+		"206_expense_send_email.poml":            {Extended: ExtendedOff},
+		"301_generate_poml.poml":                 {Extended: ExtendedOff},
+		"extended_data_invalid_syntax.poml":      {Extended: ExtendedStrict},
+		"extended_data_missing_syntax.poml":      {Extended: ExtendedStrict},
+		"extended_data_unknown_attr.poml":        {Extended: ExtendedStrict},
+		"extended_media_invalid_audio_mime.poml": {Extended: ExtendedStrict},
+		"extended_media_invalid_mime.poml":       {Extended: ExtendedStrict},
+		"extended_media_invalid_size.poml":       {Extended: ExtendedStrict},
+		"extended_media_missing_syntax.poml":     {Extended: ExtendedStrict},
+		"extended_object_invalid_syntax.poml":    {Extended: ExtendedStrict},
+		"extended_op_invalid_kind.poml":          {Extended: ExtendedStrict},
+		"extended_off_op.poml":                   {Extended: ExtendedOff},
+		"extended_off_figure.poml":               {Extended: ExtendedOff},
+		"extended_off_object.poml":               {Extended: ExtendedOff},
+		"extended_off_data.poml":                 {Extended: ExtendedOff},
+		"extended_off_text.poml":                 {Extended: ExtendedOff},
+		"validation_config.poml":                 {Extended: ExtendedStrict},
+	}
+
 	examples, err := filepath.Glob(filepath.Join("testdata", "examples", "*.poml"))
 	if err != nil {
 		t.Fatalf("glob examples: %v", err)
 	}
-	skipWords := []string{"invalid", "missing", "oversize", "off_", "off.", "bad", "fail", "unknown_attr"}
-	var coreTotal, corePass, extTotal, extPass int
 
 	for _, path := range examples {
 		base := filepath.Base(path)
-		lower := strings.ToLower(base)
-		skip := false
-		for _, word := range skipWords {
-			if strings.Contains(lower, word) {
-				skip = true
-				break
+		if opts, ok := allow[base]; ok {
+			doc, err := ParseFile(path)
+			if err != nil {
+				t.Fatalf("parse %s: %v", base, err)
 			}
-		}
-		if base == "validation_config.poml" {
-			skip = true
-		}
-		if skip {
+			if err := doc.ValidateWithOptions(opts); err != nil {
+				t.Fatalf("validate %s (%v): %v", base, opts.Extended, err)
+			}
+			if _, err := Convert(doc, FormatMessageDict, ConvertOptions{Extended: opts.Extended}); err != nil {
+				t.Fatalf("convert %s (%v): %v", base, opts.Extended, err)
+			}
 			continue
 		}
 
-		body, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatalf("read %s: %v", path, err)
-		}
-		lowerBody := strings.ToLower(string(body))
-		isExtended := strings.Contains(lowerBody, `mode="extended"`) || strings.Contains(lowerBody, `extended="true"`)
-		if strings.Contains(lowerBody, "<op") || strings.Contains(lowerBody, "<figure") || strings.Contains(lowerBody, "<object") || strings.Contains(lowerBody, "<extended-op") || strings.Contains(lowerBody, "<extended-figure") || strings.Contains(lowerBody, "<data") || strings.Contains(lowerBody, "<text") {
-			isExtended = true
-		}
-
-		doc, err := ParseFile(path)
-		if err != nil {
-			t.Fatalf("parse %s: %v", path, err)
-		}
-
-		validateOpts := ValidateOptions{Extended: ExtendedOff}
-		if isExtended {
-			validateOpts.Extended = ExtendedStrict
-		}
-		if strings.TrimSpace(doc.Meta.ID) == "" || strings.TrimSpace(doc.Meta.Version) == "" || strings.TrimSpace(doc.Meta.Owner) == "" || strings.TrimSpace(doc.Role.Body) == "" || len(doc.Tasks) == 0 {
+		if opts, ok := deny[base]; ok {
+			doc, err := ParseFile(path)
+			if err != nil {
+				t.Fatalf("parse %s: %v", base, err)
+			}
+			if err := doc.ValidateWithOptions(opts); err == nil {
+				t.Fatalf("expected validation failure for %s", base)
+			}
 			continue
 		}
 
-		if err := doc.ValidateWithOptions(validateOpts); err != nil {
-			t.Fatalf("validate %s (%v): %v", base, validateOpts.Extended, err)
-		}
-		if _, err := Convert(doc, FormatMessageDict, ConvertOptions{Extended: validateOpts.Extended}); err != nil {
-			t.Fatalf("convert %s (%v): %v", base, validateOpts.Extended, err)
-		}
-
-		if isExtended {
-			extTotal++
-			extPass++
-		} else {
-			coreTotal++
-			corePass++
-		}
+		t.Fatalf("fixture not classified in compliance manifest: %s", base)
 	}
-
-	t.Logf("Compliance matrix: core %d/%d, extended %d/%d (strict defaults)", corePass, coreTotal, extPass, extTotal)
 }
