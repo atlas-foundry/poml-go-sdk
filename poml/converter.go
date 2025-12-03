@@ -206,6 +206,9 @@ func convertMessageDict(doc Document, opts ConvertOptions) ([]messageDict, error
 				msgs = append(msgs, messageDict{Speaker: "human", Content: body})
 			}
 		case ElementObject:
+			if opts.Extended == ExtendedOff {
+				continue
+			}
 			obj := doc.Objects[el.Index]
 			msgs = append(msgs, messageDict{
 				Speaker: "human",
@@ -300,6 +303,9 @@ func convertMessageDict(doc Document, opts ConvertOptions) ([]messageDict, error
 				}
 			}
 		}
+	}
+	if msgs == nil {
+		msgs = []messageDict{}
 	}
 	return msgs, nil
 }
@@ -604,6 +610,9 @@ func convertOpenAIChat(doc Document, opts ConvertOptions) (map[string]any, error
 				"content": content,
 			})
 		}
+	}
+	if messages == nil {
+		messages = []map[string]any{}
 	}
 	result["messages"] = messages
 	if doc.hasSchema() {
@@ -944,6 +953,9 @@ func convertLangChain(doc Document, opts ConvertOptions) (map[string]any, error)
 				}
 			}
 		}
+	}
+	if messages == nil {
+		messages = []map[string]any{}
 	}
 	out := map[string]any{"messages": messages}
 	if doc.hasSchema() {

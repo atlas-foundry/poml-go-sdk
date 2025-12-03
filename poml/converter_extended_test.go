@@ -180,6 +180,37 @@ func TestConvertExtendedTextEscapeLiteral(t *testing.T) {
 	}
 }
 
+func TestConvertExtendedMixedTextAndDataOrder(t *testing.T) {
+	src := `<poml mode="extended">
+  <meta><id>x</id><version>1</version><owner>me</owner></meta>
+  <role>r</role><task>t</task>
+  Text before data.
+  <data syntax="application/json">{"a":1}</data>
+  <text>wrapped text</text>
+</poml>`
+	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: true, Extended: ExtendedStrict})
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	outAny, err := Convert(doc, FormatMessageDict, ConvertOptions{Extended: ExtendedStrict})
+	if err != nil {
+		t.Fatalf("convert: %v", err)
+	}
+	msgs := outAny.([]messageDict)
+	if len(msgs) != 3 {
+		t.Fatalf("expected 3 messages, got %d (%+v)", len(msgs), msgs)
+	}
+	if text, ok := msgs[0].Content.(string); !ok || !strings.Contains(text, "Text before data.") {
+		t.Fatalf("expected leading text content, got %+v", msgs[0])
+	}
+	if data, ok := msgs[1].Content.(map[string]any); !ok || data["type"] != "data" || data["syntax"] != "application/json" {
+		t.Fatalf("expected data payload, got %+v", msgs[1])
+	}
+	if text, ok := msgs[2].Content.(string); !ok || !strings.Contains(text, "wrapped text") {
+		t.Fatalf("expected trailing wrapped text, got %+v", msgs[2])
+	}
+}
+
 func TestConvertTextBlocksIgnoredWhenExtendedOff(t *testing.T) {
 	src := `<poml><meta><id>x</id><version>1</version><owner>o</owner></meta><role>r</role><text>inline text</text><task>t</task></poml>`
 	doc, err := ParseReaderWithOptions(strings.NewReader(src), ParseOptions{PreserveWhitespace: true, Validate: false})

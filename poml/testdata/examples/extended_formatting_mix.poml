@@ -1,0 +1,10 @@
+<poml mode="extended">
+  <meta><id>extended.formatting.mix</id><version>1</version><owner>sdk</owner></meta>
+  <role>demo</role>
+  <task>mix formatting and extended elements</task>
+  <p>leading <span>inline</span> text.</p>
+  <text>escaped &lt;b&gt;bold&lt;/b&gt; text node</text>
+  <figure src="data:image/png;base64,Zw==" alt="tiny" syntax="image/png"/>
+  <data syntax="application/json">{"mix":true}</data>
+  <p>trailer with <b>bold</b> tail.</p>
+</poml>

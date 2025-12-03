@@ -174,15 +174,19 @@ func TestConverterParityExtendedMedia(t *testing.T) {
 		name     string
 		format   Format
 		expected string
+		opts     ConvertOptions
 	}{
-		{"message_dict", FormatMessageDict, filepath.Join("testdata", "examples", "parity_extended_media.message_dict.json")},
-		{"openai_chat", FormatOpenAIChat, filepath.Join("testdata", "examples", "parity_extended_media.openai_chat.json")},
-		{"langchain", FormatLangChain, filepath.Join("testdata", "examples", "parity_extended_media.langchain.json")},
+		{"message_dict", FormatMessageDict, filepath.Join("testdata", "examples", "parity_extended_media.message_dict.json"), ConvertOptions{Extended: ExtendedStrict}},
+		{"openai_chat", FormatOpenAIChat, filepath.Join("testdata", "examples", "parity_extended_media.openai_chat.json"), ConvertOptions{Extended: ExtendedStrict}},
+		{"langchain", FormatLangChain, filepath.Join("testdata", "examples", "parity_extended_media.langchain.json"), ConvertOptions{Extended: ExtendedStrict}},
+		{"message_dict_off", FormatMessageDict, filepath.Join("testdata", "examples", "parity_extended_media.off.message_dict.json"), ConvertOptions{Extended: ExtendedOff}},
+		{"openai_chat_off", FormatOpenAIChat, filepath.Join("testdata", "examples", "parity_extended_media.off.openai_chat.json"), ConvertOptions{Extended: ExtendedOff}},
+		{"langchain_off", FormatLangChain, filepath.Join("testdata", "examples", "parity_extended_media.off.langchain.json"), ConvertOptions{Extended: ExtendedOff}},
 	}
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			out, err := Convert(doc, tc.format, ConvertOptions{Extended: ExtendedStrict})
+			out, err := Convert(doc, tc.format, tc.opts)
 			if err != nil {
 				t.Fatalf("convert %s: %v", tc.name, err)
 			}
@@ -324,15 +328,19 @@ func TestConverterParityExtendedData(t *testing.T) {
 		name     string
 		format   Format
 		expected string
+		opts     ConvertOptions
 	}{
-		{"message_dict", FormatMessageDict, filepath.Join("testdata", "examples", "extended_data_block.message_dict.json")},
-		{"openai_chat", FormatOpenAIChat, filepath.Join("testdata", "examples", "extended_data_block.openai_chat.json")},
-		{"langchain", FormatLangChain, filepath.Join("testdata", "examples", "extended_data_block.langchain.json")},
+		{"message_dict", FormatMessageDict, filepath.Join("testdata", "examples", "extended_data_block.message_dict.json"), ConvertOptions{Extended: ExtendedStrict}},
+		{"openai_chat", FormatOpenAIChat, filepath.Join("testdata", "examples", "extended_data_block.openai_chat.json"), ConvertOptions{Extended: ExtendedStrict}},
+		{"langchain", FormatLangChain, filepath.Join("testdata", "examples", "extended_data_block.langchain.json"), ConvertOptions{Extended: ExtendedStrict}},
+		{"message_dict_off", FormatMessageDict, filepath.Join("testdata", "examples", "extended_data_block.off.message_dict.json"), ConvertOptions{Extended: ExtendedOff}},
+		{"openai_chat_off", FormatOpenAIChat, filepath.Join("testdata", "examples", "extended_data_block.off.openai_chat.json"), ConvertOptions{Extended: ExtendedOff}},
+		{"langchain_off", FormatLangChain, filepath.Join("testdata", "examples", "extended_data_block.off.langchain.json"), ConvertOptions{Extended: ExtendedOff}},
 	}
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			out, err := Convert(doc, tc.format, ConvertOptions{Extended: ExtendedStrict})
+			out, err := Convert(doc, tc.format, tc.opts)
 			if err != nil {
 				t.Fatalf("convert %s: %v", tc.name, err)
 			}

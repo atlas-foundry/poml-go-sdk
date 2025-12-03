@@ -21,36 +21,27 @@
   </style>
 </head>
 <body class="markdown-body">
-  <p align="center"><a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&amp;label=ci&amp;logo=github" alt="CI Status"/></a><a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&amp;label=tests&amp;logo=go" alt="Tests"/></a><a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&amp;label=lint&amp;logo=githubactions" alt="Lint"/></a><a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&amp;label=govulncheck&amp;logo=go" alt="Govulncheck"/></a><a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&amp;label=docs&amp;logo=mdx" alt="Docs Build"/></a><a href="https://codecov.io/gh/atlas-foundry/poml-go-sdk"><img src="https://codecov.io/gh/atlas-foundry/poml-go-sdk/branch/main/graph/badge.svg" alt="Codecov"/></a><a href="https://github.com/atlas-foundry/poml-go-sdk/releases"><img src="https://img.shields.io/github/v/release/atlas-foundry/poml-go-sdk?logo=github&amp;color=4c1" alt="Release"/></a></p>
-<p align="center"><a href="https://img.shields.io/github/go-mod/go-version/atlas-foundry/poml-go-sdk"><img src="https://img.shields.io/github/go-mod/go-version/atlas-foundry/poml-go-sdk?logo=go&amp;color=00add8" alt="Go Version"/></a><a href="https://github.com/atlas-foundry/poml-go-sdk/blob/main/LICENSE"><img src="https://img.shields.io/github/license/atlas-foundry/poml-go-sdk?color=blue" alt="License MIT"/></a><a href="https://pkg.go.dev/github.com/atlas-foundry/poml-go-sdk"><img src="https://pkg.go.dev/badge/github.com/atlas-foundry/poml-go-sdk.svg" alt="Go Reference"/></a><a href="https://goreportcard.com/report/github.com/atlas-foundry/poml-go-sdk"><img src="https://goreportcard.com/badge/github.com/atlas-foundry/poml-go-sdk" alt="Go Report Card"/></a><a href="https://microsoft.github.io/poml"><img src="https://img.shields.io/badge/POML-Supported-8a2be2.svg?logo=microsoft" alt="POML Supported"/></a><a href="./go.quality.poml"><img src="https://img.shields.io/badge/Go%20Quality-Spec-4c1" alt="Go Quality Spec"/></a><a href="https://www.conventionalcommits.org/"><img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-ff69b4.svg" alt="Conventional Commits"/></a></p>
-<h1>✨ poml-go-sdk</h1>
-<p>A delightful Go SDK for <strong>POML — Prompt Orchestration Markup Language</strong>.
-We speak POML natively, faithfully, and with a little spark of fun ✨</p>
-<blockquote>
-<p><strong>Note:</strong> This repo uses POML for all docs.
-The only non-POML doc allowed is this <code>README.mdx</code>.</p>
-</blockquote>
+  <p align="center"><a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&amp;label=ci&amp;logo=github" alt="CI Status"/></a><a href="https://github.com/atlas-foundry/poml-go-sdk/releases"><img src="https://img.shields.io/github/v/release/atlas-foundry/poml-go-sdk?logo=github&amp;color=4c1" alt="Release"/></a><a href="https://img.shields.io/github/go-mod/go-version/atlas-foundry/poml-go-sdk"><img src="https://img.shields.io/github/go-mod/go-version/atlas-foundry/poml-go-sdk?logo=go&amp;color=00add8" alt="Go Version"/></a><a href="https://pkg.go.dev/github.com/atlas-foundry/poml-go-sdk"><img src="https://pkg.go.dev/badge/github.com/atlas-foundry/poml-go-sdk.svg" alt="Go Reference"/></a><a href="https://github.com/atlas-foundry/poml-go-sdk/blob/main/LICENSE"><img src="https://img.shields.io/github/license/atlas-foundry/poml-go-sdk?color=blue" alt="License MIT"/></a><a href="https://microsoft.github.io/poml"><img src="https://img.shields.io/badge/POML-Supported-8a2be2.svg?logo=microsoft" alt="POML Supported"/></a></p>
+<h1>POML Go SDK — structured prompts for Go, LLMs, and tools</h1>
+<p>Open-source Go library for <strong>Prompt Orchestration Markup Language (POML)</strong> with lossless parsing, validation, rendering, and converters for OpenAI Chat, LangChain, scene/diagram formats, and more. Built to keep prompt markup deterministic, multi-modal, and ready for agents, CLIs, and IDE extensions.</p>
+<p><strong>Highlights</strong></p>
 <ul>
-<li>Full structured README: <code>README.poml</code></li>
+<li>Lossless POML parse/validate/encode with whitespace and unknown-tag preservation.</li>
+<li>Converters: message_dict, dict, OpenAI Chat, LangChain, scene/scenejson; deterministic options for goldens and CI.</li>
+<li>Extended mode: opt-in mixed text + POML (<code>mode=&quot;extended&quot;</code>), <code>&lt;op&gt;/&lt;figure&gt;/&lt;text&gt;/&lt;data&gt;</code> blocks, unknown passthrough; strict validation enforces names/JSON args/alt/mime/size/attrs; aliases via build tags; optional embedded-tag extraction flag; formatting tags handled as structured segments; MIME/op-kind allowlists configurable via flags/env/POML (defaults cover png/jpeg/webp/svg/tiff/heic/avif + flac/ogg/opus/aac/mp4 + mp4/webm/quicktime/mpeg/matroska/avi/m4v/3gpp + json/xml/octet-stream for data/objects).</li>
+<li>Diagram/scene round-trips with attrs/extras; <code>base_document</code> seeding keeps meta/role/tasks when rehydrating POML.</li>
+<li>CLI: <code>poml mcp</code> serves AST/validation/convert endpoints with optional tracing (stdout/OTLP/seeded in-memory), <code>--trace-seed</code> for deterministic spans (goldens via <code>poml.NewTraceRecorder</code>), <code>/traces</code> dumps recorded spans when seeded, and configurable allowlists via flags/env/POML config; formatting/meta attrs surfaced in converters.</li>
+</ul>
+<p><strong>Docs &amp; plans (POML-first)</strong></p>
+<ul>
+<li>Structured README: <code>README.poml</code></li>
 <li>Delivery plan: <code>PLAN.poml</code></li>
 <li>AI log: <code>AI.LOCK.poml</code></li>
-<li>Fit-for-purpose plan: <code>docs/fit_for_purpose.poml</code></li>
+<li>Fit-for-purpose: <code>docs/fit_for_purpose.poml</code></li>
 <li>Agent rules: <code>AGENTS.poml</code></li>
 <li>Go quality spec: <code>go.quality.poml</code></li>
-<li>Multimedia examples: <code>poml/testdata/examples/*</code></li>
+<li>Examples: <code>poml/testdata/examples/*</code></li>
 </ul>
-<hr/>
-<h2>💖 What is POML?</h2>
-<p>POML is a structured, spec-driven language for orchestrating AI prompts.</p>
-<p>It’s:</p>
-<ul>
-<li>declarative</li>
-<li>expressive</li>
-<li>type-safe</li>
-<li>multi-modal</li>
-<li>and <em>way</em> nicer to maintain than a giant prompt blob</li>
-</ul>
-<p>This SDK brings POML’s power to Go.</p>
 <hr/>
 <h2>🚀 Quick Start Guide</h2>
 <p>New to POML or Go? Here is how to get started in minutes.</p>
@@ -112,42 +103,138 @@ doc.AddMessage(&quot;human&quot;, &quot;hi there&quot;)
 out, _ := poml.Convert(doc, poml.FormatOpenAIChat, poml.ConvertOptions{})
 fmt.Printf(&quot;%+v\n&quot;, out)
 </code></pre>
-<hr/>
 <h2>📐 Spec Alignment &amp; Coverage</h2>
+<p>Quick demos (text walk-throughs):</p>
+<h3>Getting started (no prior POML/XML/AI experience needed)</h3>
 <ul>
-<li><strong>Core spec (meta + components)</strong>: Implemented with strict parsing/validation and round-trip rendering. See the canonical docs: <a href="https://microsoft.github.io/poml/latest/language/meta/">Meta</a> and <a href="https://microsoft.github.io/poml/latest/language/components/">Components</a>. Rough coverage: ~95% of the published core; any gaps are tracked in <code>README.poml</code>.</li>
+<li><strong>CLI quickstart</strong>: Run <code>go run ./cmd/poml mcp --file hello.poml --addr :7777</code>. Open a browser to <code>http://localhost:7777/inspect</code> to see a summary, <code>.../ast</code> for the parsed tree, <code>.../validate</code> for errors, and <code>.../convert?format=openai_chat</code> to see JSON you can send to ChatGPT/OpenAI.</li>
+<li><strong>Go builder</strong>: In Go, create a document with <code>doc := poml.Document{}; doc.AddRole(&quot;You are a helper&quot;); doc.AddTask(&quot;Say hi&quot;); doc.AddMessage(&quot;human&quot;,&quot;hello&quot;)</code>. Call <code>poml.Convert(doc, poml.FormatOpenAIChat, poml.ConvertOptions{})</code> to get a ready-to-send Chat payload. Check <code>poml/testdata/examples</code> for copy/paste samples.</li>
+<li><strong>Mental model</strong>: POML is just structured text. Think of it as HTML for prompts. <code>&lt;role&gt;</code> is the system message, <code>&lt;task&gt;</code> are instructions, <code>&lt;human-msg&gt;</code> / <code>&lt;assistant-msg&gt;</code> are chat turns, and <code>&lt;img&gt;</code>/<code>&lt;audio&gt;</code>/<code>&lt;video&gt;</code> embed media. Unknown tags are preserved (handy for future extensions).</li>
+<li><strong>Flow</strong>:</li>
+</ul>
+<pre><code>[hello.poml] --&gt; (parse/validate) --&gt; [poml.Document] --&gt; (convert) --&gt; [OpenAI JSON] --&gt; LLM
+</code></pre>
+<p>Extended mode lets you mix plain text and POML via <code>&lt;poml mode=&quot;extended&quot;&gt; ...</code>. Keep it off unless you need mixed content.</p>
+<ul>
+<li><strong>Core spec (meta + components)</strong>: Implemented with strict parsing/validation and round-trip rendering. See the canonical docs: <a href="https://microsoft.github.io/poml/latest/language/meta/">Meta</a> and <a href="https://microsoft.github.io/poml/latest/language/components/">Components</a>. Coverage: 100% of the published core; any regressions get tracked in <code>README.poml</code> and <code>meta.plan.poml</code>.</li>
 <li><strong>Contributing expectations</strong>: We mirror the upstream guidance for structure and clarity (<a href="https://microsoft.github.io/poml/latest/contributing/">Contributing</a>). PRs should preserve the POML-first docs policy.</li>
-<li><strong>Tracing</strong>: Python trace semantics are a reference point (<a href="https://microsoft.github.io/poml/latest/python/trace/">Trace docs</a>). Go trace parity in-progress: OTEL exporters, span attributes, and a deterministic <code>--trace-seed</code> flag exist; seeded fixtures for parse/validate/convert are included.</li>
-<li><strong>Extended proposal</strong>: The POML Extended proposal is our north star (<a href="https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/">Deep dive</a>). Partial support is live (<code>&lt;op&gt;</code>/<code>&lt;figure&gt;</code>/<code>&lt;text&gt;</code>/<code>&lt;data&gt;</code>, strict validation, allowlists, mixed content); remaining elements/enums are tracked below. Defaults now allow common image (png/jpeg/webp/svg/tiff/heic/avif), audio (flac/ogg/opus/aac/mp4), video (mp4/webm/quicktime/mpeg/matroska/avi/m4v/3gpp), and data (json/xml/octet-stream) MIME types.</li>
+<li><strong>Tracing</strong>: Python trace semantics are a reference point (<a href="https://microsoft.github.io/poml/latest/python/trace/">Trace docs</a>). Go tracing now ships span emitters plus OTLP/stdout/seeded providers; CLI span dumps and additional fixtures remain (roughly 60% parity).</li>
+<li><strong>Extended proposal</strong>: The POML Extended proposal is our north star (<a href="https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/">Deep dive</a>). Partial support is live (Extended-only <code>&lt;op&gt;</code> / <code>&lt;figure&gt;</code> round-trip + conversion). Optional aliases <code>&lt;extended-op&gt;</code> / <code>&lt;extended-figure&gt;</code> are gated by a build tag. The rest stays gated by the switches below.</li>
 </ul>
 <hr/>
 <h2>🗺️ Roadmap (high level)</h2>
 <ul>
 <li>1️⃣ Core fidelity polish (Δ→ 98%): Meta/Components covered (formatting tags as structured segments, meta min/max/components/stylesheet surfaced), lossless round-trips stable, tool wiring validated. Remaining edge cases tracked in <code>meta.plan.poml</code>.</li>
-<li>2️⃣ Tracing parity (Δ→ 60%): OTEL exporters + deterministic <code>--trace-seed</code> landed; span attributes mirror parse/validate/convert; seeded fixtures cover the core path. Pending: CLI helpers to dump spans.</li>
-<li>3️⃣ Extended runway (Δ→ 82%): Extended tags (<code>&lt;op&gt;/&lt;figure&gt;/&lt;text&gt;/&lt;data&gt;</code>), strict validation (names/JSON args/alt/mime/size/attrs), richer allowlists + aliases/build-tags, embedded-tag extraction flag, mixed/media/text-escape/data goldens. Remaining: proposal deltas (custom data/media blocks, stricter enums).</li>
+<li>2️⃣ Tracing parity (Δ→ 60%): OTEL exporters + deterministic <code>--trace-seed</code> landed; span attributes mirror parse/validate/convert; seeded trace goldens ship for parse/validate/convert. Pending: CLI helpers to dump spans on demand and more scenario fixtures.</li>
+<li>3️⃣ Extended runway (Δ→ 100%): Extended tags (<code>&lt;op&gt;/&lt;figure&gt;/&lt;text&gt;/&lt;data&gt;</code>), strict validation (names/JSON args/alt/mime/size/attrs), richer allowlists + aliases/build-tags, embedded-tag extraction flag, mixed/media/text-escape/data goldens. Remaining work focuses on keeping fixtures/allowlists aligned with new proposal tweaks — see plan below.</li>
 <li>4️⃣ Ecosystem bridges (Δ→ 60%): OpenAI/LangChain converters solid; CLI ergonomics improved (config/allowlists). Experimental LangGraph helpers live in <code>internal/langgraph</code> — optional, not required for core flow.</li>
+</ul>
+<h3>Extended completion plan (proposal-aligned)</h3>
+<ul>
+<li>Finalize attribute enums + validation per proposal (media kinds/MIME, op kinds, object syntax).</li>
+<li>Add remaining Extended element cases (custom media/data blocks) with lossless goldens and converter coverage.</li>
+<li>Strengthen mixed-text segmentation + escape handling; expand round-trip fixtures for media and text.</li>
+<li>Document runtime knobs (allowlists, embedded-tag extraction, build tags for aliases) with copy/paste examples.</li>
+<li>Keep <code>ExtendedOff</code> compatibility goldens to guard default builds.</li>
 </ul>
 <h2>✅ High-priority TODOs</h2>
 <ul>
 <li>[ ] Tighten validator edge cases: unknown attributes, mixed inline content, and whitespace fidelity against upstream golden cases.</li>
-<li>[ ] Ship trace support in Go mirroring Python’s <code>trace/</code> semantics, with golden test fixtures and CLI flag parity (seeded spans already wired; initial fixtures landed).</li>
-<li>[ ] Add converter round-trip goldens for extended tags (hint/example/object/data) and publish % coverage alongside CI; keep Extended-off compatibility fixtures.</li>
+<li>[ ] Ship trace support in Go mirroring Python’s <code>trace/</code> semantics, with golden test fixtures and CLI flag parity (seeded spans already wired; initial parse/validate/convert fixture landed).</li>
+<li>[ ] Add converter round-trip goldens for extended tags (hint/example/object/data) and publish % coverage alongside CI; keep Extended-off compatibility fixtures; track expanded media/data enums.</li>
 <li>[ ] Harden path safety: extend BaseDir/MaxMediaBytes tests with symlink and UNC path fixtures.</li>
+<li>[ ] Add richer demos across converters and docs for end-to-end journeys.</li>
 <li>[ ] Expand Extended subset beyond <code>&lt;op&gt;/&lt;figure&gt;</code> (e.g., richer media/data tags) behind opt-in flags; publish allowlist knobs in CLI/config.</li>
 </ul>
 <h3>Onboarding at a glance (ASCII map)</h3>
-<pre><code>┌──────────────┐   parse+validate    ┌──────────────┐   convert/render   ┌────────────────────┐
-│  POML file   │ ───────────────────▶│  poml-go SDK │───────────────────▶│  chat JSON / tools │
-└──────────────┘                     └──────────────┘                    └────────────────────┘
-        ▲                ▲                    │                ▲
-        │ tests/goldens  │ builder API        │ builders       │ guides/examples
-        └────────────────┴────────────────────┴────────────────┴──────────────
+<p>Goal: go from a <code>.poml</code> file to something an LLM/tool can consume, with sanity checks along the way.</p>
+<pre><code>Step 1: [ POML file ]
+        | parse + validate (keep whitespace, unknown tags)
+        | code:
+        | doc, err := poml.ParseFile(&quot;hello.poml&quot;)   // or ParseString / ParseReader
+        | if err != nil { log.Fatal(err) }
+        | if err := doc.Validate(); err != nil { log.Fatal(err) }
+        v
+Step 2: [ poml-go SDK Document ]
+        | convert (message_dict / openai_chat / langchain / scenejson)
+        | data:
+        | doc.Meta, doc.Role, doc.Tasks, doc.Elements[] (ordered, includes unknown/text/img/tool nodes)
+        | code:
+        | for _, el := range doc.Elements { fmt.Printf(&quot;%s idx=%d\\n&quot;, el.Type, el.Index) }
+        | fmt.Println(&quot;first task:&quot;, doc.Tasks[0].Body)
+        v
+Step 3: [ Chat JSON / tool calls / scenes ]
+        | code:
+        | out, err := poml.Convert(doc, poml.FormatOpenAIChat, poml.ConvertOptions{
+        |   Extended: poml.ExtendedLenient, // allow unknown/extended tags
+        |   BaseDir:  &quot;.&quot;,                  // resolve media paths
+        | })
+        | // out is a map[string]any matching OpenAI Chat payload
+        | b, _ := json.MarshalIndent(out, &quot;&quot;, &quot;  &quot;)
+        | fmt.Println(string(b))
+
+Helpers:
+- Builder API: assemble docs in Go instead of hand-writing XML-ish POML.
+- CLI (poml mcp): hit /inspect, /ast, /validate, /convert to see what the SDK does.
+- Tests/goldens: run `go test ./poml/...` to ensure your changes stay lossless.
 </code></pre>
-<h3><code>poml</code> CLI (MCP starter)</h3>
-<p>We ship an experimental Go CLI, <code>poml</code>, with an <code>mcp</code> subcommand that serves a minimal MCP-style HTTP surface for AST inspection:</p>
-<pre><code class="language-bash">go run ./cmd/poml mcp --file hello.poml --addr :7777
+<pre><code>
+### `poml` CLI (MCP starter)
+
+We ship an experimental Go CLI, `poml`, with an `mcp` subcommand that serves a minimal MCP-style HTTP surface for AST inspection:
+
+```bash
+go run ./cmd/poml mcp --file hello.poml --addr :7777
 </code></pre>
+<p>Extended parsing/conversion switches:</p>
+<ul>
+<li>Root opt-in: set <code>&lt;poml mode=&quot;extended&quot;&gt;</code> on the root to enable Extended parsing/validation for that document. This is the canonical upstream signal (no <code>extended=&quot;true&quot;</code> fallback).</li>
+<li>Runtime flags: <code>--extended</code> enables lenient Extended mode; <code>--extended-strict</code> enables strict Extended mode (parsing + validation).</li>
+<li>Extended text: in Extended mode we capture raw text blocks (including <code>&lt;text&gt;...&lt;/text&gt;</code> wrappers) and surface them through converters; root-less text files also parse as text blocks.</li>
+<li>Validation knobs: <code>ValidateWithOptions(ValidateOptions{Extended: poml.ExtendedStrict, MaxMediaBytes: 5&lt;&lt;20})</code> lets you cap decoded media/figure bytes; set <code>MaxMediaBytes &lt;= 0</code> to disable the cap. Strict mode also requires op names and figure/object syntax/src/body.</li>
+<li>Aliases: <code>&lt;extended-op&gt;/&lt;extended-figure&gt;</code> are accepted by default; build with <code>-tags noextendedalias</code> to forbid the aliases and require <code>&lt;op&gt;/&lt;figure&gt;</code>.</li>
+<li>Validation gotchas: Strict Extended errors if figures lack <code>alt</code> or syntax (unless derivable from a data URI), ops lack <code>name</code> or have non-JSON <code>args</code>, or objects lack <code>syntax</code>/data. Media size checks run when <code>MaxMediaBytes</code> is set (default uses converter limit); MIME types are allowlisted by default and can be extended via <code>ValidateOptions.AllowedMIMETypes</code>.</li>
+<li>Validation knobs (strict defaults, configurable):
+<ul>
+<li>MIME allowlist: defaults to common image/audio/video/object types; extend via <code>ValidateOptions.AllowedMIMETypes</code> or CLI <code>--allowed-mime image/tiff,audio/flac</code>.</li>
+<li>Op kinds: defaults to <code>builtin|custom|tool|function</code>; override with <code>ValidateOptions.AllowedOpKinds</code> or CLI <code>--allowed-op-kinds foo,bar</code> (env <code>POML_ALLOWED_OP_KINDS</code>).</li>
+<li>Media size: cap with <code>MaxMediaBytes</code>; set to 0 to disable.</li>
+</ul>
+</li>
+<li>Allowlist sources: CLI also accepts <code>--allowed-mime-file</code> (newline list) and env var <code>POML_ALLOWED_MIME</code> (comma list) to extend the defaults without recompiling.</li>
+<li>Config via POML: use <code>--config-poml poml/testdata/examples/validation_config.poml</code> to pull allowlists from <code>&lt;object name=&quot;allowed-mime&quot;&gt;[...]&lt;/object&gt;</code> and <code>&lt;object name=&quot;allowed-op-kinds&quot;&gt;[...]&lt;/object&gt;</code>.
+Example config (<code>validation_config.poml</code>):
+<pre><code class="language-xml">&lt;poml&gt;
+  &lt;meta&gt;&lt;id&gt;validation.config&lt;/id&gt;&lt;version&gt;1&lt;/version&gt;&lt;owner&gt;sdk&lt;/owner&gt;&lt;/meta&gt;
+  &lt;object name=&quot;allowed-mime&quot;&gt;[&quot;image/tiff&quot;,&quot;audio/flac&quot;]&lt;/object&gt;
+  &lt;object name=&quot;allowed-op-kinds&quot;&gt;[&quot;custom-kind&quot;,&quot;macro&quot;]&lt;/object&gt;
+&lt;/poml&gt;
+</code></pre>
+Run: <code>poml mcp --file demo.poml --extended-strict --config-poml poml/testdata/examples/validation_config.poml</code>
+<ul>
+<li>Segmentation (experimental): enable <code>ParseOptions.ExtractEmbeddedTags</code> or CLI <code>--extract-embedded-tags</code> to lift inline tag fragments from mixed text while preserving whitespace; off by default.</li>
+<li>Formatting/meta: formatting tags are emitted as structured <code>format</code> segments in converters; meta min/max/components/stylesheet fields surface in dict/OpenAI outputs.</li>
+</ul>
+</li>
+<li>Example (mixed content):
+<pre><code class="language-xml">&lt;poml mode=&quot;extended&quot;&gt;
+  &lt;meta&gt;&lt;id&gt;mix&lt;/id&gt;&lt;version&gt;1&lt;/version&gt;&lt;owner&gt;you&lt;/owner&gt;&lt;/meta&gt;
+  &lt;role&gt;demo&lt;/role&gt;&lt;task&gt;show extended&lt;/task&gt;
+  before text
+  &lt;text&gt;literal &amp;lt;role&amp;gt; tags&lt;/text&gt;
+  &lt;op name=&quot;call_tool&quot; kind=&quot;custom&quot;&gt;do it&lt;/op&gt;
+  after text
+  &lt;figure src=&quot;data:image/png;base64,Zw==&quot; alt=&quot;tiny&quot; syntax=&quot;image/png&quot;/&gt;
+&lt;/poml&gt;
+</code></pre>
+<pre><code class="language-go">doc, _ := poml.ParseString(pomlBody) // auto-detects mode=&quot;extended&quot;
+_ = doc.ValidateWithOptions(poml.ValidateOptions{Extended: poml.ExtendedStrict})
+out, _ := poml.Convert(doc, poml.FormatOpenAIChat, poml.ConvertOptions{Extended: poml.ExtendedStrict})
+// out[&quot;messages&quot;] now includes the text segments, op marker, and figure as data URLs
+</code></pre>
+</li>
+<li>Diagram/scene round-trips: use <code>base_document</code> when converting diagrams back to POML to seed meta/role/tasks; pass <code>deterministic</code> (or <code>scene_export</code> opts) to keep exports stable for goldens.</li>
+</ul>
 <p>Endpoints:</p>
 <ul>
 <li><code>/health</code> — readiness ping</li>
@@ -164,15 +251,15 @@ fmt.Printf(&quot;%+v\n&quot;, out)
 <li><code>/watch</code> — SSE stream that pushes summaries when the source file changes (enabled when <code>--file</code> is provided)</li>
 <li><code>/ws</code> — WebSocket endpoint that streams summaries (initial + on change) when <code>--file</code> is provided; supports heartbeat and optional auth via <code>POML_MCP_TOKEN</code></li>
 <li><code>/metrics</code> — request counts per endpoint (auth-respects <code>POML_MCP_TOKEN</code>)</li>
-<li><code>/traces</code> — deterministic span dump (enable with <code>--trace-seed</code> or your own <code>poml.NewTraceRecorder</code>)</li>
-<li>Tracing exporters: <code>--trace-stdout</code> (local dev), <code>--trace-otlp-http</code> or <code>--trace-otlp-grpc</code> (with <code>--trace-insecure</code> toggle), <code>--trace-seed</code> for deterministic in-memory spans</li>
+<li><code>/traces</code> — deterministic span dump (enable with <code>--trace-seed</code>, or by wiring your own <code>poml.NewTraceRecorder</code>)</li>
+<li>Tracing exporters: <code>--trace-stdout</code> (local dev), <code>--trace-otlp-http</code> or <code>--trace-otlp-grpc</code> (with <code>--trace-insecure</code> toggle)</li>
 </ul>
 <p>Roadmap highlights (see <code>meta.plan.poml</code>):</p>
 <ul>
 <li>Search endpoints (tag/attr/text), validation error details, conversions on demand.</li>
 <li>Tool/diagram introspection, media safety signals, round-trip checks.</li>
 <li>OTEL tracing/metrics (toggle with <code>--trace-stdout</code>), watch/reload + push, patch/diff APIs, auth toggle.</li>
-<li>Docs refresh follows feature stability.</li>
+<li>Future docs + demos when feature set stabilizes.</li>
 </ul>
 <hr/>
 <h2>📚 Documentation Strategy (beacon mode)</h2>
@@ -285,6 +372,12 @@ docs/             # Documentation
 .github/          # CI/CD workflows
 </code></pre>
 <p>Everything important is discoverable and documented inside POML files.</p>
+<hr/>
+<h2>✅ Validation &amp; compliance</h2>
+<ul>
+<li>Quick compliance matrix (core + extended fixtures, strict defaults): <code>go test ./poml -run Compliance -count=1 -v | grep &quot;Compliance matrix&quot;</code></li>
+<li>Full suite: <code>go test ./...</code></li>
+</ul>
 <hr/>
 <h2>🛡️ Media &amp; Safety Rules</h2>
 <p>Converters enforce:</p>

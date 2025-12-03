@@ -961,6 +961,22 @@ func TestValidateExtendedInvalidMimeGolden(t *testing.T) {
 	}
 }
 
+func TestValidateExtendedInvalidAudioMimeGolden(t *testing.T) {
+	doc, err := ParseFile("testdata/examples/extended_media_invalid_audio_mime.poml")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	err = doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedStrict})
+	if err == nil {
+		t.Fatalf("expected invalid audio mime validation error")
+	}
+	got := strings.TrimSpace(err.Error())
+	want := strings.TrimSpace(readFile(t, "testdata/golden/extended_media_invalid_audio_mime.txt"))
+	if got != want {
+		t.Fatalf("media audio mime validation mismatch\nwant: %s\ngot:  %s", want, got)
+	}
+}
+
 func TestValidateExtendedObjectInvalidSyntaxGolden(t *testing.T) {
 	doc, err := ParseFile("testdata/examples/extended_object_invalid_syntax.poml")
 	if err != nil {
@@ -1022,6 +1038,22 @@ func TestValidateExtendedDataMissingSyntaxGolden(t *testing.T) {
 	want := strings.TrimSpace(readFile(t, "testdata/golden/extended_data_missing_syntax.txt"))
 	if got != want {
 		t.Fatalf("data syntax validation mismatch\nwant: %s\ngot:  %s", want, got)
+	}
+}
+
+func TestValidateExtendedDataUnknownAttrGolden(t *testing.T) {
+	doc, err := ParseFile("testdata/examples/extended_data_unknown_attr.poml")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	err = doc.ValidateWithOptions(ValidateOptions{Extended: ExtendedStrict})
+	if err == nil {
+		t.Fatalf("expected unknown attr validation error")
+	}
+	got := strings.TrimSpace(err.Error())
+	want := strings.TrimSpace(readFile(t, "testdata/golden/extended_data_unknown_attr.txt"))
+	if got != want {
+		t.Fatalf("data unknown attr validation mismatch\nwant: %s\ngot:  %s", want, got)
 	}
 }
 

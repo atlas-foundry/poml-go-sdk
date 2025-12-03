@@ -1,0 +1,12 @@
+<poml>
+  <meta><id>formatting.inline</id><version>1</version><owner>sdk</owner></meta>
+  <role>demo</role>
+  <task>check inline formatting tags</task>
+  <section>
+    <p>paragraph with <b>bold</b> and <i>italics</i></p>
+    <list>
+      <item>one</item>
+      <item>two</item>
+    </list>
+  </section>
+</poml>

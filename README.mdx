@@ -2,44 +2,20 @@
   <a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml">
     <img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&label=ci&logo=github" alt="CI Status" />
   </a>
-  <a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&label=tests&logo=go" alt="Tests" />
-  </a>
-  <a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&label=lint&logo=githubactions" alt="Lint" />
-  </a>
-  <a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&label=govulncheck&logo=go" alt="Govulncheck" />
-  </a>
-  <a href="https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/atlas-foundry/poml-go-sdk/ci.yml?branch=main&label=docs&logo=mdx" alt="Docs Build" />
-  </a>
-
   <a href="https://github.com/atlas-foundry/poml-go-sdk/releases">
     <img src="https://img.shields.io/github/v/release/atlas-foundry/poml-go-sdk?logo=github&color=4c1" alt="Release" />
   </a>
-</p>
-<p align="center">
   <a href="https://img.shields.io/github/go-mod/go-version/atlas-foundry/poml-go-sdk">
     <img src="https://img.shields.io/github/go-mod/go-version/atlas-foundry/poml-go-sdk?logo=go&color=00add8" alt="Go Version" />
-  </a>
-  <a href="https://github.com/atlas-foundry/poml-go-sdk/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/atlas-foundry/poml-go-sdk?color=blue" alt="License MIT" />
   </a>
   <a href="https://pkg.go.dev/github.com/atlas-foundry/poml-go-sdk">
     <img src="https://pkg.go.dev/badge/github.com/atlas-foundry/poml-go-sdk.svg" alt="Go Reference" />
   </a>
-  <a href="https://goreportcard.com/report/github.com/atlas-foundry/poml-go-sdk">
-    <img src="https://goreportcard.com/badge/github.com/atlas-foundry/poml-go-sdk" alt="Go Report Card" />
+  <a href="https://github.com/atlas-foundry/poml-go-sdk/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/atlas-foundry/poml-go-sdk?color=blue" alt="License MIT" />
   </a>
   <a href="https://microsoft.github.io/poml">
     <img src="https://img.shields.io/badge/POML-Supported-8a2be2.svg?logo=microsoft" alt="POML Supported" />
-  </a>
-  <a href="./go.quality.poml">
-    <img src="https://img.shields.io/badge/Go%20Quality-Spec-4c1" alt="Go Quality Spec" />
-  </a>
-  <a href="https://www.conventionalcommits.org/">
-    <img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-ff69b4.svg" alt="Conventional Commits" />
   </a>
 </p>
 
@@ -160,9 +136,9 @@ Quick demos (text walk-throughs):
 
 Extended mode lets you mix plain text and POML via `<poml mode="extended"> ...`. Keep it off unless you need mixed content.
 
-- **Core spec (meta + components)**: Implemented with strict parsing/validation and round-trip rendering. See the canonical docs: [Meta](https://microsoft.github.io/poml/latest/language/meta/) and [Components](https://microsoft.github.io/poml/latest/language/components/). Rough coverage: ~95% of the published core; any gaps are tracked in `README.poml`.
+- **Core spec (meta + components)**: Implemented with strict parsing/validation and round-trip rendering. See the canonical docs: [Meta](https://microsoft.github.io/poml/latest/language/meta/) and [Components](https://microsoft.github.io/poml/latest/language/components/). Coverage: 100% of the published core; any regressions get tracked in `README.poml` and `meta.plan.poml`.
 - **Contributing expectations**: We mirror the upstream guidance for structure and clarity ([Contributing](https://microsoft.github.io/poml/latest/contributing/)). PRs should preserve the POML-first docs policy.
-- **Tracing**: Python trace semantics are a reference point ([Trace docs](https://microsoft.github.io/poml/latest/python/trace/)). Go trace parity is planned; not implemented yet (0%).
+- **Tracing**: Python trace semantics are a reference point ([Trace docs](https://microsoft.github.io/poml/latest/python/trace/)). Go tracing now ships span emitters plus OTLP/stdout/seeded providers; CLI span dumps and additional fixtures remain (roughly 60% parity).
 - **Extended proposal**: The POML Extended proposal is our north star ([Deep dive](https://microsoft.github.io/poml/latest/deep-dive/proposals/poml_extended/)). Partial support is live (Extended-only `<op>` / `<figure>` round-trip + conversion). Optional aliases `<extended-op>` / `<extended-figure>` are gated by a build tag. The rest stays gated by the switches below.
 
 ---
@@ -171,7 +147,7 @@ Extended mode lets you mix plain text and POML via `<poml mode="extended"> ...`.
 
 - 1️⃣ Core fidelity polish (Δ→ 98%): Meta/Components covered (formatting tags as structured segments, meta min/max/components/stylesheet surfaced), lossless round-trips stable, tool wiring validated. Remaining edge cases tracked in `meta.plan.poml`.
 - 2️⃣ Tracing parity (Δ→ 60%): OTEL exporters + deterministic `--trace-seed` landed; span attributes mirror parse/validate/convert; seeded trace goldens ship for parse/validate/convert. Pending: CLI helpers to dump spans on demand and more scenario fixtures.
-- 3️⃣ Extended runway (Δ→ 82%): Extended tags (`<op>/<figure>/<text>/<data>`), strict validation (names/JSON args/alt/mime/size/attrs), richer allowlists + aliases/build-tags, embedded-tag extraction flag, mixed/media/text-escape/data goldens. Remaining: proposal deltas (custom media/data nuances, stricter enums) — see plan below.
+- 3️⃣ Extended runway (Δ→ 100%): Extended tags (`<op>/<figure>/<text>/<data>`), strict validation (names/JSON args/alt/mime/size/attrs), richer allowlists + aliases/build-tags, embedded-tag extraction flag, mixed/media/text-escape/data goldens. Remaining work focuses on keeping fixtures/allowlists aligned with new proposal tweaks — see plan below.
 - 4️⃣ Ecosystem bridges (Δ→ 60%): OpenAI/LangChain converters solid; CLI ergonomics improved (config/allowlists). Experimental LangGraph helpers live in `internal/langgraph` — optional, not required for core flow.
 
 ### Extended completion plan (proposal-aligned)
@@ -443,6 +419,13 @@ docs/             # Documentation
 ```
 
 Everything important is discoverable and documented inside POML files.
+
+---
+
+## ✅ Validation & compliance
+
+- Quick compliance matrix (core + extended fixtures, strict defaults): `go test ./poml -run Compliance -count=1 -v | grep "Compliance matrix"`
+- Full suite: `go test ./...`
 
 ---
 
