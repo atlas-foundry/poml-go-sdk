@@ -1,0 +1,60 @@
+<poml>
+  <meta>
+    <id>parity_checklist.poml-go-sdk</id>
+    <version>0.1.0</version>
+    <owner>poml-go-sdk</owner>
+  </meta>
+  <role>Parity checklist and CI guardrails for core + extended POML functionality.</role>
+  <task>Define the checkpoints we must satisfy before claiming spec parity and how CI enforces them.</task>
+
+  <hint caption="Scope">
+    <list>
+      <item>Core spec (meta + components) with lossless parse/validate/encode.</item>
+      <item>Extended proposal (op/figure/text/data + aliases) strict/lenient paths.</item>
+      <item>Converters: message_dict, openai_chat, langchain, scene/diagram.</item>
+      <item>Tracing parity (seeded spans, OTLP/stdout/CLI flags).</item>
+      <item>Path/media safety (BaseDir containment, MIME allowlists, size caps).</item>
+    </list>
+  </hint>
+
+  <hint caption="Coverage gates (CI)">
+    <list>
+      <item>go test ./... must pass; coverage &gt;= baseline in AI.LOCK.</item>
+      <item>go test ./poml -run Compliance -count=1 must report 100% pass for core + extended fixtures (see manifest below).</item>
+      <item>Parity fixtures: each base fixture must have message_dict/openai_chat/langchain goldens for ExtendedStrict and ExtendedOff where applicable.</item>
+      <item>Negative goldens (invalid syntax/mime/attrs/size) must surface the exact error text.</item>
+      <item>Tracing seed fixture must compare deterministic spans for parse/validate/convert once landed.</item>
+      <item>Path/MIME allowlist tests must cover symlink/UNC escapes and custom allowlists.</item>
+    </list>
+  </hint>
+
+  <hint caption="Fixture manifest (must exist)">
+    <list>
+      <item>Extended media: parity_extended_media.{message_dict,openai_chat,langchain}.json and .off.* variants.</item>
+      <item>Extended data: extended_data_block.{message_dict,openai_chat,langchain}.json and .off.* variants.</item>
+      <item>Extended attrs: parity_extended_attrs.* (on + off) goldens.</item>
+      <item>Formatting: components_formatting.poml, formatting_inline.poml, extended_formatting_mix.poml.</item>
+      <item>Failure goldens: extended_media_invalid_{mime,audio_mime,size}.txt, extended_data_{missing_syntax,invalid_syntax,unknown_attr}.txt, extended_object_invalid_syntax.txt, extended_off_errors.txt, extended_op_invalid_kind.txt.</item>
+    </list>
+  </hint>
+
+  <hint caption="Review checklist">
+    <list>
+      <item>Converters preserve element order; unknown/extended elements dropped only when ExtendedOff.</item>
+      <item>Empty conversions return [] not null (message_dict/openai_chat/langchain).</item>
+      <item>Allowlist defaults match spec; overrides only extend (never shrink) unless explicitly tested.</item>
+      <item>Docs/README claims match implemented gates; no TODO drift.</item>
+      <item>Stubs (transport/langgraph/observability) stay marked experimental and excluded from parity claims.</item>
+    </list>
+  </hint>
+
+  <hint caption="Escalation path">
+    <list>
+      <item>If a fixture is added without goldens for all formats/modes, block merge.</item>
+      <item>If a compliance skip list grows, file an issue and add fixtures/tests instead.</item>
+      <item>If tracing parity drifts, regenerate seeded span goldens and gate CI on comparisons.</item>
+    </list>
+  </hint>
+
+  <output-format>Operational checklist consumed by CI and reviewers.</output-format>
+</poml>
