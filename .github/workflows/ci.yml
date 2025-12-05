@@ -292,7 +292,7 @@ jobs:
   # =====================================================
   linux-arm64:
     name: Linux Build & Test (arm64)
-    runs-on: ubuntu-22.04-arm64
+    runs-on: ubuntu-24.04-arm
     env:
       GOTOOLCHAIN: go1.25.5
 
