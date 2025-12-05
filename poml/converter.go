@@ -150,18 +150,108 @@ func ConvertWithTrace(ctx context.Context, doc Document, format Format, opts Con
 	if opts.Trace.skip() {
 		return Convert(doc, format, opts)
 	}
-	_, span := opts.Trace.start(ctx, "poml.convert",
+	childCtx, span := opts.Trace.start(ctx, "poml.convert",
 		attribute.String("poml.format", string(format)),
 		attribute.String("poml.meta.id", strings.TrimSpace(doc.Meta.ID)),
 		attribute.String("poml.meta.version", strings.TrimSpace(doc.Meta.Version)),
 		attribute.String("poml.meta.owner", strings.TrimSpace(doc.Meta.Owner)),
+		attribute.Int("poml.element.count", len(doc.Elements)),
 	)
 	defer span.End()
-	out, err := Convert(doc, format, opts)
+
+	tc := newTraceContext(childCtx, opts.Trace)
+	out, err := convertWithTraceContext(tc, doc, format, opts)
 	if err != nil {
 		span.RecordError(err)
+		span.SetAttributes(attribute.String("poml.error.type", categorizeError(err)))
 	}
 	return out, err
+}
+
+// categorizeError returns a category string for error attribution.
+func categorizeError(err error) string {
+	if err == nil {
+		return ""
+	}
+	errStr := err.Error()
+	switch {
+	case strings.Contains(errStr, "template"):
+		return "template"
+	case strings.Contains(errStr, "version"):
+		return "version"
+	case strings.Contains(errStr, "parse"):
+		return "parse"
+	case strings.Contains(errStr, "validate"):
+		return "validation"
+	case strings.Contains(errStr, "image") || strings.Contains(errStr, "media"):
+		return "media"
+	default:
+		return "conversion"
+	}
+}
+
+// convertWithTraceContext is the traced internal implementation.
+func convertWithTraceContext(tc *traceContext, doc Document, format Format, opts ConvertOptions) (any, error) {
+	// Check version constraints if enforcement is enabled
+	if opts.EnforceVersions {
+		if err := CheckVersionConstraint(SpecVersion, doc.Meta.MinVersion, doc.Meta.MaxVersion); err != nil {
+			return nil, fmt.Errorf("version constraint: %w", err)
+		}
+	}
+
+	// Preprocess: expand templates, apply stylesheet, enforce limits
+	expanded, err := expandDocumentWithTrace(tc, doc, opts)
+	if err != nil {
+		return nil, fmt.Errorf("template expansion: %w", err)
+	}
+	doc = expanded
+
+	switch format {
+	case FormatMessageDict:
+		return convertMessageDictWithTrace(tc, doc, opts)
+	case FormatDict:
+		return convertDictWithTrace(tc, doc, opts)
+	case FormatPydantic:
+		return convertPydanticWithTrace(tc, doc, opts)
+	case FormatOpenAIChat:
+		return convertOpenAIChatWithTrace(tc, doc, opts)
+	case FormatLangChain:
+		return convertLangChainWithTrace(tc, doc, opts)
+	case FormatScene:
+		_, span := tc.span("poml.convert.scene")
+		defer span.End()
+		scenes, err := diagramsToScenes(doc.Diagrams, defaultSceneExportOptions)
+		if err != nil {
+			span.RecordError(err)
+			return nil, err
+		}
+		switch len(scenes) {
+		case 0:
+			return doc.Scene(), nil
+		case 1:
+			return scenes[0], nil
+		default:
+			return scenes, nil
+		}
+	case FormatSceneJSON:
+		_, span := tc.span("poml.convert.scenejson")
+		defer span.End()
+		scenes, err := diagramsToScenes(doc.Diagrams, defaultSceneExportOptions)
+		if err != nil {
+			span.RecordError(err)
+			return nil, err
+		}
+		switch len(scenes) {
+		case 0:
+			return encodeSceneJSON(doc.Scene())
+		case 1:
+			return encodeSceneJSON(scenes[0])
+		default:
+			return encodeScenesJSON(scenes)
+		}
+	default:
+		return nil, ErrNotImplemented
+	}
 }
 
 func diagramsToScenes(diagrams []Diagram, opts SceneExportOptions) ([]Scene, error) {
@@ -2450,4 +2540,202 @@ func formatCodeBlockContent(code CodeBlock) string {
 	sb.WriteString(content)
 	sb.WriteString("\n```")
 	return sb.String()
+}
+
+// =============================================================================
+// Traced converter wrapper functions
+// =============================================================================
+
+// convertMessageDictWithTrace wraps convertMessageDict with a child span.
+func convertMessageDictWithTrace(tc *traceContext, doc Document, opts ConvertOptions) ([]messageDict, error) {
+	_, span := tc.span("poml.convert.message_dict",
+		attribute.Int("poml.message.count", len(doc.Messages)),
+	)
+	defer span.End()
+	result, err := convertMessageDict(doc, opts)
+	if err != nil {
+		span.RecordError(err)
+	} else {
+		span.SetAttributes(attribute.Int("poml.output.count", len(result)))
+	}
+	return result, err
+}
+
+// convertDictWithTrace wraps convertDict with a child span.
+func convertDictWithTrace(tc *traceContext, doc Document, opts ConvertOptions) (dictOutput, error) {
+	_, span := tc.span("poml.convert.dict")
+	defer span.End()
+	result, err := convertDict(doc, opts)
+	if err != nil {
+		span.RecordError(err)
+	} else {
+		span.SetAttributes(
+			attribute.Int("poml.output.messages", len(result.Messages)),
+			attribute.Int("poml.output.tools", len(result.Tools)),
+		)
+	}
+	return result, err
+}
+
+// convertPydanticWithTrace wraps convertPydantic with a child span.
+func convertPydanticWithTrace(tc *traceContext, doc Document, opts ConvertOptions) (dictOutput, error) {
+	_, span := tc.span("poml.convert.pydantic")
+	defer span.End()
+	result, err := convertPydantic(doc, opts)
+	if err != nil {
+		span.RecordError(err)
+	} else {
+		span.SetAttributes(
+			attribute.Int("poml.output.messages", len(result.Messages)),
+			attribute.Int("poml.output.media", len(result.Media)),
+		)
+	}
+	return result, err
+}
+
+// convertOpenAIChatWithTrace wraps convertOpenAIChat with a child span.
+func convertOpenAIChatWithTrace(tc *traceContext, doc Document, opts ConvertOptions) (map[string]any, error) {
+	_, span := tc.span("poml.convert.openai_chat",
+		attribute.Int("poml.tool.count", len(doc.ToolDefs)),
+	)
+	defer span.End()
+	result, err := convertOpenAIChat(doc, opts)
+	if err != nil {
+		span.RecordError(err)
+	} else if msgs, ok := result["messages"].([]map[string]any); ok {
+		span.SetAttributes(attribute.Int("poml.output.messages", len(msgs)))
+	}
+	return result, err
+}
+
+// convertLangChainWithTrace wraps convertLangChain with a child span.
+func convertLangChainWithTrace(tc *traceContext, doc Document, opts ConvertOptions) (map[string]any, error) {
+	_, span := tc.span("poml.convert.langchain")
+	defer span.End()
+	result, err := convertLangChain(doc, opts)
+	if err != nil {
+		span.RecordError(err)
+	} else if msgs, ok := result["messages"].([]map[string]any); ok {
+		span.SetAttributes(attribute.Int("poml.output.messages", len(msgs)))
+	}
+	return result, err
+}
+
+// expandDocumentWithTrace wraps expandDocument with child spans for each step.
+func expandDocumentWithTrace(tc *traceContext, doc Document, opts ConvertOptions) (Document, error) {
+	if tc == nil {
+		return expandDocument(doc, opts)
+	}
+
+	_, span := tc.span("poml.template.expand",
+		attribute.Int("poml.let.count", len(doc.LetBindings)),
+		attribute.Int("poml.include.count", len(doc.Includes)),
+		attribute.Bool("poml.template.enabled", opts.ExpandTemplates || opts.TemplateVars != nil),
+		attribute.Bool("poml.stylesheet.enabled", opts.ApplyStylesheet),
+		attribute.Bool("poml.limits.enabled", opts.EnforceLimits),
+	)
+	defer span.End()
+
+	// Step 1: Process <let> bindings
+	ctx := template.NewContext(nil)
+	if len(doc.LetBindings) > 0 || len(opts.TemplateVars) > 0 {
+		_, letSpan := tc.span("poml.template.let",
+			attribute.Int("poml.binding.count", len(doc.LetBindings)+len(opts.TemplateVars)),
+		)
+		for k, v := range opts.TemplateVars {
+			ctx.Set(k, v)
+		}
+		for _, let := range doc.LetBindings {
+			if let.Value != "" {
+				ctx.Set(let.Name, let.Value)
+			} else if let.Src != "" && opts.BaseDir != "" {
+				path := filepath.Join(opts.BaseDir, let.Src)
+				data, err := os.ReadFile(path)
+				if err != nil {
+					letSpan.RecordError(err)
+					letSpan.End()
+					span.RecordError(err)
+					return doc, fmt.Errorf("let %q: load src %q: %w", let.Name, let.Src, err)
+				}
+				var jsonVal any
+				if err := json.Unmarshal(data, &jsonVal); err == nil {
+					ctx.Set(let.Name, jsonVal)
+				} else {
+					ctx.Set(let.Name, string(data))
+				}
+			} else if let.Body != "" {
+				var jsonVal any
+				if err := json.Unmarshal([]byte(let.Body), &jsonVal); err == nil {
+					ctx.Set(let.Name, jsonVal)
+				} else {
+					ctx.Set(let.Name, let.Body)
+				}
+			}
+		}
+		letSpan.End()
+	}
+
+	// Step 2: Process conditionals and loops
+	doc = processConditionalsAndLoops(doc, ctx)
+
+	// Step 3: Process includes
+	if opts.BaseDir != "" && len(doc.Includes) > 0 {
+		_, incSpan := tc.span("poml.template.include",
+			attribute.Int("poml.include.count", len(doc.Includes)),
+		)
+		maxDepth := opts.MaxIncludeDepth
+		if maxDepth <= 0 {
+			maxDepth = 10
+		}
+		var err error
+		doc, err = processIncludes(doc, opts.BaseDir, maxDepth, 0, ctx)
+		if err != nil {
+			incSpan.RecordError(err)
+			incSpan.End()
+			span.RecordError(err)
+			return doc, fmt.Errorf("process includes: %w", err)
+		}
+		incSpan.End()
+	}
+
+	// Step 4: Template interpolation
+	if opts.ExpandTemplates || opts.TemplateVars != nil {
+		_, interpSpan := tc.span("poml.template.interpolate")
+		doc = interpolateDocument(doc, ctx)
+		interpSpan.End()
+	}
+
+	// Step 5: Apply stylesheet
+	if opts.ApplyStylesheet && len(doc.Styles) > 0 {
+		_, styleSpan := tc.span("poml.stylesheet.apply",
+			attribute.Int("poml.style.count", len(doc.Styles)),
+		)
+		for _, style := range doc.Styles {
+			for _, out := range style.Outputs {
+				if ss, err := stylesheet.Parse(out.Body); err == nil && ss != nil {
+					doc = applyStylesheetToDocument(doc, ss)
+				}
+			}
+		}
+		styleSpan.End()
+	}
+
+	// Step 6: Enforce limits
+	if opts.EnforceLimits {
+		_, limitSpan := tc.span("poml.token.enforce")
+		doc = enforceLimitsOnDocument(doc)
+		limitSpan.End()
+	}
+
+	// Step 7: Apply component filtering
+	if opts.Components != "" {
+		_, filterSpan := tc.span("poml.component.filter",
+			attribute.String("poml.components", opts.Components),
+		)
+		filtered := FilterDocumentByComponents(&doc, opts.Components)
+		doc = *filtered
+		filterSpan.End()
+	}
+
+	return doc, nil
 }

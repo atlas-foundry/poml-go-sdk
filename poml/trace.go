@@ -6,6 +6,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 // TraceOptions configure OpenTelemetry spans for parsing/validation/conversion.
@@ -34,4 +35,31 @@ func (t TraceOptions) start(ctx context.Context, name string, attrs ...attribute
 	all = append(all, t.Attributes...)
 	all = append(all, attrs...)
 	return t.tracer().Start(ctx, name, trace.WithAttributes(all...))
+}
+
+// traceContext holds the context and trace options for propagating spans through internal functions.
+type traceContext struct {
+	ctx  context.Context
+	opts TraceOptions
+}
+
+// newTraceContext creates a trace context; if opts is empty, returns nil to skip tracing.
+func newTraceContext(ctx context.Context, opts TraceOptions) *traceContext {
+	if opts.skip() {
+		return nil
+	}
+	return &traceContext{ctx: ctx, opts: opts}
+}
+
+// span starts a child span and returns a new traceContext with the span's context.
+// The caller must call span.End() when done.
+func (tc *traceContext) span(name string, attrs ...attribute.KeyValue) (*traceContext, trace.Span) {
+	if tc == nil {
+		// Return a noop span from the noop tracer provider
+		noopTracer := noop.NewTracerProvider().Tracer("")
+		_, noopSpan := noopTracer.Start(context.Background(), name)
+		return nil, noopSpan
+	}
+	ctx, span := tc.opts.start(tc.ctx, name, attrs...)
+	return &traceContext{ctx: ctx, opts: tc.opts}, span
 }

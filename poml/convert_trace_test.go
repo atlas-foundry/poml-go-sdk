@@ -66,13 +66,23 @@ func TestConvertWithTraceCapturesMeta(t *testing.T) {
 	if len(spans) == 0 {
 		t.Fatalf("expected convert span recorded")
 	}
+	// Find the root poml.convert span (the one with no parent or named poml.convert)
 	found := false
-	for _, kv := range spans[0].Attributes {
-		if kv.Key == "poml.meta.id" && kv.Value.AsString() == "trace.conv" {
-			found = true
+	for _, span := range spans {
+		if span.Name != "poml.convert" {
+			continue
+		}
+		for _, kv := range span.Attributes {
+			if kv.Key == "poml.meta.id" && kv.Value.AsString() == "trace.conv" {
+				found = true
+				break
+			}
+		}
+		if found {
+			break
 		}
 	}
 	if !found {
-		t.Fatalf("meta id not found in convert span: %+v", spans[0].Attributes)
+		t.Fatalf("meta id not found in poml.convert span")
 	}
 }

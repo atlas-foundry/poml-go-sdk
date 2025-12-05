@@ -149,9 +149,14 @@ Extended mode lets you mix plain text and POML via `<poml mode="extended"> ...`.
 ## 🗺️ Roadmap (high level)
 
 - ✅ Core fidelity (100%): Meta/Components fully covered (formatting tags as structured segments, meta min/max/components/stylesheet surfaced), lossless round-trips stable, tool wiring validated. Comprehensive fixture suite covering templates, rich text, data components, stylesheets, and version constraints.
-- ✅ Tracing parity (80%): OTEL exporters + deterministic `--trace-seed` landed; span attributes mirror parse/validate/convert; seeded trace goldens ship for parse/validate/convert with deterministic span ordering.
+- ✅ Tracing parity (100%): Full OpenTelemetry tracing with hierarchical child spans for all operations:
+  - Root spans: `poml.parse`, `poml.validate`, `poml.convert`
+  - Format spans: `poml.convert.message_dict`, `poml.convert.openai_chat`, `poml.convert.langchain`, etc.
+  - Template spans: `poml.template.expand`, `poml.template.let`, `poml.template.interpolate`, `poml.template.include`
+  - Processing spans: `poml.stylesheet.apply`, `poml.token.enforce`, `poml.component.filter`
+  - Error categorization via `poml.error.type` attribute
 - ✅ Extended runway (100%): Extended tags (`<op>/<figure>/<text>/<data>`), strict validation (names/JSON args/alt/mime/size/attrs), richer allowlists + aliases/build-tags, embedded-tag extraction flag, mixed/media/text-escape/data goldens all implemented.
-- ✅ Ecosystem bridges (80%): OpenAI/LangChain converters solid; CLI ergonomics improved (config/allowlists). Experimental LangGraph helpers live in `internal/langgraph`.
+- ✅ Ecosystem bridges (100%): OpenAI/LangChain/Pydantic converters solid; CLI ergonomics improved (config/allowlists). Experimental LangGraph helpers live in `internal/langgraph`.
 
 ### Test Coverage
 
@@ -166,7 +171,6 @@ The SDK maintains **80%+ test coverage** across all packages, enforced by CI. Te
 
 ## ✅ Maintenance TODOs
 
-- [ ] Continue expanding trace scenario fixtures for additional CLI workflows.
 - [ ] Add richer demos across converters and docs for end-to-end journeys.
 - [ ] Keep fixtures aligned with upstream spec updates.
 

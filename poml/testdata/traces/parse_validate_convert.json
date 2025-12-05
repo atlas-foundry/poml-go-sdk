@@ -55,6 +55,10 @@
     "span_id": "754921b06b83e47b",
     "attributes": [
       {
+        "key": "poml.element.count",
+        "value": 3
+      },
+      {
         "key": "poml.format",
         "value": "openai_chat"
       },
@@ -69,6 +73,50 @@
       {
         "key": "poml.meta.version",
         "value": "1"
+      }
+    ]
+  },
+  {
+    "name": "poml.template.expand",
+    "trace_id": "8809484ff6663a9a6dfd5483c2621918",
+    "span_id": "2452f87fa073340a",
+    "parent_span_id": "754921b06b83e47b",
+    "attributes": [
+      {
+        "key": "poml.include.count",
+        "value": 0
+      },
+      {
+        "key": "poml.let.count",
+        "value": 0
+      },
+      {
+        "key": "poml.limits.enabled",
+        "value": false
+      },
+      {
+        "key": "poml.stylesheet.enabled",
+        "value": false
+      },
+      {
+        "key": "poml.template.enabled",
+        "value": false
+      }
+    ]
+  },
+  {
+    "name": "poml.convert.openai_chat",
+    "trace_id": "8809484ff6663a9a6dfd5483c2621918",
+    "span_id": "f05c23e94fe623ad",
+    "parent_span_id": "754921b06b83e47b",
+    "attributes": [
+      {
+        "key": "poml.output.messages",
+        "value": 0
+      },
+      {
+        "key": "poml.tool.count",
+        "value": 0
       }
     ]
   }
