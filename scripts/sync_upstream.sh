@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-UPSTREAM_REPO="${UPSTREAM_REPO:-poml-lang/poml}"
+UPSTREAM_REPO="${UPSTREAM_REPO:-microsoft/poml}"
 TAG="${TAG:-${UPSTREAM_TAG:-}}"
 
 if [[ -z "${TAG}" ]]; then
@@ -43,7 +43,7 @@ if [[ -z "${ARCHIVE_DIR}" ]]; then
 fi
 
 TARGET_ROOT="${ROOT_DIR}/third_party/upstream"
-declare -a SYNC_DIRS=("schemas" "scenarios" "test-fixtures")
+declare -a SYNC_DIRS=("examples" "docs" "gallery")
 
 mkdir -p "${TARGET_ROOT}"
 

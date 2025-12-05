@@ -26,7 +26,7 @@ type Metrics struct {
 	PacketsLost   int64
 }
 
-// Transport is the abstraction over H3/QUIC backends (quic-go, go-msquic).
+// Transport is the abstraction over network backends.
 // Implementations should be safe for concurrent use.
 type Transport interface {
 	Listen(ctx context.Context, addr string) (Listener, error)

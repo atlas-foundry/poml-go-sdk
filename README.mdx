@@ -40,7 +40,22 @@ Production-ready Go library for **Prompt Orchestration Markup Language (POML)** 
 - Parity checklist & CI gates: `docs/parity_checklist.poml`
 - Agent rules: `AGENTS.poml`
 - Go quality spec: `go.quality.poml`
-- Examples: `poml/testdata/examples/*`
+- Runnable examples: `examples/` (see below)
+- Test fixtures: `poml/testdata/examples/*`
+
+**Examples**
+| Example | Description |
+|---------|-------------|
+| [`examples/01_basic_conversion`](examples/01_basic_conversion) | Parse, validate, convert to multiple formats |
+| [`examples/02_format_comparison`](examples/02_format_comparison) | Side-by-side comparison of all output formats |
+| [`examples/03_tool_calls`](examples/03_tool_calls) | Tool definitions, requests, and responses |
+| [`examples/04_multimedia`](examples/04_multimedia) | Images, audio, and video handling |
+| [`examples/05_templates`](examples/05_templates) | Variables, conditionals, loops, includes |
+| [`examples/06_integrations`](examples/06_integrations) | MLflow, AgentOps, Weave, OpenTelemetry |
+
+**Integration Guides**
+- Converter formats: [`docs/converters.md`](docs/converters.md)
+- Observability plugins: [`integrations/README.md`](integrations/README.md)
 
 ---
 
@@ -171,8 +186,8 @@ The SDK maintains **80%+ test coverage** across all packages, enforced by CI. Te
 
 ## ✅ Maintenance TODOs
 
-- [ ] Add richer demos across converters and docs for end-to-end journeys.
-- [ ] Keep fixtures aligned with upstream spec updates.
+- [x] Add richer demos across converters and docs for end-to-end journeys. *(See `examples/` directory)*
+- [x] Keep fixtures aligned with upstream spec updates. *(Synced with microsoft/poml v0.0.8)*
 
 ### Onboarding at a glance (ASCII map)
 
