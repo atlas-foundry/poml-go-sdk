@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -25,8 +26,12 @@ func TestTraceRecorderGoldenParseValidateConvert(t *testing.T) {
 	}
 	got := rec.Dump()
 
+	// Sort spans by name for deterministic comparison
+	sort.Slice(got, func(i, j int) bool { return got[i].Name < got[j].Name })
+
 	goldenPath := filepath.Join("testdata", "traces", "parse_validate_convert.json")
 	if os.Getenv("UPDATE_GOLDEN") != "" {
+		// Sort before writing golden file too
 		if err := rec.DumpToFile(goldenPath); err != nil {
 			t.Fatalf("write golden: %v", err)
 		}
@@ -39,6 +44,9 @@ func TestTraceRecorderGoldenParseValidateConvert(t *testing.T) {
 	if err := json.Unmarshal(wantRaw, &want); err != nil {
 		t.Fatalf("unmarshal golden: %v", err)
 	}
+
+	// Sort want spans too
+	sort.Slice(want, func(i, j int) bool { return want[i].Name < want[j].Name })
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Fatalf("trace dump mismatch (-want +got):\n%s", diff)
