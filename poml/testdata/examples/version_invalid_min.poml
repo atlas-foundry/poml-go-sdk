@@ -1,0 +1,11 @@
+<poml>
+  <meta>
+    <id>version.invalid.min</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+    <minVersion>99.0.0</minVersion>
+  </meta>
+  <role>Version constraint invalid minVersion test</role>
+  <task>This document requires SDK version 99.0.0 or higher - should fail validation</task>
+  <human-msg>Test minVersion constraint failure</human-msg>
+</poml>

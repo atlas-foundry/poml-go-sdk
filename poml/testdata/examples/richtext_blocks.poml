@@ -1,0 +1,22 @@
+<poml>
+  <meta>
+    <id>richtext.blocks</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <role>Rich text block elements test</role>
+  <task>
+    <h>Main Heading</h>
+    <p>First paragraph with some content.</p>
+    <p>Second paragraph with more content.</p>
+    <section>
+      <h>Section Heading</h>
+      <p>Section content here.</p>
+    </section>
+  </task>
+  <hint>
+    <span>Inline span content</span>
+    <br/>
+    <span>After line break</span>
+  </hint>
+</poml>

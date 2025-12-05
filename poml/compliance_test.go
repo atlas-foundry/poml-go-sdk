@@ -10,10 +10,12 @@ func TestComplianceMatrix(t *testing.T) {
 	allow := map[string]ValidateOptions{
 		"207_multimedia.poml":             {Extended: ExtendedStrict},
 		"components_formatting.poml":      {Extended: ExtendedOff},
+		"conversation_multi.poml":         {Extended: ExtendedStrict},
 		"core_full.poml":                  {Extended: ExtendedOff},
 		"extended_data_block.poml":        {Extended: ExtendedStrict},
 		"extended_formatting_mix.poml":    {Extended: ExtendedStrict},
 		"extended_media_oversize.poml":    {Extended: ExtendedStrict},
+		"folder_tree.poml":                {Extended: ExtendedStrict},
 		"formatting_inline.poml":          {Extended: ExtendedOff},
 		"meta_attrs.poml":                 {Extended: ExtendedOff},
 		"parity_basic.poml":               {Extended: ExtendedOff},
@@ -22,7 +24,24 @@ func TestComplianceMatrix(t *testing.T) {
 		"parity_extended_mixed.poml":      {Extended: ExtendedStrict},
 		"parity_extended_textescape.poml": {Extended: ExtendedStrict},
 		"parity_persona.poml":             {Extended: ExtendedOff},
+		"richtext_blocks.poml":            {Extended: ExtendedStrict},
+		"richtext_code.poml":              {Extended: ExtendedStrict},
+		"richtext_inline.poml":            {Extended: ExtendedStrict},
+		"richtext_lists.poml":             {Extended: ExtendedStrict},
+		"stylesheet_basic.poml":           {Extended: ExtendedStrict},
+		"stylesheet_classes.poml":         {Extended: ExtendedStrict},
+		"table_csv.poml":                  {Extended: ExtendedStrict},
+		"table_inline.poml":               {Extended: ExtendedStrict},
+		"template_conditional.poml":       {Extended: ExtendedStrict},
+		"template_include.poml":           {Extended: ExtendedStrict},
+		"template_let.poml":               {Extended: ExtendedStrict},
+		"template_loop.poml":              {Extended: ExtendedStrict},
+		"template_variables.poml":         {Extended: ExtendedStrict},
+		"token_charlimit.poml":            {Extended: ExtendedStrict},
+		"token_priority.poml":             {Extended: ExtendedStrict},
 		"ts_reference_basic.poml":         {Extended: ExtendedOff},
+		"version_valid.poml":              {Extended: ExtendedStrict},
+		"webpage_extract.poml":            {Extended: ExtendedStrict},
 	}
 
 	deny := map[string]ValidateOptions{
@@ -58,6 +77,8 @@ func TestComplianceMatrix(t *testing.T) {
 		"extended_off_data.poml":                 {Extended: ExtendedOff},
 		"extended_off_text.poml":                 {Extended: ExtendedOff},
 		"validation_config.poml":                 {Extended: ExtendedStrict},
+		"version_invalid_max.poml":               {Extended: ExtendedStrict, EnforceVersions: true},
+		"version_invalid_min.poml":               {Extended: ExtendedStrict, EnforceVersions: true},
 	}
 
 	examples, err := filepath.Glob(filepath.Join("testdata", "examples", "*.poml"))

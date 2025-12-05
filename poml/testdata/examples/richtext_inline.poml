@@ -1,0 +1,11 @@
+<poml>
+  <meta>
+    <id>richtext.inline</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <role>Rich text inline formatting test</role>
+  <task>Test <b>bold</b>, <i>italic</i>, <u>underline</u>, and <s>strikethrough</s> text</task>
+  <hint>Combined: <b><i>bold italic</i></b> and <u><s>underline strikethrough</s></u></hint>
+  <human-msg>Please format this <b>important</b> message with <i>emphasis</i></human-msg>
+</poml>

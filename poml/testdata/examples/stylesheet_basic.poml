@@ -1,0 +1,31 @@
+<poml>
+  <meta>
+    <id>stylesheet.basic</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <stylesheet><![CDATA[
+{
+  "rules": [
+    {
+      "selector": "task",
+      "properties": {
+        "font-weight": "bold",
+        "color": "blue"
+      }
+    },
+    {
+      "selector": "hint",
+      "properties": {
+        "font-style": "italic",
+        "background": "lightyellow"
+      }
+    }
+  ]
+}
+  ]]></stylesheet>
+  <role>Stylesheet basic test</role>
+  <task>This task should be bold and blue</task>
+  <hint>This hint should be italic with yellow background</hint>
+  <human-msg>Test the stylesheet application</human-msg>
+</poml>

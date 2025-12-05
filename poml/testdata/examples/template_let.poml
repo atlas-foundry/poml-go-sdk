@@ -1,0 +1,13 @@
+<poml>
+  <meta>
+    <id>template.let</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <let name="greeting" value="Hello"/>
+  <let name="target" value="World"/>
+  <let name="combined" value="{{ greeting + ', ' + target + '!' }}"/>
+  <role>Let binding test</role>
+  <task>{{ combined }}</task>
+  <human-msg>{{ greeting }} there!</human-msg>
+</poml>

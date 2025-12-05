@@ -1,0 +1,15 @@
+<poml>
+  <meta>
+    <id>template.conditional</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <let name="isAdmin" value="true"/>
+  <let name="count" value="5"/>
+  <role>Conditional rendering test</role>
+  <task if="isAdmin">Admin task: manage users</task>
+  <task if="!isAdmin">User task: view content</task>
+  <hint if="count > 3">High count: {{ count }}</hint>
+  <hint if="count &lt;= 3">Low count: {{ count }}</hint>
+  <human-msg>{{ count > 0 ? 'Has items' : 'Empty' }}</human-msg>
+</poml>

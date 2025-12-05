@@ -1,0 +1,14 @@
+<poml>
+  <meta>
+    <id>token.priority</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+    <charLimit>300</charLimit>
+  </meta>
+  <role>Token priority ranking test</role>
+  <task priority="1">Critical task - highest priority, kept first</task>
+  <task priority="3">Low priority task - may be truncated</task>
+  <hint priority="2">Medium priority hint - kept if space allows</hint>
+  <hint priority="4">Lowest priority hint - truncated first when limits exceeded</hint>
+  <human-msg priority="1">User message - high priority</human-msg>
+</poml>

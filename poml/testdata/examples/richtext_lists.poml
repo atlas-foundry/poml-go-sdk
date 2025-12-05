@@ -1,0 +1,28 @@
+<poml>
+  <meta>
+    <id>richtext.lists</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <role>Rich text list elements test</role>
+  <task>
+    <list style="dash">
+      <item>First item</item>
+      <item>Second item</item>
+      <item>Third item</item>
+    </list>
+  </task>
+  <hint>
+    <list style="number">
+      <item>Step one</item>
+      <item>Step two</item>
+      <item>Step three</item>
+    </list>
+  </hint>
+  <human-msg>
+    <list style="star">
+      <item>Option A</item>
+      <item>Option B</item>
+    </list>
+  </human-msg>
+</poml>

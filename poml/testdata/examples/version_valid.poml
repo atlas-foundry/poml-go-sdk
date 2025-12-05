@@ -1,0 +1,12 @@
+<poml>
+  <meta>
+    <id>version.valid</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+    <minVersion>0.0.1</minVersion>
+    <maxVersion>1.0.0</maxVersion>
+  </meta>
+  <role>Version constraint valid test</role>
+  <task>This document should validate successfully with SDK version 0.0.8</task>
+  <human-msg>Test version constraint validation</human-msg>
+</poml>

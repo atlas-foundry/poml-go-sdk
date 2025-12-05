@@ -1,0 +1,46 @@
+<poml>
+  <meta>
+    <id>stylesheet.classes</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <stylesheet><![CDATA[
+{
+  "rules": [
+    {
+      "selector": "task",
+      "properties": {
+        "padding": "10px"
+      }
+    },
+    {
+      "selector": ".important",
+      "properties": {
+        "font-weight": "bold",
+        "color": "red"
+      }
+    },
+    {
+      "selector": ".highlight",
+      "properties": {
+        "background": "yellow",
+        "border": "1px solid orange"
+      }
+    },
+    {
+      "selector": ".muted",
+      "properties": {
+        "color": "gray",
+        "opacity": "0.7"
+      }
+    }
+  ]
+}
+  ]]></stylesheet>
+  <role>Stylesheet class selectors test</role>
+  <task class="important">This is an important task</task>
+  <task class="highlight">This task is highlighted</task>
+  <task class="muted">This task is muted</task>
+  <hint class="important highlight">Important and highlighted hint</hint>
+  <human-msg>Test class-based styling</human-msg>
+</poml>

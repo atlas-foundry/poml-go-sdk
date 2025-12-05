@@ -1,0 +1,16 @@
+<poml>
+  <meta>
+    <id>data.conversation</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <role>Conversation component for multi-turn display test</role>
+  <task>Continue this conversation</task>
+  <conversation>
+    <human-msg>What is machine learning?</human-msg>
+    <assistant-msg>Machine learning is a subset of AI that enables systems to learn from data.</assistant-msg>
+    <human-msg>Can you give an example?</human-msg>
+    <assistant-msg>Sure! Email spam filters use machine learning to classify messages.</assistant-msg>
+  </conversation>
+  <human-msg>What about deep learning?</human-msg>
+</poml>

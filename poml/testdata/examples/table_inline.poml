@@ -1,0 +1,22 @@
+<poml>
+  <meta>
+    <id>data.table.inline</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <role>Table component with inline data test</role>
+  <task>Analyze the following sales data</task>
+  <table maxRecords="100">
+    <columns>
+      <column name="product" type="string"/>
+      <column name="quantity" type="number"/>
+      <column name="price" type="number"/>
+    </columns>
+    <records>
+      <record product="Widget A" quantity="10" price="29.99"/>
+      <record product="Widget B" quantity="5" price="49.99"/>
+      <record product="Widget C" quantity="20" price="19.99"/>
+    </records>
+  </table>
+  <human-msg>Calculate total revenue</human-msg>
+</poml>

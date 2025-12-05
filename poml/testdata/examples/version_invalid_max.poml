@@ -1,0 +1,11 @@
+<poml>
+  <meta>
+    <id>version.invalid.max</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+    <maxVersion>0.0.1</maxVersion>
+  </meta>
+  <role>Version constraint invalid maxVersion test</role>
+  <task>This document requires SDK version 0.0.1 or lower - should fail validation</task>
+  <human-msg>Test maxVersion constraint failure</human-msg>
+</poml>

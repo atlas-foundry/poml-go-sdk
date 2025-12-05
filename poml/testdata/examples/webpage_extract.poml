@@ -1,0 +1,12 @@
+<poml>
+  <meta>
+    <id>data.webpage</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <role>Webpage component for web content extraction test</role>
+  <task>Extract and analyze web content</task>
+  <webpage url="https://example.com" selector="main" extractText="true"/>
+  <hint>Focus on the main content area</hint>
+  <human-msg>Summarize the webpage content</human-msg>
+</poml>

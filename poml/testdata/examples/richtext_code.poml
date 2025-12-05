@@ -1,0 +1,23 @@
+<poml>
+  <meta>
+    <id>richtext.code</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <role>Rich text code blocks test</role>
+  <task>
+    Use <code inline="true">console.log()</code> for debugging.
+    <code lang="javascript">
+function hello(name) {
+  return `Hello, ${name}!`;
+}
+    </code>
+  </task>
+  <hint>
+    <code lang="python">
+def greet(name):
+    return f"Hello, {name}!"
+    </code>
+  </hint>
+  <human-msg>Run <code inline="true">npm install</code> then <code inline="true">npm start</code></human-msg>
+</poml>

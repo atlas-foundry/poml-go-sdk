@@ -1,0 +1,12 @@
+<poml>
+  <meta>
+    <id>data.folder</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <role>Folder component for directory trees test</role>
+  <task>Analyze the project structure</task>
+  <folder src="./assets" filter="*.go" maxDepth="3" showContent="false"/>
+  <hint>Review the file organization</hint>
+  <human-msg>What is the project structure?</human-msg>
+</poml>

@@ -1,0 +1,11 @@
+<poml>
+  <meta>
+    <id>data.table.csv</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <role>Table component with CSV source test</role>
+  <task>Parse and analyze the CSV data</task>
+  <table src="./assets/sample.csv" parser="csv" maxRecords="50"/>
+  <human-msg>Summarize the data</human-msg>
+</poml>

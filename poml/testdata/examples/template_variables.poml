@@ -1,0 +1,11 @@
+<poml>
+  <meta>
+    <id>template.variables</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <role>Template variable interpolation test</role>
+  <task>Test {{ name }} with value {{ value }}</task>
+  <hint>User is {{ user.name }} aged {{ user.age }}</hint>
+  <human-msg>Calculate {{ a + b }} and {{ a * b }}</human-msg>
+</poml>

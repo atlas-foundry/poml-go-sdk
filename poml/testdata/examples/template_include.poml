@@ -1,0 +1,11 @@
+<poml>
+  <meta>
+    <id>template.include</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <role>Include directive test</role>
+  <task>Main task with included content</task>
+  <include src="./template_variables.poml"/>
+  <human-msg>After include</human-msg>
+</poml>

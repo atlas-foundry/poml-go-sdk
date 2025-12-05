@@ -1,0 +1,13 @@
+<poml>
+  <meta>
+    <id>template.loop</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+  </meta>
+  <let name="items" value="['apple', 'banana', 'cherry']"/>
+  <let name="numbers" value="[1, 2, 3, 4, 5]"/>
+  <role>Loop iteration test</role>
+  <task for="item in items">Process {{ item }}{{ !loop.last ? ', ' : '' }}</task>
+  <hint for="n in numbers" if="n > 2">Number {{ n }} is greater than 2</hint>
+  <human-msg for="i in range(3)">Item {{ i + 1 }}</human-msg>
+</poml>

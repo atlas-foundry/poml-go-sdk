@@ -1,0 +1,13 @@
+<poml>
+  <meta>
+    <id>token.charlimit</id>
+    <version>1.0</version>
+    <owner>tester</owner>
+    <charLimit>500</charLimit>
+    <tokenLimit>100</tokenLimit>
+  </meta>
+  <role>Token and character limit test</role>
+  <task>Process content within limits</task>
+  <hint>This is a hint block that may be truncated if it exceeds the character limit. The system should respect the charLimit and tokenLimit specified in the meta section. Long content will be truncated at word boundaries when possible to maintain readability.</hint>
+  <human-msg>Test the limit enforcement</human-msg>
+</poml>
