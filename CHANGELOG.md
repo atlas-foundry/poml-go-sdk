@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/atlas-foundry/poml-go-sdk/compare/v1.6.0...v1.7.0) (2025-12-05)
+
+
+### Features
+
+* achieve full Microsoft POML v0.0.8 spec parity ([0df74ad](https://github.com/atlas-foundry/poml-go-sdk/commit/0df74ad9adb865552561c7ad4acb686bf554c67b))
+
 # 📌 Version Parity
 
 ## Unreleased
