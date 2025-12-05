@@ -23,13 +23,13 @@ jobs:
     name: Build & Test (Go ${{ matrix.go }})
     runs-on: ubuntu-latest
     env:
-      # Force older runners to auto-upgrade the toolchain to 1.25.4 while keeping native 1.25.4 unchanged
-      GOTOOLCHAIN: go1.25.4
+      # Force older runners to auto-upgrade the toolchain to 1.25.5 while keeping native 1.25.5 unchanged
+      GOTOOLCHAIN: go1.25.5
 
     strategy:
       fail-fast: false
       matrix:
-        go: ["1.24.10","1.25.4"]
+        go: ["1.24.10","1.25.5"]
 
     steps:
       - name: Checkout
@@ -139,7 +139,7 @@ jobs:
           ARG BASE_IMAGE=alpine:3.20
           FROM ${BASE_IMAGE}
 
-          ARG GO_VERSION=1.25.4
+          ARG GO_VERSION=1.25.5
           # Ensure curl/tar/git are available for Go install across alpine/apt-based images.
           RUN (apk add --no-cache curl tar git ca-certificates || \
                (apt-get update && apt-get install -y curl ca-certificates tar git)) && \
@@ -209,7 +209,7 @@ jobs:
           EOF
 
           IMAGE="ghcr.io/${{ github.repository_owner }}/poml-e2e:${TAG}-${ARCH}"
-          docker buildx build --platform=linux/${ARCH} --build-arg BASE_IMAGE="${BASE}" --build-arg GO_VERSION="1.25.4" -t "${IMAGE}" --push .
+          docker buildx build --platform=linux/${ARCH} --build-arg BASE_IMAGE="${BASE}" --build-arg GO_VERSION="1.25.5" -t "${IMAGE}" --push .
 
       - name: Run E2E Test
         run: |
@@ -224,7 +224,7 @@ jobs:
     name: macOS Build & Test (Apple Silicon)
     runs-on: macos-15
     env:
-      GOTOOLCHAIN: go1.25.4
+      GOTOOLCHAIN: go1.25.5
 
     steps:
       - uses: actions/checkout@v4
@@ -232,7 +232,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.4"
+          go-version: "1.25.5"
           cache: true
 
       - name: go mod tidy consistency
@@ -258,7 +258,7 @@ jobs:
     name: Windows Build & Test
     runs-on: windows-2022
     env:
-      GOTOOLCHAIN: go1.25.4
+      GOTOOLCHAIN: go1.25.5
 
     steps:
       - uses: actions/checkout@v4
@@ -266,7 +266,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.4"
+          go-version: "1.25.5"
           cache: true
 
       - name: go mod tidy consistency
@@ -294,7 +294,7 @@ jobs:
     name: Linux Build & Test (arm64)
     runs-on: ubuntu-22.04-arm64
     env:
-      GOTOOLCHAIN: go1.25.4
+      GOTOOLCHAIN: go1.25.5
 
     steps:
       - uses: actions/checkout@v4
@@ -302,7 +302,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.4"
+          go-version: "1.25.5"
           cache: true
 
       - name: go mod tidy consistency
@@ -328,7 +328,7 @@ jobs:
     name: Go Vet
     runs-on: ubuntu-latest
     env:
-      GOTOOLCHAIN: go1.25.4
+      GOTOOLCHAIN: go1.25.5
 
     steps:
       - uses: actions/checkout@v4
@@ -336,7 +336,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.4"
+          go-version: "1.25.5"
           cache: true
 
       - name: go mod tidy consistency
@@ -442,7 +442,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.25.4"
+          go-version: "1.25.5"
 
       - name: Build binaries
         run: |

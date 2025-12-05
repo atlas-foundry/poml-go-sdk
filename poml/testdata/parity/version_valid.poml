@@ -1,0 +1,10 @@
+<poml>
+  <meta>
+    <id>version_valid</id>
+    <version>0.0.8</version>
+    <minVersion>0.0.1</minVersion>
+    <maxVersion>1.0.0</maxVersion>
+  </meta>
+  <role>Test fixture for valid version constraints</role>
+  <task>This prompt requires POML spec version between 0.0.1 and 1.0.0.</task>
+</poml>

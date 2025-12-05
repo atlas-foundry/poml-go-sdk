@@ -1694,3 +1694,319 @@ func TestParseFastVariants(t *testing.T) {
 		t.Fatalf("meta not parsed from file: %+v", docFile.Meta)
 	}
 }
+
+func TestRichTextElementParsing(t *testing.T) {
+	// Rich text elements at top level of <poml>
+	src := `<poml>
+  <meta><id>richtext</id><version>1.0</version><owner>test</owner></meta>
+  <role>Test</role>
+  <task>Do something</task>
+  <h level="1">Main Title</h>
+  <p>First paragraph with <b>bold</b> text.</p>
+  <section title="Details">
+    <p>Nested content here</p>
+  </section>
+  <list style="star">
+    <item>First item</item>
+    <item>Second item</item>
+  </list>
+  <code lang="go">func main() {}</code>
+  <br newLineCount="2"/>
+</poml>`
+
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	t.Run("headers", func(t *testing.T) {
+		if len(doc.Headers) != 1 {
+			t.Fatalf("expected 1 header, got %d", len(doc.Headers))
+		}
+		if doc.Headers[0].Level != 1 {
+			t.Errorf("header level = %d, want 1", doc.Headers[0].Level)
+		}
+		if !strings.Contains(doc.Headers[0].Content, "Main Title") {
+			t.Errorf("header content missing: %q", doc.Headers[0].Content)
+		}
+	})
+
+	t.Run("paragraphs", func(t *testing.T) {
+		// Only top-level p is parsed; nested p inside section stays as raw XML
+		if len(doc.Paragraphs) != 1 {
+			t.Fatalf("expected 1 paragraph, got %d", len(doc.Paragraphs))
+		}
+		if !strings.Contains(doc.Paragraphs[0].Content, "bold") {
+			t.Errorf("paragraph should contain bold: %q", doc.Paragraphs[0].Content)
+		}
+	})
+
+	t.Run("sections", func(t *testing.T) {
+		if len(doc.Sections) != 1 {
+			t.Fatalf("expected 1 section, got %d", len(doc.Sections))
+		}
+		if doc.Sections[0].Title != "Details" {
+			t.Errorf("section title = %q, want Details", doc.Sections[0].Title)
+		}
+	})
+
+	t.Run("lists", func(t *testing.T) {
+		if len(doc.Lists) != 1 {
+			t.Fatalf("expected 1 list, got %d", len(doc.Lists))
+		}
+		if doc.Lists[0].Style != "star" {
+			t.Errorf("list style = %q, want star", doc.Lists[0].Style)
+		}
+		if len(doc.Lists[0].Items) != 2 {
+			t.Errorf("list items = %d, want 2", len(doc.Lists[0].Items))
+		}
+	})
+
+	t.Run("code blocks", func(t *testing.T) {
+		if len(doc.CodeBlocks) != 1 {
+			t.Fatalf("expected 1 code block, got %d", len(doc.CodeBlocks))
+		}
+		if doc.CodeBlocks[0].Lang != "go" {
+			t.Errorf("code lang = %q, want go", doc.CodeBlocks[0].Lang)
+		}
+		if !strings.Contains(doc.CodeBlocks[0].Content, "func main") {
+			t.Errorf("code content missing: %q", doc.CodeBlocks[0].Content)
+		}
+	})
+
+	t.Run("newlines", func(t *testing.T) {
+		if len(doc.Newlines) != 1 {
+			t.Fatalf("expected 1 newline, got %d", len(doc.Newlines))
+		}
+		if doc.Newlines[0].Count != 2 {
+			t.Errorf("newline count = %d, want 2", doc.Newlines[0].Count)
+		}
+	})
+
+	t.Run("element types", func(t *testing.T) {
+		seenTypes := make(map[ElementType]bool)
+		for _, el := range doc.Elements {
+			seenTypes[el.Type] = true
+		}
+		for _, want := range []ElementType{ElementHeader, ElementParagraph, ElementSection, ElementList, ElementCode, ElementNewline} {
+			if !seenTypes[want] {
+				t.Errorf("expected element type %s in Elements", want)
+			}
+		}
+	})
+}
+
+func TestMetaLimitsAndPriority(t *testing.T) {
+	src := `<poml>
+  <meta charLimit="1000" tokenLimit="500" priority="5">
+    <id>limits</id><version>1.0</version><owner>test</owner>
+  </meta>
+  <role>Test</role>
+  <task>Do something</task>
+</poml>`
+
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	if doc.Meta.CharLimit != 1000 {
+		t.Errorf("CharLimit = %d, want 1000", doc.Meta.CharLimit)
+	}
+	if doc.Meta.TokenLimit != 500 {
+		t.Errorf("TokenLimit = %d, want 500", doc.Meta.TokenLimit)
+	}
+	if doc.Meta.Priority != 5 {
+		t.Errorf("Priority = %d, want 5", doc.Meta.Priority)
+	}
+}
+
+func TestVersionConstraintValidation(t *testing.T) {
+	// Test with version constraints that should pass
+	// Note: SpecVersion is 0.0.8, so minVersion must be <= 0.0.8
+	passSrc := `<poml>
+  <meta minVersion="0.0.1" maxVersion="99.0.0">
+    <id>pass</id><version>1.0</version><owner>test</owner>
+  </meta>
+  <role>Test</role>
+  <task>Do something</task>
+</poml>`
+
+	doc, err := ParseString(passSrc)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	// Validation without version enforcement should pass
+	if err := doc.ValidateWithOptions(ValidateOptions{EnforceVersions: false}); err != nil {
+		t.Errorf("validation without version enforcement failed: %v", err)
+	}
+
+	// Validation with version enforcement should also pass (SDK version is within range)
+	if err := doc.ValidateWithOptions(ValidateOptions{EnforceVersions: true}); err != nil {
+		t.Errorf("validation with version enforcement failed: %v", err)
+	}
+
+	// Test with version constraints that should fail
+	failSrc := `<poml>
+  <meta minVersion="999.0.0">
+    <id>fail</id><version>1.0</version><owner>test</owner>
+  </meta>
+  <role>Test</role>
+  <task>Do something</task>
+</poml>`
+
+	doc2, err := ParseString(failSrc)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	// Without enforcement, should pass
+	if err := doc2.ValidateWithOptions(ValidateOptions{EnforceVersions: false}); err != nil {
+		t.Errorf("validation without enforcement should pass: %v", err)
+	}
+
+	// With enforcement, should fail due to minVersion constraint
+	if err := doc2.ValidateWithOptions(ValidateOptions{EnforceVersions: true}); err == nil {
+		t.Error("validation with enforcement should fail for minVersion=999.0.0")
+	}
+}
+
+func TestDataComponentParsing(t *testing.T) {
+	src := `<poml>
+  <meta><id>datacomp</id><version>1.0</version><owner>test</owner></meta>
+  <role>Test</role>
+  <task>Do something</task>
+  <table src="data.csv" parser="csv" maxRecords="100"/>
+  <folder src="./docs" filter="*.md" maxDepth="2"/>
+  <webpage url="https://example.com" selector="article" extractText="true"/>
+  <conversation>
+    <human-msg>Hello</human-msg>
+    <assistant-msg>Hi there</assistant-msg>
+  </conversation>
+</poml>`
+
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	t.Run("tables", func(t *testing.T) {
+		if len(doc.Tables) != 1 {
+			t.Fatalf("expected 1 table, got %d", len(doc.Tables))
+		}
+		if doc.Tables[0].Src != "data.csv" {
+			t.Errorf("table src = %q, want data.csv", doc.Tables[0].Src)
+		}
+		if doc.Tables[0].Parser != "csv" {
+			t.Errorf("table parser = %q, want csv", doc.Tables[0].Parser)
+		}
+		if doc.Tables[0].MaxRecords != 100 {
+			t.Errorf("table maxRecords = %d, want 100", doc.Tables[0].MaxRecords)
+		}
+	})
+
+	t.Run("folders", func(t *testing.T) {
+		if len(doc.Folders) != 1 {
+			t.Fatalf("expected 1 folder, got %d", len(doc.Folders))
+		}
+		if doc.Folders[0].Src != "./docs" {
+			t.Errorf("folder src = %q, want ./docs", doc.Folders[0].Src)
+		}
+		if doc.Folders[0].Filter != "*.md" {
+			t.Errorf("folder filter = %q, want *.md", doc.Folders[0].Filter)
+		}
+		if doc.Folders[0].MaxDepth != 2 {
+			t.Errorf("folder maxDepth = %d, want 2", doc.Folders[0].MaxDepth)
+		}
+	})
+
+	t.Run("webpages", func(t *testing.T) {
+		if len(doc.Webpages) != 1 {
+			t.Fatalf("expected 1 webpage, got %d", len(doc.Webpages))
+		}
+		if doc.Webpages[0].URL != "https://example.com" {
+			t.Errorf("webpage url = %q, want https://example.com", doc.Webpages[0].URL)
+		}
+		if doc.Webpages[0].Selector != "article" {
+			t.Errorf("webpage selector = %q, want article", doc.Webpages[0].Selector)
+		}
+		if !doc.Webpages[0].ExtractText {
+			t.Error("webpage extractText should be true")
+		}
+	})
+
+	t.Run("conversations", func(t *testing.T) {
+		if len(doc.Conversations) != 1 {
+			t.Fatalf("expected 1 conversation, got %d", len(doc.Conversations))
+		}
+		// Body should contain the nested messages
+		if !strings.Contains(doc.Conversations[0].Body, "human-msg") {
+			t.Errorf("conversation body should contain human-msg")
+		}
+	})
+
+	t.Run("element types", func(t *testing.T) {
+		seenTypes := make(map[ElementType]bool)
+		for _, el := range doc.Elements {
+			seenTypes[el.Type] = true
+		}
+		for _, want := range []ElementType{ElementTable, ElementFolder, ElementWebpage, ElementConversation} {
+			if !seenTypes[want] {
+				t.Errorf("expected element type %s in Elements", want)
+			}
+		}
+	})
+}
+
+func TestTemplateElementParsing(t *testing.T) {
+	src := `<poml>
+  <meta><id>template</id><version>1.0</version><owner>test</owner></meta>
+  <role>Test</role>
+  <task>Do something</task>
+  <let name="greeting" value="Hello, World!"/>
+  <let name="data" src="data.json"/>
+  <include src="fragment.poml"/>
+</poml>`
+
+	doc, err := ParseString(src)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	t.Run("let bindings", func(t *testing.T) {
+		if len(doc.LetBindings) != 2 {
+			t.Fatalf("expected 2 let bindings, got %d", len(doc.LetBindings))
+		}
+		if doc.LetBindings[0].Name != "greeting" {
+			t.Errorf("let name = %q, want greeting", doc.LetBindings[0].Name)
+		}
+		if doc.LetBindings[0].Value != "Hello, World!" {
+			t.Errorf("let value = %q, want Hello, World!", doc.LetBindings[0].Value)
+		}
+		if doc.LetBindings[1].Src != "data.json" {
+			t.Errorf("let src = %q, want data.json", doc.LetBindings[1].Src)
+		}
+	})
+
+	t.Run("includes", func(t *testing.T) {
+		if len(doc.Includes) != 1 {
+			t.Fatalf("expected 1 include, got %d", len(doc.Includes))
+		}
+		if doc.Includes[0].Src != "fragment.poml" {
+			t.Errorf("include src = %q, want fragment.poml", doc.Includes[0].Src)
+		}
+	})
+
+	t.Run("element types", func(t *testing.T) {
+		seenTypes := make(map[ElementType]bool)
+		for _, el := range doc.Elements {
+			seenTypes[el.Type] = true
+		}
+		for _, want := range []ElementType{ElementLet, ElementInclude} {
+			if !seenTypes[want] {
+				t.Errorf("expected element type %s in Elements", want)
+			}
+		}
+	})
+}

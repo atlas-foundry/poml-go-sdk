@@ -301,7 +301,10 @@ func TestConverterParityExtendedAttrs(t *testing.T) {
 	}{
 		{"message_dict", FormatMessageDict, filepath.Join("testdata", "examples", "parity_extended_attrs.message_dict.json"), ConvertOptions{Extended: ExtendedStrict}},
 		{"openai_chat", FormatOpenAIChat, filepath.Join("testdata", "examples", "parity_extended_attrs.openai_chat.json"), ConvertOptions{Extended: ExtendedStrict}},
+		{"langchain", FormatLangChain, filepath.Join("testdata", "examples", "parity_extended_attrs.langchain.json"), ConvertOptions{Extended: ExtendedStrict}},
 		{"message_dict_off", FormatMessageDict, filepath.Join("testdata", "examples", "parity_extended_attrs.off.message_dict.json"), ConvertOptions{Extended: ExtendedOff}},
+		{"openai_chat_off", FormatOpenAIChat, filepath.Join("testdata", "examples", "parity_extended_attrs.off.openai_chat.json"), ConvertOptions{Extended: ExtendedOff}},
+		{"langchain_off", FormatLangChain, filepath.Join("testdata", "examples", "parity_extended_attrs.off.langchain.json"), ConvertOptions{Extended: ExtendedOff}},
 	}
 	for _, tc := range cases {
 		tc := tc

@@ -1,0 +1,12 @@
+<poml>
+  <meta>
+    <id>richtext_inline</id>
+    <version>0.0.8</version>
+  </meta>
+  <role>Test fixture for inline rich text elements</role>
+  <task>
+    Demonstrate inline formatting: <b>bold text</b>, <i>italic text</i>,
+    <u>underlined text</u>, and <s>strikethrough text</s>.
+    Also test <span>inline span</span> elements.
+  </task>
+</poml>

@@ -1,0 +1,17 @@
+<poml>
+  <meta>
+    <id>stylesheet_basic</id>
+    <version>0.0.8</version>
+  </meta>
+  <role>Test fixture for basic stylesheet rules</role>
+  <style>
+    task {
+      font-weight: bold;
+    }
+    hint {
+      border: 1px solid gray;
+    }
+  </style>
+  <task>This task should be styled as bold.</task>
+  <hint caption="Note">This hint should have a border.</hint>
+</poml>

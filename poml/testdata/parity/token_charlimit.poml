@@ -1,0 +1,13 @@
+<poml>
+  <meta>
+    <id>token_charlimit</id>
+    <version>0.0.8</version>
+    <charLimit>1000</charLimit>
+  </meta>
+  <role>Test fixture for character limit enforcement</role>
+  <task>Summarize the following document within the character limit.</task>
+  <document>
+    This is a long document that may exceed the character limit.
+    Additional content that contributes to the total character count.
+  </document>
+</poml>

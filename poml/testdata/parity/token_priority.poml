@@ -1,0 +1,13 @@
+<poml>
+  <meta>
+    <id>token_priority</id>
+    <version>0.0.8</version>
+    <tokenLimit>500</tokenLimit>
+    <priority>1</priority>
+  </meta>
+  <role priority="2">High priority role that should be preserved</role>
+  <task priority="1">Lower priority task that may be truncated first</task>
+  <hint priority="3" caption="Critical">
+    Highest priority content that must be preserved.
+  </hint>
+</poml>

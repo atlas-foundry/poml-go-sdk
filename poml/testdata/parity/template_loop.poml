@@ -1,0 +1,14 @@
+<poml>
+  <meta>
+    <id>template_loop</id>
+    <version>0.0.8</version>
+  </meta>
+  <role>Test fixture for loop iteration</role>
+  <let name="items" value="apple,banana,cherry"/>
+  <task>
+    Process the following items:
+    <list style="numbered">
+      <item for="item in split(items, ',')">{{ item }}</item>
+    </list>
+  </task>
+</poml>

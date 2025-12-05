@@ -1,0 +1,9 @@
+<poml>
+  <meta>
+    <id>version_invalid_min</id>
+    <version>0.0.8</version>
+    <minVersion>99.0.0</minVersion>
+  </meta>
+  <role>Test fixture for invalid minimum version</role>
+  <task>This prompt requires a future SDK version.</task>
+</poml>

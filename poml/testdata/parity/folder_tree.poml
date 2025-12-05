@@ -1,0 +1,9 @@
+<poml>
+  <meta>
+    <id>folder_tree</id>
+    <version>0.0.8</version>
+  </meta>
+  <role>Test fixture for folder component</role>
+  <task>Review the project structure:</task>
+  <folder src="." filter="*.go" maxDepth="2" showContent="false"/>
+</poml>

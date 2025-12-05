@@ -1,0 +1,19 @@
+<poml>
+  <meta>
+    <id>stylesheet_classes</id>
+    <version>0.0.8</version>
+  </meta>
+  <role>Test fixture for class-based stylesheet selectors</role>
+  <style>
+    .important {
+      color: red;
+      font-weight: bold;
+    }
+    .secondary {
+      color: gray;
+      font-style: italic;
+    }
+  </style>
+  <task class="important">This is an important task.</task>
+  <hint class="secondary" caption="Note">This is secondary information.</hint>
+</poml>

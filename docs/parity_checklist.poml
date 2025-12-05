@@ -1,40 +1,112 @@
 <poml>
   <meta>
     <id>parity_checklist.poml-go-sdk</id>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <owner>poml-go-sdk</owner>
   </meta>
-  <role>Parity checklist and CI guardrails for core + extended POML functionality.</role>
-  <task>Define the checkpoints we must satisfy before claiming spec parity and how CI enforces them.</task>
+  <role>Parity checklist and CI guardrails for Microsoft POML SDK parity.</role>
+  <task>Define the checkpoints we must satisfy before claiming full spec parity with Microsoft POML TypeScript/Python SDKs (v0.0.8).</task>
 
-  <hint caption="Scope">
+  <hint caption="Current Status (v0.2.0)">
     <list>
-      <item>Core spec (meta + components) with lossless parse/validate/encode.</item>
-      <item>Extended proposal (op/figure/text/data + aliases) strict/lenient paths.</item>
-      <item>Converters: message_dict, openai_chat, langchain, scene/diagram.</item>
-      <item>Tracing parity (seeded spans, OTLP/stdout/CLI flags).</item>
-      <item>Path/media safety (BaseDir containment, MIME allowlists, size caps).</item>
+      <item>Core spec (meta + components) with lossless parse/validate/encode: COMPLETE</item>
+      <item>Extended proposal (op/figure/text/data + aliases) strict/lenient paths: COMPLETE</item>
+      <item>Converters: message_dict, openai_chat, langchain, pydantic, scene/diagram: COMPLETE</item>
+      <item>Tracing parity (seeded spans, OTLP/stdout/CLI flags): COMPLETE</item>
+      <item>Path/media safety (BaseDir containment, MIME allowlists, size caps, symlink/UNC): COMPLETE</item>
+      <item>Microsoft POML v0.0.8 parity (Phases 1-6): COMPLETE</item>
+    </list>
+  </hint>
+
+  <hint caption="Phase 1: Foundation (COMPLETE)">
+    <list>
+      <item>Meta enhancements: charLimit, tokenLimit, priority attributes. ✓</item>
+      <item>Version constraint enforcement: minVersion/maxVersion validation via ValidateOptions.EnforceVersions. ✓</item>
+      <item>Component filtering: components="+x,-y" enable/disable syntax via poml/component_filter.go. ✓</item>
+      <item>Version constants: SpecVersion="0.0.8" (for constraint checking), SDKVersion="0.2.0" (informational). ✓</item>
+    </list>
+  </hint>
+
+  <hint caption="Phase 2: Rich Text Elements (COMPLETE)">
+    <list>
+      <item>Inline formatting: b, i, u, s (bold, italic, underline, strikethrough) as ContentPart. ✓</item>
+      <item>Block elements: h (Header), p (Paragraph), section (Section), span as ContentPart. ✓</item>
+      <item>Code blocks: code (CodeBlock) with lang and inline attributes. ✓</item>
+      <item>Lists: list (List) with style attribute, item children (ListItem). ✓</item>
+      <item>Whitespace: br (Newline) with newLineCount attribute. ✓</item>
+    </list>
+  </hint>
+
+  <hint caption="Phase 3: Data Components (COMPLETE)">
+    <list>
+      <item>Table: src, parser, maxRecords attributes; Records/Columns for runtime. ✓</item>
+      <item>Folder: src, filter, maxDepth, showContent for directory trees. ✓</item>
+      <item>Webpage: url, selector, extractText for web content. ✓</item>
+      <item>Conversation: multi-turn message display with Body. ✓</item>
+    </list>
+  </hint>
+
+  <hint caption="Phase 4: Template Engine (COMPLETE)">
+    <list>
+      <item>Variable interpolation: {{ expression }} syntax via poml/template/interpolate.go. ✓</item>
+      <item>Let bindings: name, value, src attributes via LetBinding struct. ✓</item>
+      <item>Conditionals: if attribute evaluation via poml/template/expand.go. ✓</item>
+      <item>Loops: for="item in list" with LoopContext (Index, First, Last). ✓</item>
+      <item>Includes: include with src attribute via Include struct. ✓</item>
+      <item>Expression evaluator: arithmetic, comparison, logical, ternary, array access via poml/template/expr.go. ✓</item>
+      <item>Built-in functions: len, upper, lower, trim, split, join, int, float, string, range, default. ✓</item>
+    </list>
+  </hint>
+
+  <hint caption="Phase 5: Stylesheet System (COMPLETE)">
+    <list>
+      <item>Stylesheet package: poml/stylesheet/stylesheet.go for JSON-based CSS-like rules. ✓</item>
+      <item>Selector matching: tag names and .className via MatchSelector. ✓</item>
+      <item>Property application: Apply returns merged properties for element. ✓</item>
+      <item>Specificity: class selectors (10) override tag selectors (1). ✓</item>
+    </list>
+  </hint>
+
+  <hint caption="Phase 6: Token Management (COMPLETE)">
+    <list>
+      <item>Character counting: CountChars, CountWords, CountRunes in poml/token/count.go. ✓</item>
+      <item>Token estimation: EstimateTokens (chars/4 approximation) and DefaultCounter. ✓</item>
+      <item>Limit enforcement: TruncateToCharLimit, TruncateToTokenLimit with word-boundary preference. ✓</item>
+      <item>Priority ranking: EnforceLimitWithPriority sorts by priority and truncates. ✓</item>
     </list>
   </hint>
 
   <hint caption="Coverage gates (CI)">
     <list>
-      <item>go test ./... must pass; coverage &gt;= baseline in AI.LOCK.</item>
-      <item>go test ./poml -run Compliance -count=1 must report 100% pass for core + extended fixtures (see manifest below).</item>
-      <item>Parity fixtures: each base fixture must have message_dict/openai_chat/langchain goldens for ExtendedStrict and ExtendedOff where applicable.</item>
-      <item>Negative goldens (invalid syntax/mime/attrs/size) must surface the exact error text.</item>
-      <item>Tracing seed fixture must compare deterministic spans for parse/validate/convert once landed.</item>
-      <item>Path/MIME allowlist tests must cover symlink/UNC escapes and custom allowlists.</item>
+      <item>go test ./... must pass.</item>
+      <item>go test ./poml -run Compliance -count=1 must report 100% pass for all fixtures.</item>
+      <item>Parity fixtures: each base fixture must have message_dict/openai_chat/langchain goldens.</item>
+      <item>Negative goldens must surface exact error text.</item>
+      <item>Tracing seed fixture must compare deterministic spans.</item>
+      <item>Path/MIME allowlist tests must cover symlink/UNC escapes.</item>
+      <item>Template expansion must match Python SDK output for equivalent inputs.</item>
+      <item>Token counts must match Python SDK within 1% tolerance.</item>
     </list>
   </hint>
 
-  <hint caption="Fixture manifest (must exist)">
+  <hint caption="Fixture manifest (current)">
     <list>
       <item>Extended media: parity_extended_media.{message_dict,openai_chat,langchain}.json and .off.* variants.</item>
       <item>Extended data: extended_data_block.{message_dict,openai_chat,langchain}.json and .off.* variants.</item>
       <item>Extended attrs: parity_extended_attrs.* (on + off) goldens.</item>
       <item>Formatting: components_formatting.poml, formatting_inline.poml, extended_formatting_mix.poml.</item>
-      <item>Failure goldens: extended_media_invalid_{mime,audio_mime,size}.txt, extended_data_{missing_syntax,invalid_syntax,unknown_attr}.txt, extended_object_invalid_syntax.txt, extended_off_errors.txt, extended_op_invalid_kind.txt.</item>
+      <item>Failure goldens: extended_media_invalid_*, extended_data_*, extended_object_*, extended_off_*, extended_op_*.</item>
+    </list>
+  </hint>
+
+  <hint caption="Fixture manifest (planned)">
+    <list>
+      <item>Template fixtures: template_variables.poml, template_let.poml, template_conditional.poml, template_loop.poml, template_include.poml.</item>
+      <item>Rich text fixtures: richtext_inline.poml, richtext_blocks.poml, richtext_lists.poml, richtext_code.poml.</item>
+      <item>Data component fixtures: table_inline.poml, table_csv.poml, folder_tree.poml, webpage_extract.poml, conversation_multi.poml.</item>
+      <item>Stylesheet fixtures: stylesheet_basic.poml, stylesheet_classes.poml.</item>
+      <item>Token limit fixtures: token_charlimit.poml, token_priority.poml.</item>
+      <item>Version constraint fixtures: version_valid.poml, version_invalid_min.poml, version_invalid_max.poml.</item>
     </list>
   </hint>
 
@@ -42,9 +114,11 @@
     <list>
       <item>Converters preserve element order; unknown/extended elements dropped only when ExtendedOff.</item>
       <item>Empty conversions return [] not null (message_dict/openai_chat/langchain).</item>
-      <item>Allowlist defaults match spec; overrides only extend (never shrink) unless explicitly tested.</item>
+      <item>Allowlist defaults match spec; overrides only extend unless explicitly tested.</item>
+      <item>Template expansion is deterministic and reproducible.</item>
+      <item>Stylesheet application follows CSS specificity rules.</item>
+      <item>Token limits respect priority ordering.</item>
       <item>Docs/README claims match implemented gates; no TODO drift.</item>
-      <item>Stubs (transport/langgraph/observability) stay marked experimental and excluded from parity claims.</item>
     </list>
   </hint>
 
@@ -52,7 +126,8 @@
     <list>
       <item>If a fixture is added without goldens for all formats/modes, block merge.</item>
       <item>If a compliance skip list grows, file an issue and add fixtures/tests instead.</item>
-      <item>If tracing parity drifts, regenerate seeded span goldens and gate CI on comparisons.</item>
+      <item>If tracing parity drifts, regenerate seeded span goldens and gate CI.</item>
+      <item>If template output diverges from Python SDK, investigate and document.</item>
     </list>
   </hint>
 

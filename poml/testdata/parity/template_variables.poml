@@ -1,0 +1,11 @@
+<poml>
+  <meta>
+    <id>template_variables</id>
+    <version>0.0.8</version>
+  </meta>
+  <role>Test fixture for template variable interpolation</role>
+  <task>
+    Hello, {{ name }}! You have {{ count }} unread messages.
+    Your account balance is ${{ balance | default:"0.00" }}.
+  </task>
+</poml>

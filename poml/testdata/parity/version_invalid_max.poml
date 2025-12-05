@@ -1,0 +1,9 @@
+<poml>
+  <meta>
+    <id>version_invalid_max</id>
+    <version>0.0.8</version>
+    <maxVersion>0.0.1</maxVersion>
+  </meta>
+  <role>Test fixture for invalid maximum version</role>
+  <task>This prompt requires an older SDK version.</task>
+</poml>

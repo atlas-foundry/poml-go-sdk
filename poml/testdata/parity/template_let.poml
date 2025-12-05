@@ -1,0 +1,10 @@
+<poml>
+  <meta>
+    <id>template_let</id>
+    <version>0.0.8</version>
+  </meta>
+  <role>Test fixture for let bindings</role>
+  <let name="greeting" value="Hello"/>
+  <let name="target" value="World"/>
+  <task>{{ greeting }}, {{ target }}!</task>
+</poml>

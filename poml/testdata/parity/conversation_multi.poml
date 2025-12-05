@@ -1,0 +1,13 @@
+<poml>
+  <meta>
+    <id>conversation_multi</id>
+    <version>0.0.8</version>
+  </meta>
+  <role>Test fixture for multi-turn conversation</role>
+  <task>Continue this conversation appropriately:</task>
+  <conversation>
+    <human-msg>What is the capital of France?</human-msg>
+    <assistant-msg>The capital of France is Paris.</assistant-msg>
+    <human-msg>What is its population?</human-msg>
+  </conversation>
+</poml>

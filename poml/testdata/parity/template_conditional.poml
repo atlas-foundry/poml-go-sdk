@@ -1,0 +1,16 @@
+<poml>
+  <meta>
+    <id>template_conditional</id>
+    <version>0.0.8</version>
+  </meta>
+  <role>Test fixture for conditional elements</role>
+  <let name="premium" value="true"/>
+  <task>
+    <hint if="premium == true" caption="Premium Features">
+      You have access to all premium features.
+    </hint>
+    <hint if="premium == false" caption="Basic Features">
+      Upgrade to access premium features.
+    </hint>
+  </task>
+</poml>

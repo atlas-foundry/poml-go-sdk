@@ -1,0 +1,18 @@
+<poml>
+  <meta>
+    <id>richtext_lists</id>
+    <version>0.0.8</version>
+  </meta>
+  <role>Test fixture for list elements</role>
+  <task>
+    <list style="bullet">
+      <item>First bullet item</item>
+      <item>Second bullet item</item>
+      <item>Third bullet item</item>
+    </list>
+    <list style="numbered">
+      <item>First numbered item</item>
+      <item>Second numbered item</item>
+    </list>
+  </task>
+</poml>

@@ -91,3 +91,43 @@ func TestResolveImagePathRejectsBaseSymlinkEscape(t *testing.T) {
 		t.Fatalf("expected escape through base symlink to be rejected")
 	}
 }
+
+func TestResolveImagePathRejectsUNCPaths(t *testing.T) {
+	// UNC paths are Windows network paths like \\server\share\file
+	// They should be rejected as potential escape vectors on all platforms
+	uncPaths := []string{
+		`\\server\share\file.bin`,
+		`\\?\C:\Windows\file.bin`,
+		`\\.\COM1`,
+		`//server/share/file.bin`, // Unix-style UNC
+	}
+
+	base := t.TempDir()
+	for _, uncPath := range uncPaths {
+		t.Run(uncPath, func(t *testing.T) {
+			// UNC paths are absolute, so they should be rejected when AllowAbsImagePaths is false
+			_, err := resolveImagePath(uncPath, ConvertOptions{BaseDir: base, AllowAbsImagePaths: false})
+			if err == nil {
+				t.Errorf("expected UNC path %q to be rejected", uncPath)
+			}
+		})
+	}
+}
+
+func TestResolveMediaPathRejectsUNCPaths(t *testing.T) {
+	// Same test for resolveMediaPath which wraps resolveImagePath
+	uncPaths := []string{
+		`\\server\share\media.bin`,
+		`\\?\D:\media\file.bin`,
+	}
+
+	base := t.TempDir()
+	for _, uncPath := range uncPaths {
+		t.Run(uncPath, func(t *testing.T) {
+			_, err := resolveMediaPath(uncPath, ConvertOptions{BaseDir: base, AllowAbsImagePaths: false})
+			if err == nil {
+				t.Errorf("expected UNC path %q to be rejected", uncPath)
+			}
+		})
+	}
+}

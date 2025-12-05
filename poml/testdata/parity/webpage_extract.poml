@@ -1,0 +1,9 @@
+<poml>
+  <meta>
+    <id>webpage_extract</id>
+    <version>0.0.8</version>
+  </meta>
+  <role>Test fixture for webpage component</role>
+  <task>Summarize the content from this page:</task>
+  <webpage url="https://example.com" selector="main" extractText="true"/>
+</poml>

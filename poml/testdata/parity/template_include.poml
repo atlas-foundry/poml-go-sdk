@@ -1,0 +1,9 @@
+<poml>
+  <meta>
+    <id>template_include</id>
+    <version>0.0.8</version>
+  </meta>
+  <role>Test fixture for file includes</role>
+  <task>Review the following guidelines:</task>
+  <include src="guidelines.poml"/>
+</poml>

@@ -1,0 +1,16 @@
+<poml>
+  <meta>
+    <id>table_inline</id>
+    <version>0.0.8</version>
+  </meta>
+  <role>Test fixture for inline table data</role>
+  <task>Analyze the following sales data:</task>
+  <table>
+    <columns>Product,Quantity,Price</columns>
+    <records>
+      <record>Widget A,100,9.99</record>
+      <record>Widget B,50,19.99</record>
+      <record>Widget C,75,14.99</record>
+    </records>
+  </table>
+</poml>

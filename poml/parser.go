@@ -47,6 +47,32 @@ const (
 	ElementOp             ElementType = "op"
 	ElementFigure         ElementType = "figure"
 	ElementUnknown        ElementType = "unknown"
+
+	// Phase 2: Rich Text Elements
+	ElementBold      ElementType = "bold"
+	ElementItalic    ElementType = "italic"
+	ElementUnderline ElementType = "underline"
+	ElementStrike    ElementType = "strike"
+	ElementCode      ElementType = "code"
+	ElementHeader    ElementType = "header"
+	ElementParagraph ElementType = "paragraph"
+	ElementSpan      ElementType = "span"
+	ElementList      ElementType = "list"
+	ElementListItem  ElementType = "list_item"
+	ElementNewline   ElementType = "newline"
+	ElementSection   ElementType = "section"
+
+	// Phase 3: Data Components
+	ElementTable        ElementType = "table"
+	ElementFolder       ElementType = "folder"
+	ElementWebpage      ElementType = "webpage"
+	ElementConversation ElementType = "conversation"
+
+	// Phase 4: Template Engine
+	ElementLet     ElementType = "let"
+	ElementIf      ElementType = "if"
+	ElementFor     ElementType = "for"
+	ElementInclude ElementType = "include"
 )
 
 // Element tracks an entry's type and its position in the backing slices on Document.
@@ -95,6 +121,24 @@ type Document struct {
 	Figures      []ExtendedFigure
 	Elements     []Element
 
+	// Phase 2: Rich Text Elements
+	Headers    []Header
+	Paragraphs []Paragraph
+	Sections   []Section
+	Lists      []List
+	CodeBlocks []CodeBlock
+	Newlines   []Newline
+
+	// Phase 3: Data Components
+	Tables        []Table
+	Folders       []Folder
+	Webpages      []Webpage
+	Conversations []Conversation
+
+	// Phase 4: Template Engine
+	LetBindings []LetBinding
+	Includes    []Include
+
 	nextID int // internal counter for element IDs
 }
 
@@ -107,6 +151,9 @@ type Meta struct {
 	MaxVersion string `xml:"maxVersion,attr,omitempty"`
 	Components string `xml:"components,attr,omitempty"`
 	Stylesheet string `xml:"stylesheet,attr,omitempty"`
+	CharLimit  int64  `xml:"charLimit,attr,omitempty"`
+	TokenLimit int64  `xml:"tokenLimit,attr,omitempty"`
+	Priority   int    `xml:"priority,attr,omitempty"`
 }
 
 func isZeroMeta(m Meta) bool {
@@ -116,7 +163,10 @@ func isZeroMeta(m Meta) bool {
 		m.MinVersion == "" &&
 		m.MaxVersion == "" &&
 		m.Components == "" &&
-		m.Stylesheet == ""
+		m.Stylesheet == "" &&
+		m.CharLimit == 0 &&
+		m.TokenLimit == 0 &&
+		m.Priority == 0
 }
 
 // Block holds free-form body content for task/role/style sections.
@@ -281,6 +331,145 @@ type ExtendedFigure struct {
 	Syntax string     `xml:"syntax,attr"`
 	Body   string     `xml:",innerxml"`
 	Attrs  []xml.Attr `xml:",any,attr"`
+}
+
+// --- Phase 2: Rich Text Elements ---
+
+// RichText represents inline formatting elements (b, i, u, s, code, span).
+type RichText struct {
+	Tag      string            `xml:"-"` // b, i, u, s, code, span
+	Content  string            `xml:",innerxml"`
+	Children []RichText        `xml:"-"` // nested formatting
+	Attrs    map[string]string `xml:"-"` // lang for code, etc.
+}
+
+// Header represents a heading element with level attribute.
+type Header struct {
+	Level   int        `xml:"level,attr"`
+	Content string     `xml:",innerxml"`
+	Attrs   []xml.Attr `xml:",any,attr"`
+}
+
+// Paragraph represents a <p> block element.
+type Paragraph struct {
+	Content string     `xml:",innerxml"`
+	Attrs   []xml.Attr `xml:",any,attr"`
+}
+
+// Section represents a <section> block with nested content.
+type Section struct {
+	Title   string     `xml:"title,attr"`
+	Content string     `xml:",innerxml"`
+	Attrs   []xml.Attr `xml:",any,attr"`
+}
+
+// List represents a <list> element with style and items.
+type List struct {
+	Style string     `xml:"style,attr"` // star, dash, plus, decimal, latin
+	Items []ListItem `xml:"item"`
+	Attrs []xml.Attr `xml:",any,attr"`
+}
+
+// ListItem represents an <item> within a list.
+type ListItem struct {
+	Content string     `xml:",innerxml"`
+	Attrs   []xml.Attr `xml:",any,attr"`
+}
+
+// CodeBlock represents a <code> element with optional language.
+type CodeBlock struct {
+	Lang    string     `xml:"lang,attr"`
+	Inline  bool       `xml:"inline,attr"`
+	Content string     `xml:",innerxml"`
+	Attrs   []xml.Attr `xml:",any,attr"`
+}
+
+// Newline represents a <br> element with optional count.
+type Newline struct {
+	Count int        `xml:"newLineCount,attr"`
+	Attrs []xml.Attr `xml:",any,attr"`
+}
+
+// --- Phase 3: Data Components ---
+
+// Table represents a <table> element for tabular data.
+type Table struct {
+	Src             string           `xml:"src,attr"`    // external file path
+	Parser          string           `xml:"parser,attr"` // csv, xlsx, json
+	Records         []map[string]any `xml:"-"`           // inline data
+	Columns         []TableColumn    `xml:"-"`           // column definitions
+	SelectedColumns []string         `xml:"-"`           // columns to include
+	SelectedRecords []int            `xml:"-"`           // row indices to include
+	MaxRecords      int              `xml:"maxRecords,attr"`
+	Body            string           `xml:",innerxml"`
+	Attrs           []xml.Attr       `xml:",any,attr"`
+}
+
+// TableColumn defines a column in a table.
+type TableColumn struct {
+	Field       string `json:"field"`
+	Header      string `json:"header"`
+	Description string `json:"description,omitempty"`
+}
+
+// Folder represents a <folder> element for directory trees.
+type Folder struct {
+	Src         string        `xml:"src,attr"`
+	Filter      string        `xml:"filter,attr"` // glob pattern
+	MaxDepth    int           `xml:"maxDepth,attr"`
+	ShowContent bool          `xml:"showContent,attr"`
+	Entries     []FolderEntry `xml:"-"`
+	Attrs       []xml.Attr    `xml:",any,attr"`
+}
+
+// FolderEntry represents a file or directory in a folder tree.
+type FolderEntry struct {
+	Path    string
+	IsDir   bool
+	Content string // populated if ShowContent=true
+}
+
+// Webpage represents a <webpage> element for web content.
+type Webpage struct {
+	URL         string     `xml:"url,attr"`
+	Selector    string     `xml:"selector,attr"` // CSS selector
+	ExtractText bool       `xml:"extractText,attr"`
+	Title       string     `xml:"-"` // extracted
+	Content     string     `xml:"-"` // extracted
+	Attrs       []xml.Attr `xml:",any,attr"`
+}
+
+// Conversation represents a <conversation> element for multi-turn displays.
+type Conversation struct {
+	Turns            []ConversationTurn `xml:"-"`
+	SelectedMessages []int              `xml:"-"`
+	Body             string             `xml:",innerxml"`
+	Attrs            []xml.Attr         `xml:",any,attr"`
+}
+
+// ConversationTurn represents a single message in a conversation.
+type ConversationTurn struct {
+	Speaker string // human, ai, system
+	Content string
+}
+
+// --- Phase 4: Template Engine ---
+
+// LetBinding represents a <let> variable binding.
+type LetBinding struct {
+	Name  string     `xml:"name,attr"`
+	Value string     `xml:"value,attr"` // expression
+	Src   string     `xml:"src,attr"`   // file import
+	Body  string     `xml:",innerxml"`  // inline value
+	Attrs []xml.Attr `xml:",any,attr"`
+}
+
+// Include represents an <include> file inclusion.
+type Include struct {
+	Src       string     `xml:"src,attr"`
+	Condition string     `xml:"if,attr"`  // optional condition
+	Loop      string     `xml:"for,attr"` // optional loop
+	Attrs     []xml.Attr `xml:",any,attr"`
 }
 
 // EncodeOptions controls XML serialization.
@@ -772,6 +961,8 @@ type ValidateOptions struct {
 	// When ExtendedStrict is enabled, unknown attributes on extended nodes can optionally be flagged.
 	// Defaults to true for strict mode unless explicitly set.
 	RejectUnknownAttrs *bool
+	// EnforceVersions validates minVersion/maxVersion constraints against SDKVersion.
+	EnforceVersions bool
 }
 
 func (d Document) ValidateWithOptions(opts ValidateOptions) error {
@@ -866,7 +1057,13 @@ func (d Document) ValidateWithOptions(opts ValidateOptions) error {
 		issues = append(issues, "meta.owner is required")
 		details = append(details, ValidationDetail{Element: ElementMeta, Field: "owner", Message: "missing owner"})
 	}
-	// no ordering check for min/max version; presence handled in converters
+	// Version constraint validation (checked against POML spec version, not SDK version)
+	if opts.EnforceVersions {
+		if err := CheckVersionConstraint(SpecVersion, d.Meta.MinVersion, d.Meta.MaxVersion); err != nil {
+			issues = append(issues, err.Error())
+			details = append(details, ValidationDetail{Element: ElementMeta, Field: "minVersion/maxVersion", Message: err.Error()})
+		}
+	}
 	nameSeen := make(map[string]struct{})
 	inputIndex := 0
 	for _, in := range d.Inputs {
@@ -1790,13 +1987,146 @@ func decodePoml(dec *xml.Decoder, opts ParseOptions) (Document, error) {
 				if err := dec.DecodeElement(new(struct{}), &t); err != nil {
 					return doc, wrapXMLError(err, "<examples>")
 				}
-			case "p", "section", "span", "h", "i", "b", "u", "strike", "s", "list", "item", "br":
+			case "h":
+				var h Header
+				if err := dec.DecodeElement(&h, &t); err != nil {
+					return doc, wrapXMLError(err, "<h>")
+				}
+				doc.Headers = append(doc.Headers, h)
+				el := doc.newElement(ElementHeader, len(doc.Headers)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "p":
+				var p Paragraph
+				if err := dec.DecodeElement(&p, &t); err != nil {
+					return doc, wrapXMLError(err, "<p>")
+				}
+				doc.Paragraphs = append(doc.Paragraphs, p)
+				el := doc.newElement(ElementParagraph, len(doc.Paragraphs)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "section":
+				var sec Section
+				if err := dec.DecodeElement(&sec, &t); err != nil {
+					return doc, wrapXMLError(err, "<section>")
+				}
+				doc.Sections = append(doc.Sections, sec)
+				el := doc.newElement(ElementSection, len(doc.Sections)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "list":
+				var l List
+				if err := dec.DecodeElement(&l, &t); err != nil {
+					return doc, wrapXMLError(err, "<list>")
+				}
+				doc.Lists = append(doc.Lists, l)
+				el := doc.newElement(ElementList, len(doc.Lists)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "code":
+				var c CodeBlock
+				if err := dec.DecodeElement(&c, &t); err != nil {
+					return doc, wrapXMLError(err, "<code>")
+				}
+				doc.CodeBlocks = append(doc.CodeBlocks, c)
+				el := doc.newElement(ElementCode, len(doc.CodeBlocks)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "br":
+				var br Newline
+				if err := dec.DecodeElement(&br, &t); err != nil {
+					return doc, wrapXMLError(err, "<br>")
+				}
+				if br.Count == 0 {
+					br.Count = 1
+				}
+				doc.Newlines = append(doc.Newlines, br)
+				el := doc.newElement(ElementNewline, len(doc.Newlines)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "table":
+				var tbl Table
+				if err := dec.DecodeElement(&tbl, &t); err != nil {
+					return doc, wrapXMLError(err, "<table>")
+				}
+				doc.Tables = append(doc.Tables, tbl)
+				el := doc.newElement(ElementTable, len(doc.Tables)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "folder":
+				var f Folder
+				if err := dec.DecodeElement(&f, &t); err != nil {
+					return doc, wrapXMLError(err, "<folder>")
+				}
+				doc.Folders = append(doc.Folders, f)
+				el := doc.newElement(ElementFolder, len(doc.Folders)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "webpage":
+				var wp Webpage
+				if err := dec.DecodeElement(&wp, &t); err != nil {
+					return doc, wrapXMLError(err, "<webpage>")
+				}
+				doc.Webpages = append(doc.Webpages, wp)
+				el := doc.newElement(ElementWebpage, len(doc.Webpages)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "conversation":
+				var conv Conversation
+				if err := dec.DecodeElement(&conv, &t); err != nil {
+					return doc, wrapXMLError(err, "<conversation>")
+				}
+				doc.Conversations = append(doc.Conversations, conv)
+				el := doc.newElement(ElementConversation, len(doc.Conversations)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "let":
+				var lb LetBinding
+				if err := dec.DecodeElement(&lb, &t); err != nil {
+					return doc, wrapXMLError(err, "<let>")
+				}
+				doc.LetBindings = append(doc.LetBindings, lb)
+				el := doc.newElement(ElementLet, len(doc.LetBindings)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "include":
+				var inc Include
+				if err := dec.DecodeElement(&inc, &t); err != nil {
+					return doc, wrapXMLError(err, "<include>")
+				}
+				doc.Includes = append(doc.Includes, inc)
+				el := doc.newElement(ElementInclude, len(doc.Includes)-1, "")
+				if preserveWS {
+					el.Leading = leading
+				}
+				doc.Elements = append(doc.Elements, el)
+			case "span", "i", "b", "u", "strike", "s", "item":
+				// Inline formatting and list items preserved as ContentPart for backwards compatibility
 				var cp ContentPart
 				if err := dec.DecodeElement(&cp, &t); err != nil {
 					return doc, wrapXMLError(err, fmt.Sprintf("<%s>", t.Name.Local))
-				}
-				if t.Name.Local == "br" && strings.TrimSpace(cp.Body) == "" {
-					break
 				}
 				doc.ContentParts = append(doc.ContentParts, cp)
 				el := doc.newElement(ElementContentPart, len(doc.ContentParts)-1, t.Name.Local)
@@ -2322,6 +2652,69 @@ func encodeElement(enc *xml.Encoder, out io.Writer, doc Document, el Element, op
 		}
 	case ElementPersona:
 		err = enc.EncodeElement(doc.Persona, xml.StartElement{Name: xml.Name{Local: "persona"}})
+	// Phase 2: Rich Text Elements
+	case ElementHeader:
+		if el.Index < 0 || el.Index >= len(doc.Headers) {
+			return fmt.Errorf("encode header: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Headers[el.Index], xml.StartElement{Name: xml.Name{Local: "h"}})
+	case ElementParagraph:
+		if el.Index < 0 || el.Index >= len(doc.Paragraphs) {
+			return fmt.Errorf("encode paragraph: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Paragraphs[el.Index], xml.StartElement{Name: xml.Name{Local: "p"}})
+	case ElementSection:
+		if el.Index < 0 || el.Index >= len(doc.Sections) {
+			return fmt.Errorf("encode section: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Sections[el.Index], xml.StartElement{Name: xml.Name{Local: "section"}})
+	case ElementList:
+		if el.Index < 0 || el.Index >= len(doc.Lists) {
+			return fmt.Errorf("encode list: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Lists[el.Index], xml.StartElement{Name: xml.Name{Local: "list"}})
+	case ElementCode:
+		if el.Index < 0 || el.Index >= len(doc.CodeBlocks) {
+			return fmt.Errorf("encode code: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.CodeBlocks[el.Index], xml.StartElement{Name: xml.Name{Local: "code"}})
+	case ElementNewline:
+		if el.Index < 0 || el.Index >= len(doc.Newlines) {
+			return fmt.Errorf("encode newline: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Newlines[el.Index], xml.StartElement{Name: xml.Name{Local: "br"}})
+	// Phase 3: Data Components
+	case ElementTable:
+		if el.Index < 0 || el.Index >= len(doc.Tables) {
+			return fmt.Errorf("encode table: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Tables[el.Index], xml.StartElement{Name: xml.Name{Local: "table"}})
+	case ElementFolder:
+		if el.Index < 0 || el.Index >= len(doc.Folders) {
+			return fmt.Errorf("encode folder: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Folders[el.Index], xml.StartElement{Name: xml.Name{Local: "folder"}})
+	case ElementWebpage:
+		if el.Index < 0 || el.Index >= len(doc.Webpages) {
+			return fmt.Errorf("encode webpage: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Webpages[el.Index], xml.StartElement{Name: xml.Name{Local: "webpage"}})
+	case ElementConversation:
+		if el.Index < 0 || el.Index >= len(doc.Conversations) {
+			return fmt.Errorf("encode conversation: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Conversations[el.Index], xml.StartElement{Name: xml.Name{Local: "conversation"}})
+	// Phase 4: Template Engine
+	case ElementLet:
+		if el.Index < 0 || el.Index >= len(doc.LetBindings) {
+			return fmt.Errorf("encode let: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.LetBindings[el.Index], xml.StartElement{Name: xml.Name{Local: "let"}})
+	case ElementInclude:
+		if el.Index < 0 || el.Index >= len(doc.Includes) {
+			return fmt.Errorf("encode include: index %d out of range", el.Index)
+		}
+		err = enc.EncodeElement(doc.Includes[el.Index], xml.StartElement{Name: xml.Name{Local: "include"}})
 	default:
 	}
 	if err != nil {
