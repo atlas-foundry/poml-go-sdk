@@ -269,3 +269,139 @@ func TestMainMCPCommand(t *testing.T) {
 		t.Fatalf("listenAndServe not called")
 	}
 }
+
+func TestRunMCPWithMIMEEnv(t *testing.T) {
+	exitFunc = func(int) {}
+	t.Cleanup(func() { exitFunc = os.Exit })
+
+	readFile = func(path string) ([]byte, error) {
+		return []byte(`<poml><meta><id>x</id><version>0.1</version><owner>y</owner></meta><role>r</role><task>t</task></poml>`), nil
+	}
+	t.Cleanup(func() { readFile = os.ReadFile })
+
+	var listened bool
+	listenAndServe = func(addr string, handler http.Handler) error {
+		listened = true
+		return nil
+	}
+	t.Cleanup(func() { listenAndServe = http.ListenAndServe })
+
+	// Set env variable for MIME types
+	_ = os.Setenv("POML_ALLOWED_MIME", "image/custom,video/custom")
+	t.Cleanup(func() { _ = os.Unsetenv("POML_ALLOWED_MIME") })
+
+	runMCP([]string{"--stdin"})
+
+	if !listened {
+		t.Fatalf("listenAndServe not called")
+	}
+}
+
+func TestRunMCPWithOpKindsEnv(t *testing.T) {
+	exitFunc = func(int) {}
+	t.Cleanup(func() { exitFunc = os.Exit })
+
+	readFile = func(path string) ([]byte, error) {
+		return []byte(`<poml><meta><id>x</id><version>0.1</version><owner>y</owner></meta><role>r</role><task>t</task></poml>`), nil
+	}
+	t.Cleanup(func() { readFile = os.ReadFile })
+
+	var listened bool
+	listenAndServe = func(addr string, handler http.Handler) error {
+		listened = true
+		return nil
+	}
+	t.Cleanup(func() { listenAndServe = http.ListenAndServe })
+
+	// Set env variable for op kinds
+	_ = os.Setenv("POML_ALLOWED_OP_KINDS", "custom-op,special-op")
+	t.Cleanup(func() { _ = os.Unsetenv("POML_ALLOWED_OP_KINDS") })
+
+	runMCP([]string{"--stdin"})
+
+	if !listened {
+		t.Fatalf("listenAndServe not called")
+	}
+}
+
+func TestRunMCPWithConfigPOML(t *testing.T) {
+	exitFunc = func(int) {}
+	t.Cleanup(func() { exitFunc = os.Exit })
+
+	// Create a real temp file for config
+	tmpFile, err := os.CreateTemp("", "config-*.poml")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+
+	configContent := `<poml><meta><id>cfg</id><version>1</version><owner>o</owner></meta><object name="allowed-mime">["image/custom","video/custom"]</object><object name="allowed-op-kinds">["custom-kind"]</object></poml>`
+	if _, err := tmpFile.WriteString(configContent); err != nil {
+		t.Fatalf("failed to write config: %v", err)
+	}
+	_ = tmpFile.Close()
+
+	readFile = func(path string) ([]byte, error) {
+		return []byte(`<poml><meta><id>x</id><version>0.1</version><owner>y</owner></meta><role>r</role><task>t</task></poml>`), nil
+	}
+	t.Cleanup(func() { readFile = os.ReadFile })
+
+	var listened bool
+	listenAndServe = func(addr string, handler http.Handler) error {
+		listened = true
+		return nil
+	}
+	t.Cleanup(func() { listenAndServe = http.ListenAndServe })
+
+	runMCP([]string{"--stdin", "--config-poml", tmpFile.Name()})
+
+	if !listened {
+		t.Fatalf("listenAndServe not called")
+	}
+}
+
+func TestRunMCPWithTraceOTLPHTTP(t *testing.T) {
+	exitFunc = func(int) {}
+	t.Cleanup(func() { exitFunc = os.Exit })
+
+	readFile = func(path string) ([]byte, error) {
+		return []byte(`<poml><meta><id>x</id><version>0.1</version><owner>y</owner></meta><role>r</role><task>t</task></poml>`), nil
+	}
+	t.Cleanup(func() { readFile = os.ReadFile })
+
+	var listened bool
+	listenAndServe = func(addr string, handler http.Handler) error {
+		listened = true
+		return nil
+	}
+	t.Cleanup(func() { listenAndServe = http.ListenAndServe })
+
+	runMCP([]string{"--stdin", "--trace-otlp-http", "localhost:4318"})
+
+	if !listened {
+		t.Fatalf("listenAndServe not called")
+	}
+}
+
+func TestRunMCPWithTraceOTLPGRPC(t *testing.T) {
+	exitFunc = func(int) {}
+	t.Cleanup(func() { exitFunc = os.Exit })
+
+	readFile = func(path string) ([]byte, error) {
+		return []byte(`<poml><meta><id>x</id><version>0.1</version><owner>y</owner></meta><role>r</role><task>t</task></poml>`), nil
+	}
+	t.Cleanup(func() { readFile = os.ReadFile })
+
+	var listened bool
+	listenAndServe = func(addr string, handler http.Handler) error {
+		listened = true
+		return nil
+	}
+	t.Cleanup(func() { listenAndServe = http.ListenAndServe })
+
+	runMCP([]string{"--stdin", "--trace-otlp-grpc", "localhost:4317"})
+
+	if !listened {
+		t.Fatalf("listenAndServe not called")
+	}
+}

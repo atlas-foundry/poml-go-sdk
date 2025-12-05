@@ -43,3 +43,46 @@ func runCmd(t *testing.T, cmd string, args ...string) ([]byte, error) {
 	c.Env = append(os.Environ(), "GO111MODULE=on")
 	return c.CombinedOutput()
 }
+
+func TestExecuteGraphEmpty(t *testing.T) {
+	e := &Executor{}
+	g := Graph{Nodes: []Node{}}
+	if err := e.ExecuteGraph(g); err != nil {
+		t.Errorf("empty graph should succeed: %v", err)
+	}
+}
+
+func TestExecuteGraphUnknownNodeType(t *testing.T) {
+	e := &Executor{}
+	g := Graph{Nodes: []Node{{Type: "unknown"}}}
+	if err := e.ExecuteGraph(g); err != nil {
+		t.Errorf("unknown node type should be ignored: %v", err)
+	}
+}
+
+func TestExecuteTransportPingNoTransport(t *testing.T) {
+	e := &Executor{}
+	if err := e.ExecuteTransportPing("localhost:8080"); err != nil {
+		t.Errorf("should succeed when no transport: %v", err)
+	}
+}
+
+func TestExecuteGraphMeshLogNoMesh(t *testing.T) {
+	e := &Executor{}
+	g := Graph{Nodes: []Node{{Type: "mesh_log", Msg: "test"}}}
+	if err := e.ExecuteGraph(g); err != nil {
+		t.Errorf("mesh_log without mesh should succeed: %v", err)
+	}
+}
+
+func TestExecutorClose(t *testing.T) {
+	e := &Executor{clients: nil}
+	e.Close() // Should not panic with nil clients
+}
+
+func TestLoadTransportInvalidPath(t *testing.T) {
+	_, err := LoadTransport("/nonexistent/plugin")
+	if err == nil {
+		t.Error("expected error for invalid plugin path")
+	}
+}
