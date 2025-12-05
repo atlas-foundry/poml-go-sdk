@@ -2413,11 +2413,14 @@ func formatListContent(list List) string {
 				sb.WriteString(fmt.Sprintf("%d. ", i+1))
 			}
 		default: // star, dash, plus, or empty
-			marker := "-"
-			if list.Style == "star" {
+			var marker string
+			switch list.Style {
+			case "star":
 				marker = "*"
-			} else if list.Style == "plus" {
+			case "plus":
 				marker = "+"
+			default:
+				marker = "-"
 			}
 			sb.WriteString(marker + " ")
 		}

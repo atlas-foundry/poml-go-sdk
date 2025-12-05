@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -261,14 +262,14 @@ func TestConverterRegistryConcurrentRegister(t *testing.T) {
 	reg := NewConverterRegistry()
 	conv := basicConverter{from: "x", to: "y", fn: func(context.Context, any, map[string]any) (any, error) { return nil, nil }}
 	var wg sync.WaitGroup
-	var dupCount int
+	var dupCount atomic.Int32
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			if err := reg.Register(conv); err != nil {
 				if errors.Is(err, ErrConverterExists) {
-					dupCount++
+					dupCount.Add(1)
 				} else {
 					t.Errorf("unexpected error: %v", err)
 				}
@@ -276,8 +277,8 @@ func TestConverterRegistryConcurrentRegister(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	if dupCount != 9 {
-		t.Fatalf("expected 9 duplicate errors, got %d", dupCount)
+	if dupCount.Load() != 9 {
+		t.Fatalf("expected 9 duplicate errors, got %d", dupCount.Load())
 	}
 	if got := len(reg.List()); got != 1 {
 		t.Fatalf("expected single converter registered, got %d", got)
