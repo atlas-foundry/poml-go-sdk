@@ -421,9 +421,10 @@ jobs:
       - name: Build binaries
         run: |
           mkdir dist
-          GOOS=linux   GOARCH=amd64 go build -o dist/poml-go-sdk-linux-amd64   .
-          GOOS=darwin  GOARCH=arm64 go build -o dist/poml-go-sdk-macos-arm64   .
-          GOOS=windows GOARCH=amd64 go build -o dist/poml-go-sdk-windows-amd64.exe .
+          GOOS=linux   GOARCH=amd64 go build -o dist/poml-linux-amd64   ./cmd/poml
+          GOOS=darwin  GOARCH=arm64 go build -o dist/poml-darwin-arm64  ./cmd/poml
+          GOOS=darwin  GOARCH=amd64 go build -o dist/poml-darwin-amd64  ./cmd/poml
+          GOOS=windows GOARCH=amd64 go build -o dist/poml-windows-amd64.exe ./cmd/poml
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
