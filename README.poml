@@ -67,7 +67,7 @@
   <hint caption="Coverage & CI badges">
     <list>
       <item>CI: https://github.com/atlas-foundry/poml-go-sdk/actions/workflows/ci.yml</item>
-      <item>Docs build: node tools/render-mdx.mjs README.mdx build/docs/index.html</item>
+      <item>Docs build: node tools/render-mdx.mjs README.md build/docs/index.html</item>
     </list>
   </hint>
 

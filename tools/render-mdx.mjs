@@ -1,31 +1,22 @@
 import { readFile, writeFile } from 'node:fs/promises'
-import { evaluate } from '@mdx-js/mdx'
-import * as runtime from 'react/jsx-runtime'
-import { renderToStaticMarkup } from 'react-dom/server'
-import React from 'react'
+import { marked } from 'marked'
 
-const inputFile = process.argv[2] || 'README.mdx'
+const inputFile = process.argv[2] || 'README.md'
 const outputFile = process.argv[3] || 'index.html'
 
 try {
   console.log(`Reading ${inputFile}...`)
-  const mdx = await readFile(inputFile, 'utf8')
-  
-  console.log('Compiling MDX...')
-  const { default: Content } = await evaluate(mdx, {
-    ...runtime,
-    baseUrl: import.meta.url,
-  })
+  const markdown = await readFile(inputFile, 'utf8')
 
-  console.log('Rendering to HTML...')
-  const html = renderToStaticMarkup(React.createElement(Content))
+  console.log('Rendering Markdown to HTML...')
+  const html = marked(markdown)
 
   const doc = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Documentation</title>
+  <title>POML Go SDK Documentation</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.0/github-markdown.min.css">
   <style>
     .markdown-body {
@@ -48,8 +39,8 @@ try {
 </html>`
 
   await writeFile(outputFile, doc)
-  console.log(`Successfully compiled ${inputFile} to ${outputFile}`)
+  console.log(`Successfully rendered ${inputFile} to ${outputFile}`)
 } catch (error) {
-  console.error('Error compiling MDX:', error)
+  console.error('Error rendering Markdown:', error)
   process.exit(1)
 }

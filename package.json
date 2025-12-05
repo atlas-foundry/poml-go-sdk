@@ -10,15 +10,13 @@
   "devDependencies": {
     "@commitlint/cli": "^19.0.0",
     "@commitlint/config-conventional": "^19.0.0",
-    "@mdx-js/mdx": "^3.0.0",
+    "marked": "^15.0.0",
     "@semantic-release/changelog": "^6.0.0",
     "@semantic-release/commit-analyzer": "^11.0.0",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^9.0.0",
     "@semantic-release/release-notes-generator": "^12.0.0",
     "husky": "^9.0.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
     "semantic-release": "^24.2.9"
   },
   "overrides": {

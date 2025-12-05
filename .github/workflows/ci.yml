@@ -368,7 +368,7 @@ jobs:
       - name: Generate docs
         run: |
           mkdir -p build/docs
-          node tools/render-mdx.mjs README.mdx build/docs/index.html
+          node tools/render-mdx.mjs README.md build/docs/index.html
 
       - name: Docs smoke test
         run: |
@@ -396,7 +396,7 @@ jobs:
       - run: |
           npm install
           mkdir -p nightly/docs
-          node tools/render-mdx.mjs README.mdx nightly/docs/index.html
+          node tools/render-mdx.mjs README.md nightly/docs/index.html
       - uses: actions/upload-artifact@v4
         with:
           name: nightly-docs
