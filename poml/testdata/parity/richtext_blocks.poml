@@ -4,12 +4,11 @@
     <version>0.0.8</version>
   </meta>
   <role>Test fixture for block-level rich text elements</role>
-  <task>
-    <h level="1">Main Heading</h>
-    <p>This is a paragraph of text that demonstrates the paragraph element.</p>
-    <h level="2">Subheading</h>
-    <section title="Named Section">
-      <p>Content within a named section.</p>
-    </section>
-  </task>
+  <task>Demonstrate rich text block elements</task>
+  <h level="1">Main Heading</h>
+  <p>This is a paragraph of text that demonstrates the paragraph element.</p>
+  <h level="2">Subheading</h>
+  <section title="Named Section">
+    <p>Content within a named section.</p>
+  </section>
 </poml>

@@ -14,6 +14,9 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/atlas-foundry/poml-go-sdk/poml/stylesheet"
+	"github.com/atlas-foundry/poml-go-sdk/poml/template"
+	"github.com/atlas-foundry/poml-go-sdk/poml/token"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -47,6 +50,25 @@ type ConvertOptions struct {
 	Trace TraceOptions
 	// Extended toggles conversion of POML Extended constructs; off by default.
 	Extended ExtendedMode
+
+	// TemplateVars provides variables for template interpolation ({{ var }}).
+	// When non-nil, template expansion is enabled.
+	TemplateVars map[string]any
+	// ExpandTemplates enables processing of <let>, if/for attributes, and {{ }} interpolation.
+	ExpandTemplates bool
+	// ApplyStylesheet enables stylesheet application from <style> elements.
+	ApplyStylesheet bool
+	// EnforceLimits enables charLimit/tokenLimit truncation based on priority.
+	EnforceLimits bool
+	// MaxIncludeDepth limits recursive <include> depth (default 10).
+	MaxIncludeDepth int
+	// Components specifies which components to include/exclude.
+	// Format: "component1,+component2,-component3"
+	// Use "-component" to disable, "component" or "+component" to enable.
+	Components string
+	// EnforceVersions validates minVersion/maxVersion constraints during conversion.
+	// If enabled and version constraints are violated, conversion returns an error.
+	EnforceVersions bool
 }
 
 const defaultMaxImageBytes int64 = 10 << 20 // 10MB safeguard
@@ -57,6 +79,20 @@ var ErrNotImplemented = errors.New("conversion not implemented")
 
 // Convert transforms a parsed Document into the requested format.
 func Convert(doc Document, format Format, opts ConvertOptions) (any, error) {
+	// Check version constraints if enforcement is enabled
+	if opts.EnforceVersions {
+		if err := CheckVersionConstraint(SpecVersion, doc.Meta.MinVersion, doc.Meta.MaxVersion); err != nil {
+			return nil, fmt.Errorf("version constraint: %w", err)
+		}
+	}
+
+	// Preprocess: expand templates, apply stylesheet, enforce limits
+	expanded, err := expandDocument(doc, opts)
+	if err != nil {
+		return nil, fmt.Errorf("template expansion: %w", err)
+	}
+	doc = expanded
+
 	switch format {
 	case FormatMessageDict:
 		return convertMessageDict(doc, opts)
@@ -278,6 +314,86 @@ func convertMessageDict(doc Document, opts ConvertOptions) ([]messageDict, error
 			body := strings.TrimSpace(doc.elementBody(el))
 			if body != "" {
 				msgs = append(msgs, messageDict{Speaker: "human", Content: body})
+			}
+		case ElementTable:
+			tbl := doc.Tables[el.Index]
+			content := formatTableContent(tbl)
+			if content != "" {
+				msgs = append(msgs, messageDict{Speaker: "human", Content: content})
+			}
+		case ElementFolder:
+			folder := doc.Folders[el.Index]
+			content := formatFolderContent(folder, opts.BaseDir)
+			if content != "" {
+				msgs = append(msgs, messageDict{Speaker: "human", Content: content})
+			}
+		case ElementWebpage:
+			// Webpage content is not fetched at convert time for security
+			// Just include the URL reference
+			wp := doc.Webpages[el.Index]
+			msgs = append(msgs, messageDict{
+				Speaker: "human",
+				Content: map[string]any{
+					"type":     "webpage",
+					"url":      wp.URL,
+					"selector": wp.Selector,
+				},
+			})
+		case ElementConversation:
+			conv := doc.Conversations[el.Index]
+			content := formatConversationContent(conv)
+			if content != "" {
+				msgs = append(msgs, messageDict{Speaker: "human", Content: content})
+			}
+		case ElementHeader:
+			if el.Index >= 0 && el.Index < len(doc.Headers) {
+				h := doc.Headers[el.Index]
+				content := formatHeaderContent(h)
+				if content != "" {
+					msgs = append(msgs, messageDict{Speaker: "human", Content: content})
+				}
+			}
+		case ElementParagraph:
+			if el.Index >= 0 && el.Index < len(doc.Paragraphs) {
+				p := doc.Paragraphs[el.Index]
+				content := strings.TrimSpace(p.Content)
+				if content != "" {
+					msgs = append(msgs, messageDict{Speaker: "human", Content: content})
+				}
+			}
+		case ElementSection:
+			if el.Index >= 0 && el.Index < len(doc.Sections) {
+				sec := doc.Sections[el.Index]
+				content := formatSectionContent(sec)
+				if content != "" {
+					msgs = append(msgs, messageDict{Speaker: "human", Content: content})
+				}
+			}
+		case ElementList:
+			if el.Index >= 0 && el.Index < len(doc.Lists) {
+				list := doc.Lists[el.Index]
+				content := formatListContent(list)
+				if content != "" {
+					msgs = append(msgs, messageDict{Speaker: "human", Content: content})
+				}
+			}
+		case ElementCode:
+			if el.Index >= 0 && el.Index < len(doc.CodeBlocks) {
+				code := doc.CodeBlocks[el.Index]
+				content := formatCodeBlockContent(code)
+				if content != "" {
+					msgs = append(msgs, messageDict{Speaker: "human", Content: content})
+				}
+			}
+		case ElementNewline:
+			if el.Index >= 0 && el.Index < len(doc.Newlines) {
+				nl := doc.Newlines[el.Index]
+				count := nl.Count
+				if count <= 0 {
+					count = 1
+				}
+				content := strings.Repeat("\n", count)
+				msgs = append(msgs, messageDict{Speaker: "human", Content: content})
 			}
 		case ElementUnknown:
 			if opts.Extended != ExtendedOff {
@@ -1514,4 +1630,821 @@ func ImageFromFile(path string, mime string, alt string) (Image, error) {
 		mime = "application/octet-stream"
 	}
 	return ImageFromBytes(raw, mime, alt), nil
+}
+
+// expandDocument processes template expansion, stylesheet application, and limit enforcement.
+func expandDocument(doc Document, opts ConvertOptions) (Document, error) {
+	// Step 1: Process <let> bindings and build template context
+	ctx := template.NewContext(nil)
+
+	// Add user-provided variables
+	for k, v := range opts.TemplateVars {
+		ctx.Set(k, v)
+	}
+
+	// Process <let> elements to populate context
+	for _, let := range doc.LetBindings {
+		if let.Value != "" {
+			// Expression or literal value
+			ctx.Set(let.Name, let.Value)
+		} else if let.Src != "" && opts.BaseDir != "" {
+			// Load from file
+			path := filepath.Join(opts.BaseDir, let.Src)
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return doc, fmt.Errorf("let %q: load src %q: %w", let.Name, let.Src, err)
+			}
+			// Try to parse as JSON, otherwise use as string
+			var jsonVal any
+			if err := json.Unmarshal(data, &jsonVal); err == nil {
+				ctx.Set(let.Name, jsonVal)
+			} else {
+				ctx.Set(let.Name, string(data))
+			}
+		} else if let.Body != "" {
+			// Inline body - try JSON first
+			var jsonVal any
+			if err := json.Unmarshal([]byte(let.Body), &jsonVal); err == nil {
+				ctx.Set(let.Name, jsonVal)
+			} else {
+				ctx.Set(let.Name, let.Body)
+			}
+		}
+	}
+
+	// Step 2: Process if/for conditions on elements
+	doc = processConditionalsAndLoops(doc, ctx)
+
+	// Step 3: Process includes (if enabled and base dir set)
+	if opts.BaseDir != "" {
+		maxDepth := opts.MaxIncludeDepth
+		if maxDepth <= 0 {
+			maxDepth = 10 // Default max include depth
+		}
+		var err error
+		doc, err = processIncludes(doc, opts.BaseDir, maxDepth, 0, ctx)
+		if err != nil {
+			return doc, fmt.Errorf("process includes: %w", err)
+		}
+	}
+
+	// Step 4: Template interpolation (if enabled)
+	if opts.ExpandTemplates || opts.TemplateVars != nil {
+		doc = interpolateDocument(doc, ctx)
+	}
+
+	// Step 5: Apply stylesheet (if enabled and present)
+	if opts.ApplyStylesheet && len(doc.Styles) > 0 {
+		// Combine all style blocks
+		for _, style := range doc.Styles {
+			for _, out := range style.Outputs {
+				if ss, err := stylesheet.Parse(out.Body); err == nil && ss != nil {
+					doc = applyStylesheetToDocument(doc, ss)
+				}
+			}
+		}
+	}
+
+	// Step 6: Enforce limits (if enabled)
+	if opts.EnforceLimits {
+		doc = enforceLimitsOnDocument(doc)
+	}
+
+	// Step 7: Apply component filtering (if specified)
+	if opts.Components != "" {
+		filtered := FilterDocumentByComponents(&doc, opts.Components)
+		doc = *filtered
+	}
+
+	return doc, nil
+}
+
+// processConditionalsAndLoops evaluates if/for attributes on elements.
+// Elements with false conditions are removed; elements with loops are expanded.
+func processConditionalsAndLoops(doc Document, ctx *template.Context) Document {
+	// Filter includes by condition and expand loops
+	var filteredIncludes []Include
+	for _, inc := range doc.Includes {
+		// Check if condition (if present)
+		if inc.Condition != "" {
+			match, err := template.EvalCondition(inc.Condition, ctx)
+			if err != nil || !match {
+				continue // Skip this include
+			}
+		}
+
+		// Check for loop (if present)
+		if inc.Loop != "" {
+			varName, listExpr, ok := template.ParseForAttribute(inc.Loop)
+			if ok {
+				items, err := template.EvalLoop(listExpr, ctx)
+				if err == nil && len(items) > 0 {
+					// Expand the loop - create one include per item
+					for _, item := range items {
+						newInc := inc
+						// Set the loop variable in context for interpolation
+						ctx.Set(varName, item)
+						filteredIncludes = append(filteredIncludes, newInc)
+					}
+					continue
+				}
+			}
+		}
+
+		filteredIncludes = append(filteredIncludes, inc)
+	}
+	doc.Includes = filteredIncludes
+
+	// Filter elements by checking if/for on their underlying items' Attrs
+	var filteredElements []Element
+	for _, el := range doc.Elements {
+		attrs := getElementAttrs(doc, el)
+		ifVal := findAttr(attrs, "if")
+		forVal := findAttr(attrs, "for")
+
+		// Check if condition
+		if ifVal != "" {
+			match, err := template.EvalCondition(ifVal, ctx)
+			if err != nil || !match {
+				continue // Skip this element
+			}
+		}
+
+		// Check for loop
+		if forVal != "" {
+			varName, listExpr, ok := template.ParseForAttribute(forVal)
+			if ok {
+				items, err := template.EvalLoop(listExpr, ctx)
+				if err == nil && len(items) > 0 {
+					// Expand the loop
+					for _, item := range items {
+						ctx.Set(varName, item)
+						filteredElements = append(filteredElements, el)
+					}
+					continue
+				}
+			}
+		}
+
+		filteredElements = append(filteredElements, el)
+	}
+	doc.Elements = filteredElements
+
+	return doc
+}
+
+// processIncludes loads and merges included POML files into the document.
+func processIncludes(doc Document, baseDir string, maxDepth, currentDepth int, ctx *template.Context) (Document, error) {
+	if currentDepth >= maxDepth {
+		return doc, fmt.Errorf("maximum include depth (%d) exceeded", maxDepth)
+	}
+
+	if len(doc.Includes) == 0 {
+		return doc, nil
+	}
+
+	// Process each include
+	for _, inc := range doc.Includes {
+		if inc.Src == "" {
+			continue
+		}
+
+		// Interpolate src path if it contains template expressions
+		srcPath := inc.Src
+		if strings.Contains(srcPath, "{{") {
+			if result, err := template.Interpolate(srcPath, ctx); err == nil {
+				srcPath = result
+			}
+		}
+
+		// Resolve path relative to baseDir
+		fullPath := srcPath
+		if !filepath.IsAbs(srcPath) {
+			fullPath = filepath.Join(baseDir, srcPath)
+		}
+
+		// Read and parse the included file
+		data, err := os.ReadFile(fullPath)
+		if err != nil {
+			return doc, fmt.Errorf("include %q: %w", inc.Src, err)
+		}
+
+		// Parse the included document
+		incDir := filepath.Dir(fullPath)
+		incDoc, err := ParseString(string(data))
+		if err != nil {
+			return doc, fmt.Errorf("parse include %q: %w", inc.Src, err)
+		}
+		_ = incDir // Used for recursive includes
+
+		// Recursively process includes in the included document
+		incDoc, err = processIncludes(incDoc, incDir, maxDepth, currentDepth+1, ctx)
+		if err != nil {
+			return doc, fmt.Errorf("include %q: %w", inc.Src, err)
+		}
+
+		// Merge content from included document into main document
+		doc = mergeIncludedDocument(doc, incDoc)
+	}
+
+	// Clear includes since they've been processed
+	doc.Includes = nil
+
+	return doc, nil
+}
+
+// mergeIncludedDocument merges content from an included document into the main document.
+func mergeIncludedDocument(doc, inc Document) Document {
+	// Merge inputs
+	doc.Inputs = append(doc.Inputs, inc.Inputs...)
+
+	// Merge examples
+	doc.Examples = append(doc.Examples, inc.Examples...)
+
+	// Merge hints
+	doc.Hints = append(doc.Hints, inc.Hints...)
+
+	// Merge output formats
+	doc.OutFormats = append(doc.OutFormats, inc.OutFormats...)
+
+	// Merge images
+	doc.Images = append(doc.Images, inc.Images...)
+
+	// Merge audios
+	doc.Audios = append(doc.Audios, inc.Audios...)
+
+	// Merge videos
+	doc.Videos = append(doc.Videos, inc.Videos...)
+
+	// Merge diagrams
+	doc.Diagrams = append(doc.Diagrams, inc.Diagrams...)
+
+	// Merge tables
+	doc.Tables = append(doc.Tables, inc.Tables...)
+
+	// Merge folders
+	doc.Folders = append(doc.Folders, inc.Folders...)
+
+	// Merge webpages
+	doc.Webpages = append(doc.Webpages, inc.Webpages...)
+
+	// Merge conversations
+	doc.Conversations = append(doc.Conversations, inc.Conversations...)
+
+	// Merge let bindings
+	doc.LetBindings = append(doc.LetBindings, inc.LetBindings...)
+
+	// Merge styles
+	doc.Styles = append(doc.Styles, inc.Styles...)
+
+	// Merge messages
+	doc.Messages = append(doc.Messages, inc.Messages...)
+
+	// If main doc lacks role/persona, use included doc's
+	if doc.Role.Body == "" && inc.Role.Body != "" {
+		doc.Role = inc.Role
+	}
+	if doc.Persona.Body == "" && inc.Persona.Body != "" {
+		doc.Persona = inc.Persona
+	}
+
+	// Merge tasks
+	doc.Tasks = append(doc.Tasks, inc.Tasks...)
+
+	return doc
+}
+
+// getElementAttrs returns the Attrs slice for an element based on its type.
+func getElementAttrs(doc Document, el Element) []xml.Attr {
+	switch el.Type {
+	case ElementInput:
+		if el.Index >= 0 && el.Index < len(doc.Inputs) {
+			return doc.Inputs[el.Index].Attrs
+		}
+	case ElementExample:
+		if el.Index >= 0 && el.Index < len(doc.Examples) {
+			return doc.Examples[el.Index].Attrs
+		}
+	case ElementHint:
+		if el.Index >= 0 && el.Index < len(doc.Hints) {
+			return doc.Hints[el.Index].Attrs
+		}
+	case ElementOutputFormat:
+		if el.Index >= 0 && el.Index < len(doc.OutFormats) {
+			return doc.OutFormats[el.Index].Attrs
+		}
+	case ElementImage:
+		if el.Index >= 0 && el.Index < len(doc.Images) {
+			return doc.Images[el.Index].Attrs
+		}
+	case ElementAudio:
+		if el.Index >= 0 && el.Index < len(doc.Audios) {
+			return doc.Audios[el.Index].Attrs
+		}
+	case ElementVideo:
+		if el.Index >= 0 && el.Index < len(doc.Videos) {
+			return doc.Videos[el.Index].Attrs
+		}
+	case ElementDiagram:
+		if el.Index >= 0 && el.Index < len(doc.Diagrams) {
+			return doc.Diagrams[el.Index].Attrs
+		}
+	case ElementTable:
+		if el.Index >= 0 && el.Index < len(doc.Tables) {
+			return doc.Tables[el.Index].Attrs
+		}
+	case ElementFolder:
+		if el.Index >= 0 && el.Index < len(doc.Folders) {
+			return doc.Folders[el.Index].Attrs
+		}
+	case ElementWebpage:
+		if el.Index >= 0 && el.Index < len(doc.Webpages) {
+			return doc.Webpages[el.Index].Attrs
+		}
+	case ElementConversation:
+		if el.Index >= 0 && el.Index < len(doc.Conversations) {
+			return doc.Conversations[el.Index].Attrs
+		}
+	case ElementInclude:
+		if el.Index >= 0 && el.Index < len(doc.Includes) {
+			return doc.Includes[el.Index].Attrs
+		}
+	case ElementHeader:
+		if el.Index >= 0 && el.Index < len(doc.Headers) {
+			return doc.Headers[el.Index].Attrs
+		}
+	case ElementParagraph:
+		if el.Index >= 0 && el.Index < len(doc.Paragraphs) {
+			return doc.Paragraphs[el.Index].Attrs
+		}
+	case ElementSection:
+		if el.Index >= 0 && el.Index < len(doc.Sections) {
+			return doc.Sections[el.Index].Attrs
+		}
+	case ElementList:
+		if el.Index >= 0 && el.Index < len(doc.Lists) {
+			return doc.Lists[el.Index].Attrs
+		}
+	case ElementCode:
+		if el.Index >= 0 && el.Index < len(doc.CodeBlocks) {
+			return doc.CodeBlocks[el.Index].Attrs
+		}
+	case ElementNewline:
+		if el.Index >= 0 && el.Index < len(doc.Newlines) {
+			return doc.Newlines[el.Index].Attrs
+		}
+	}
+	return nil
+}
+
+// findAttr looks up an attribute by local name.
+func findAttr(attrs []xml.Attr, name string) string {
+	for _, a := range attrs {
+		if a.Name.Local == name {
+			return a.Value
+		}
+	}
+	return ""
+}
+
+// interpolateDocument applies {{ }} template substitution to text fields.
+func interpolateDocument(doc Document, ctx *template.Context) Document {
+	// Interpolate role
+	if doc.Role.Body != "" {
+		if result, err := template.Interpolate(doc.Role.Body, ctx); err == nil {
+			doc.Role.Body = result
+		}
+	}
+
+	// Interpolate persona
+	if doc.Persona.Body != "" {
+		if result, err := template.Interpolate(doc.Persona.Body, ctx); err == nil {
+			doc.Persona.Body = result
+		}
+	}
+
+	// Interpolate tasks
+	for i := range doc.Tasks {
+		if doc.Tasks[i].Body != "" {
+			if result, err := template.Interpolate(doc.Tasks[i].Body, ctx); err == nil {
+				doc.Tasks[i].Body = result
+			}
+		}
+	}
+
+	// Interpolate inputs
+	for i := range doc.Inputs {
+		if doc.Inputs[i].Body != "" {
+			if result, err := template.Interpolate(doc.Inputs[i].Body, ctx); err == nil {
+				doc.Inputs[i].Body = result
+			}
+		}
+	}
+
+	// Interpolate hints
+	for i := range doc.Hints {
+		if doc.Hints[i].Body != "" {
+			if result, err := template.Interpolate(doc.Hints[i].Body, ctx); err == nil {
+				doc.Hints[i].Body = result
+			}
+		}
+	}
+
+	// Interpolate examples
+	for i := range doc.Examples {
+		if doc.Examples[i].Body != "" {
+			if result, err := template.Interpolate(doc.Examples[i].Body, ctx); err == nil {
+				doc.Examples[i].Body = result
+			}
+		}
+	}
+
+	// Interpolate messages
+	for i := range doc.Messages {
+		if doc.Messages[i].Body != "" {
+			if result, err := template.Interpolate(doc.Messages[i].Body, ctx); err == nil {
+				doc.Messages[i].Body = result
+			}
+		}
+	}
+
+	return doc
+}
+
+// applyStylesheetToDocument applies CSS-like rules to elements.
+func applyStylesheetToDocument(doc Document, ss *stylesheet.Stylesheet) Document {
+	// Helper to apply all properties from stylesheet to attrs
+	applyProps := func(attrs []xml.Attr, tagName string) []xml.Attr {
+		className := getAttr(attrs, "class")
+		props := ss.Apply(tagName, className)
+		for name, value := range props {
+			attrs = setAttr(attrs, name, value)
+		}
+		return attrs
+	}
+
+	// Apply to hints
+	for i := range doc.Hints {
+		doc.Hints[i].Attrs = applyProps(doc.Hints[i].Attrs, "hint")
+	}
+
+	// Apply to examples
+	for i := range doc.Examples {
+		doc.Examples[i].Attrs = applyProps(doc.Examples[i].Attrs, "example")
+	}
+
+	// Apply to documents
+	for i := range doc.Documents {
+		doc.Documents[i].Attrs = applyProps(doc.Documents[i].Attrs, "document")
+	}
+
+	// Apply to inputs
+	for i := range doc.Inputs {
+		doc.Inputs[i].Attrs = applyProps(doc.Inputs[i].Attrs, "input")
+	}
+
+	// Apply to output formats
+	for i := range doc.OutFormats {
+		doc.OutFormats[i].Attrs = applyProps(doc.OutFormats[i].Attrs, "output-format")
+	}
+
+	// Apply to images
+	for i := range doc.Images {
+		doc.Images[i].Attrs = applyProps(doc.Images[i].Attrs, "image")
+	}
+
+	// Apply to audio
+	for i := range doc.Audios {
+		doc.Audios[i].Attrs = applyProps(doc.Audios[i].Attrs, "audio")
+	}
+
+	// Apply to video
+	for i := range doc.Videos {
+		doc.Videos[i].Attrs = applyProps(doc.Videos[i].Attrs, "video")
+	}
+
+	// Apply to diagrams
+	for i := range doc.Diagrams {
+		doc.Diagrams[i].Attrs = applyProps(doc.Diagrams[i].Attrs, "diagram")
+	}
+
+	// Apply to tables
+	for i := range doc.Tables {
+		doc.Tables[i].Attrs = applyProps(doc.Tables[i].Attrs, "table")
+	}
+
+	// Apply to folders
+	for i := range doc.Folders {
+		doc.Folders[i].Attrs = applyProps(doc.Folders[i].Attrs, "folder")
+	}
+
+	// Apply to webpages
+	for i := range doc.Webpages {
+		doc.Webpages[i].Attrs = applyProps(doc.Webpages[i].Attrs, "webpage")
+	}
+
+	// Apply to conversations
+	for i := range doc.Conversations {
+		doc.Conversations[i].Attrs = applyProps(doc.Conversations[i].Attrs, "conversation")
+	}
+
+	// Apply to code blocks
+	for i := range doc.CodeBlocks {
+		doc.CodeBlocks[i].Attrs = applyProps(doc.CodeBlocks[i].Attrs, "code")
+	}
+
+	// Apply to headers
+	for i := range doc.Headers {
+		doc.Headers[i].Attrs = applyProps(doc.Headers[i].Attrs, "h")
+	}
+
+	// Apply to paragraphs
+	for i := range doc.Paragraphs {
+		doc.Paragraphs[i].Attrs = applyProps(doc.Paragraphs[i].Attrs, "p")
+	}
+
+	// Apply to sections
+	for i := range doc.Sections {
+		doc.Sections[i].Attrs = applyProps(doc.Sections[i].Attrs, "section")
+	}
+
+	// Apply to lists
+	for i := range doc.Lists {
+		doc.Lists[i].Attrs = applyProps(doc.Lists[i].Attrs, "list")
+	}
+
+	return doc
+}
+
+// getAttr retrieves an attribute value from a slice of xml.Attr.
+func getAttr(attrs []xml.Attr, name string) string {
+	for _, a := range attrs {
+		if a.Name.Local == name {
+			return a.Value
+		}
+	}
+	return ""
+}
+
+// setAttr sets or adds an attribute in a slice of xml.Attr.
+func setAttr(attrs []xml.Attr, name, value string) []xml.Attr {
+	for i, a := range attrs {
+		if a.Name.Local == name {
+			attrs[i].Value = value
+			return attrs
+		}
+	}
+	return append(attrs, xml.Attr{Name: xml.Name{Local: name}, Value: value})
+}
+
+// enforceLimitsOnDocument applies charLimit/tokenLimit with priority-based truncation.
+func enforceLimitsOnDocument(doc Document) Document {
+	charLimit := doc.Meta.CharLimit
+	tokenLimit := doc.Meta.TokenLimit
+
+	if charLimit <= 0 && tokenLimit <= 0 {
+		return doc
+	}
+
+	// Get total task content
+	var taskContent string
+	for _, t := range doc.Tasks {
+		taskContent += t.Body
+	}
+
+	// Collect content with priorities for potential truncation
+	// For now, apply simple truncation to task and role if needed
+	if charLimit > 0 {
+		totalChars := int64(len(doc.Role.Body) + len(taskContent))
+		if totalChars > charLimit {
+			// Truncate tasks first (lower priority typically)
+			remaining := charLimit - int64(len(doc.Role.Body))
+			if remaining > 0 && len(doc.Tasks) > 0 && int64(len(doc.Tasks[0].Body)) > remaining {
+				doc.Tasks[0].Body = token.TruncateToCharLimit(doc.Tasks[0].Body, remaining)
+			}
+		}
+	}
+
+	if tokenLimit > 0 {
+		// Use token-based truncation
+		totalTokens := token.EstimateTokens(doc.Role.Body + taskContent)
+		if totalTokens > tokenLimit {
+			// Estimate how many chars we can keep
+			charBudget := tokenLimit * 4 // rough estimate
+			remaining := charBudget - int64(len(doc.Role.Body))
+			if remaining > 0 && len(doc.Tasks) > 0 && int64(len(doc.Tasks[0].Body)) > remaining {
+				doc.Tasks[0].Body = token.TruncateToCharLimit(doc.Tasks[0].Body, remaining)
+			}
+		}
+	}
+
+	return doc
+}
+
+// formatTableContent formats a Table as markdown-like text.
+func formatTableContent(tbl Table) string {
+	if len(tbl.Records) == 0 {
+		return ""
+	}
+
+	var sb strings.Builder
+
+	// Extract column headers from Columns or Records keys
+	var headers []string
+	if len(tbl.Columns) > 0 {
+		for _, col := range tbl.Columns {
+			if col.Header != "" {
+				headers = append(headers, col.Header)
+			} else {
+				headers = append(headers, col.Field)
+			}
+		}
+	} else if len(tbl.Records) > 0 {
+		// Extract keys from first record
+		for k := range tbl.Records[0] {
+			headers = append(headers, k)
+		}
+	}
+
+	// Write headers
+	if len(headers) > 0 {
+		sb.WriteString("| ")
+		for i, h := range headers {
+			if i > 0 {
+				sb.WriteString(" | ")
+			}
+			sb.WriteString(h)
+		}
+		sb.WriteString(" |\n")
+
+		// Separator
+		sb.WriteString("|")
+		for range headers {
+			sb.WriteString(" --- |")
+		}
+		sb.WriteString("\n")
+	}
+
+	// Determine field order for values
+	var fields []string
+	if len(tbl.Columns) > 0 {
+		for _, col := range tbl.Columns {
+			fields = append(fields, col.Field)
+		}
+	} else {
+		fields = headers
+	}
+
+	// Write rows
+	for _, rec := range tbl.Records {
+		sb.WriteString("| ")
+		for i, field := range fields {
+			if i > 0 {
+				sb.WriteString(" | ")
+			}
+			if val, ok := rec[field]; ok {
+				sb.WriteString(fmt.Sprintf("%v", val))
+			}
+		}
+		sb.WriteString(" |\n")
+	}
+
+	return sb.String()
+}
+
+// formatFolderContent formats a Folder as a tree structure.
+func formatFolderContent(folder Folder, baseDir string) string {
+	var sb strings.Builder
+
+	if folder.Src != "" {
+		sb.WriteString("Folder: ")
+		sb.WriteString(folder.Src)
+		sb.WriteString("\n")
+	}
+
+	// List entries
+	for _, entry := range folder.Entries {
+		if entry.IsDir {
+			sb.WriteString("  [dir] ")
+		} else {
+			sb.WriteString("  - ")
+		}
+		sb.WriteString(entry.Path)
+		sb.WriteString("\n")
+
+		if entry.Content != "" && folder.ShowContent {
+			sb.WriteString("    ```\n")
+			sb.WriteString("    ")
+			sb.WriteString(entry.Content)
+			sb.WriteString("\n    ```\n")
+		}
+	}
+
+	return sb.String()
+}
+
+// formatConversationContent formats a Conversation as readable text.
+func formatConversationContent(conv Conversation) string {
+	var sb strings.Builder
+
+	for _, turn := range conv.Turns {
+		sb.WriteString("[")
+		sb.WriteString(turn.Speaker)
+		sb.WriteString("]: ")
+		sb.WriteString(turn.Content)
+		sb.WriteString("\n\n")
+	}
+
+	return strings.TrimSpace(sb.String())
+}
+
+// formatHeaderContent formats a Header as markdown heading.
+func formatHeaderContent(h Header) string {
+	level := h.Level
+	if level < 1 {
+		level = 1
+	}
+	if level > 6 {
+		level = 6
+	}
+	prefix := strings.Repeat("#", level)
+	content := strings.TrimSpace(h.Content)
+	if content == "" {
+		return ""
+	}
+	return prefix + " " + content
+}
+
+// formatSectionContent formats a Section with optional title.
+func formatSectionContent(sec Section) string {
+	var sb strings.Builder
+	if sec.Title != "" {
+		sb.WriteString("## ")
+		sb.WriteString(sec.Title)
+		sb.WriteString("\n\n")
+	}
+	content := strings.TrimSpace(sec.Content)
+	if content != "" {
+		sb.WriteString(content)
+	}
+	return strings.TrimSpace(sb.String())
+}
+
+// formatListContent formats a List as markdown list.
+func formatListContent(list List) string {
+	if len(list.Items) == 0 {
+		return ""
+	}
+
+	var sb strings.Builder
+	for i, item := range list.Items {
+		content := strings.TrimSpace(item.Content)
+		if content == "" {
+			continue
+		}
+
+		switch list.Style {
+		case "decimal":
+			sb.WriteString(fmt.Sprintf("%d. ", i+1))
+		case "latin":
+			if i < 26 {
+				sb.WriteString(string(rune('a'+i)) + ". ")
+			} else {
+				sb.WriteString(fmt.Sprintf("%d. ", i+1))
+			}
+		default: // star, dash, plus, or empty
+			marker := "-"
+			if list.Style == "star" {
+				marker = "*"
+			} else if list.Style == "plus" {
+				marker = "+"
+			}
+			sb.WriteString(marker + " ")
+		}
+		sb.WriteString(content)
+		sb.WriteString("\n")
+	}
+	return strings.TrimSpace(sb.String())
+}
+
+// formatCodeBlockContent formats a CodeBlock as markdown fenced code.
+func formatCodeBlockContent(code CodeBlock) string {
+	content := strings.TrimSpace(code.Content)
+	if content == "" {
+		return ""
+	}
+
+	if code.Inline {
+		return "`" + content + "`"
+	}
+
+	var sb strings.Builder
+	sb.WriteString("```")
+	if code.Lang != "" {
+		sb.WriteString(code.Lang)
+	}
+	sb.WriteString("\n")
+	sb.WriteString(content)
+	sb.WriteString("\n```")
+	return sb.String()
 }

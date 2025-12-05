@@ -4,16 +4,14 @@
     <version>0.0.8</version>
   </meta>
   <role>Test fixture for code elements</role>
-  <task>
-    Use <code inline="true">inline code</code> for short snippets.
-    <code lang="go">
+  <task>Demonstrate code elements</task>
+  <code lang="go">
 func main() {
     fmt.Println("Hello, World!")
 }
-    </code>
-    <code lang="python">
+  </code>
+  <code lang="python">
 def greet(name):
     return f"Hello, {name}!"
-    </code>
-  </task>
+  </code>
 </poml>

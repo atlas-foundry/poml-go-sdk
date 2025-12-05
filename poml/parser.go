@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -143,17 +144,158 @@ type Document struct {
 }
 
 // Meta captures the id/version/owner fields under <meta>.
+// minVersion/maxVersion/etc can be attributes or child elements.
 type Meta struct {
-	ID         string `xml:"id"`
-	Version    string `xml:"version"`
-	Owner      string `xml:"owner"`
-	MinVersion string `xml:"minVersion,attr,omitempty"`
-	MaxVersion string `xml:"maxVersion,attr,omitempty"`
-	Components string `xml:"components,attr,omitempty"`
-	Stylesheet string `xml:"stylesheet,attr,omitempty"`
-	CharLimit  int64  `xml:"charLimit,attr,omitempty"`
-	TokenLimit int64  `xml:"tokenLimit,attr,omitempty"`
-	Priority   int    `xml:"priority,attr,omitempty"`
+	ID         string
+	Version    string
+	Owner      string
+	MinVersion string
+	MaxVersion string
+	Components string
+	Stylesheet string
+	CharLimit  int64
+	TokenLimit int64
+	Priority   int
+}
+
+// UnmarshalXML implements custom unmarshaling for Meta to support
+// both attribute and child element forms for minVersion, maxVersion, etc.
+func (m *Meta) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	// First, extract attributes
+	for _, attr := range start.Attr {
+		switch attr.Name.Local {
+		case "minVersion":
+			m.MinVersion = attr.Value
+		case "maxVersion":
+			m.MaxVersion = attr.Value
+		case "components":
+			m.Components = attr.Value
+		case "stylesheet":
+			m.Stylesheet = attr.Value
+		case "charLimit":
+			if v, err := strconv.ParseInt(attr.Value, 10, 64); err == nil {
+				m.CharLimit = v
+			}
+		case "tokenLimit":
+			if v, err := strconv.ParseInt(attr.Value, 10, 64); err == nil {
+				m.TokenLimit = v
+			}
+		case "priority":
+			if v, err := strconv.Atoi(attr.Value); err == nil {
+				m.Priority = v
+			}
+		}
+	}
+
+	// Now parse child elements
+	for {
+		tok, err := d.Token()
+		if err != nil {
+			return err
+		}
+		switch t := tok.(type) {
+		case xml.StartElement:
+			var content string
+			if err := d.DecodeElement(&content, &t); err != nil {
+				return err
+			}
+			switch t.Name.Local {
+			case "id":
+				m.ID = content
+			case "version":
+				m.Version = content
+			case "owner":
+				m.Owner = content
+			case "minVersion":
+				if m.MinVersion == "" {
+					m.MinVersion = content
+				}
+			case "maxVersion":
+				if m.MaxVersion == "" {
+					m.MaxVersion = content
+				}
+			case "components":
+				if m.Components == "" {
+					m.Components = content
+				}
+			case "stylesheet":
+				if m.Stylesheet == "" {
+					m.Stylesheet = content
+				}
+			case "charLimit":
+				if m.CharLimit == 0 {
+					if v, err := strconv.ParseInt(content, 10, 64); err == nil {
+						m.CharLimit = v
+					}
+				}
+			case "tokenLimit":
+				if m.TokenLimit == 0 {
+					if v, err := strconv.ParseInt(content, 10, 64); err == nil {
+						m.TokenLimit = v
+					}
+				}
+			case "priority":
+				if m.Priority == 0 {
+					if v, err := strconv.Atoi(content); err == nil {
+						m.Priority = v
+					}
+				}
+			}
+		case xml.EndElement:
+			if t.Name == start.Name {
+				return nil
+			}
+		}
+	}
+}
+
+// MarshalXML implements custom marshaling for Meta to encode as XML.
+func (m Meta) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	// Add attributes for minVersion, maxVersion, etc. if set
+	if m.MinVersion != "" {
+		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "minVersion"}, Value: m.MinVersion})
+	}
+	if m.MaxVersion != "" {
+		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "maxVersion"}, Value: m.MaxVersion})
+	}
+	if m.Components != "" {
+		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "components"}, Value: m.Components})
+	}
+	if m.Stylesheet != "" {
+		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "stylesheet"}, Value: m.Stylesheet})
+	}
+	if m.CharLimit != 0 {
+		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "charLimit"}, Value: strconv.FormatInt(m.CharLimit, 10)})
+	}
+	if m.TokenLimit != 0 {
+		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "tokenLimit"}, Value: strconv.FormatInt(m.TokenLimit, 10)})
+	}
+	if m.Priority != 0 {
+		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "priority"}, Value: strconv.Itoa(m.Priority)})
+	}
+
+	if err := e.EncodeToken(start); err != nil {
+		return err
+	}
+
+	// Encode child elements
+	if m.ID != "" {
+		if err := e.EncodeElement(m.ID, xml.StartElement{Name: xml.Name{Local: "id"}}); err != nil {
+			return err
+		}
+	}
+	if m.Version != "" {
+		if err := e.EncodeElement(m.Version, xml.StartElement{Name: xml.Name{Local: "version"}}); err != nil {
+			return err
+		}
+	}
+	if m.Owner != "" {
+		if err := e.EncodeElement(m.Owner, xml.StartElement{Name: xml.Name{Local: "owner"}}); err != nil {
+			return err
+		}
+	}
+
+	return e.EncodeToken(start.End())
 }
 
 func isZeroMeta(m Meta) bool {

@@ -6,5 +6,6 @@
   <role>Test fixture for let bindings</role>
   <let name="greeting" value="Hello"/>
   <let name="target" value="World"/>
-  <task>{{ greeting }}, {{ target }}!</task>
+  <task>Test let bindings</task>
+  <hint>{{ greeting }}, {{ target }}!</hint>
 </poml>
