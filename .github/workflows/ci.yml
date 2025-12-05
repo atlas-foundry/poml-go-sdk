@@ -81,18 +81,14 @@ jobs:
       - name: Verify fit-for-purpose plan present
         run: test -f docs/fit_for_purpose.poml
 
-      - name: Run all tests
-        run: go test ./...
-
-      - name: Run coverage (poml package)
-        run: go test -coverprofile=coverage.out ./poml
+      - name: Run tests with coverage
+        run: go test -coverprofile=coverage.out ./...
 
       - name: Verify DOT goldens
         run: |
           UPDATE_GOLDEN=0 go test ./poml -run TestRenderDOT
 
       - name: Enforce coverage ≥80%
-        if: matrix.go == '1.25.5'
         run: |
           THRESHOLD=80.0
           TOTAL=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
